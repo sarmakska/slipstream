@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Live agent dashboard (pillar five): the `SessionStart` hook auto-starts a
+  dependency-light local server bound to `127.0.0.1` on a free port, tails an
+  append-only event log under `.claude/claudepilot/dashboard/` and serves a
+  self-contained live UI over server-sent events with Agents, Discussion,
+  Token budget, Plan and Mermaid mind-map panels. Start is idempotent, the
+  browser opens behind a setting, sessions replay from the log, the bind is
+  local-only with no telemetry, and obvious secrets are redacted before they
+  reach disk. New hooks `PostToolUse` and `SubagentStop`; new `claudepilot
+  dashboard start|emit|replay|sessions` helper subcommands.
 - Claude Code plugin packaging: a `.claude-plugin/plugin.json` manifest and a
   `.claude-plugin/marketplace.json` so the plugin installs with
   `/plugin marketplace add sarmakska/claudepilot` then `/plugin install claudepilot`
