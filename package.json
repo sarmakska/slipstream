@@ -1,0 +1,49 @@
+{
+  "name": "claudepilot",
+  "version": "0.1.0",
+  "description": "A Claude Code plugin that gives Claude persistent memory and token-efficient retrieval, plus a guardrailed skill library for shipping production sites on Cloudflare, Supabase, Vercel and Resend.",
+  "type": "module",
+  "license": "MIT",
+  "author": "Sarma",
+  "homepage": "https://github.com/sarmakska/claudepilot",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sarmakska/claudepilot.git"
+  },
+  "bin": {
+    "claudepilot": "./dist/cli/index.js"
+  },
+  "files": [
+    "dist",
+    "skills",
+    "commands",
+    "hooks",
+    ".claude-plugin"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "packageManager": "pnpm@10.33.0",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "dev": "tsc -p tsconfig.build.json --watch",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "validate": "node dist/cli/index.js validate",
+    "plugin-validate": "node dist/cli/index.js plugin-validate"
+  },
+  "dependencies": {
+    "gray-matter": "^4.0.3",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@typescript-eslint/eslint-plugin": "^8.18.0",
+    "@typescript-eslint/parser": "^8.18.0",
+    "eslint": "^9.17.0",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
+}
