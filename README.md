@@ -1,5 +1,3 @@
-<p align="center"><img src=".github/brand/banner.svg" alt="claudepilot by sarmalinux" width="100%"></p>
-
 <h1 align="center">claudepilot by sarmalinux</h1>
 
 <p align="center">A Claude Code plugin that works through precise tools instead of whole-file reads, keeps context across compaction, and shows you the agents and the budget while they run.</p>
