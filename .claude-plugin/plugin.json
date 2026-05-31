@@ -1,0 +1,24 @@
+{
+  "name": "claudepilot",
+  "version": "0.1.0",
+  "description": "Turn Claude Code into a disciplined, token-efficient builder with persistent memory and a guardrailed skill library for shipping production sites on Cloudflare, Supabase, Vercel and Resend.",
+  "author": {
+    "name": "Sarma",
+    "url": "https://sarmalinux.com"
+  },
+  "homepage": "https://github.com/sarmakska/claudepilot",
+  "repository": "https://github.com/sarmakska/claudepilot",
+  "license": "MIT",
+  "keywords": [
+    "claude-code",
+    "memory",
+    "token-efficiency",
+    "skills",
+    "vercel",
+    "supabase",
+    "cloudflare"
+  ],
+  "skills": "./skills",
+  "commands": "./commands",
+  "hooks": "./hooks/hooks.json"
+}

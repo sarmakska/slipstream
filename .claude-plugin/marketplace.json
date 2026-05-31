@@ -1,0 +1,31 @@
+{
+  "name": "sarmalinux",
+  "owner": {
+    "name": "Sarma",
+    "url": "https://sarmalinux.com"
+  },
+  "metadata": {
+    "description": "SarmaLinux open-source plugins for Claude Code.",
+    "version": "0.1.0"
+  },
+  "plugins": [
+    {
+      "name": "claudepilot",
+      "source": ".",
+      "description": "Persistent memory, token-efficient retrieval and a guardrailed skill library that turn Claude Code into a disciplined builder for shipping production sites.",
+      "version": "0.1.0",
+      "author": {
+        "name": "Sarma",
+        "url": "https://sarmalinux.com"
+      },
+      "homepage": "https://github.com/sarmakska/claudepilot",
+      "license": "MIT",
+      "keywords": [
+        "claude-code",
+        "memory",
+        "skills",
+        "token-efficiency"
+      ]
+    }
+  ]
+}
