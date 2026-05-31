@@ -1,0 +1,179 @@
+/**
+ * The live dashboard server. It is deliberately built on node:http alone, no
+ * Express, no ws library: one fewer thing that can break the plugin build, and
+ * the surface we need (static page, an SSE stream, two small JSON routes) is
+ * tiny. It binds 127.0.0.1 so the dashboard is local-only, picks a free port,
+ * tails the active session log, and pushes folded state to connected clients.
+ *
+ * Streaming uses server-sent events rather than a websocket. The traffic here is
+ * one-directional (server to browser) and SSE is a few lines over plain HTTP
+ * with automatic client reconnect, so a websocket would be cost without benefit.
+ *
+ * Idempotency lives in startDashboard, not here: the hook checks for a live
+ * server before constructing one. This class only knows how to run.
+ */
+
+import { createServer, type Server, type IncomingMessage, type ServerResponse } from "node:http";
+import { URL } from "node:url";
+import { reduceEvents, type DashboardState } from "./state.js";
+import { readLog, listSessions } from "./log.js";
+import { renderDashboardHtml } from "./ui.js";
+
+export interface DashboardServerOptions {
+  projectRoot: string;
+  /** The session to show first. Falls back to the newest on disk. */
+  session?: string;
+  /** Poll interval for the log tail, ms. Small so the UI feels live. */
+  pollMs?: number;
+  /** Port to bind; 0 lets the OS pick a free one. */
+  port?: number;
+}
+
+interface Client {
+  res: ServerResponse;
+  session: string;
+  lastSeq: number;
+}
+
+export class DashboardServer {
+  private readonly opts: Required<Omit<DashboardServerOptions, "session" | "port">> & {
+    session?: string;
+    port: number;
+  };
+  private server: Server | null = null;
+  private clients = new Set<Client>();
+  private timer: NodeJS.Timeout | null = null;
+
+  constructor(options: DashboardServerOptions) {
+    this.opts = {
+      projectRoot: options.projectRoot,
+      session: options.session,
+      pollMs: options.pollMs ?? 400,
+      port: options.port ?? 0
+    };
+  }
+
+  /** Start listening. Resolves with the bound port once the socket is up. */
+  async listen(): Promise<number> {
+    const server = createServer((req, res) => {
+      this.handle(req, res).catch(() => {
+        if (!res.headersSent) res.writeHead(500);
+        res.end();
+      });
+    });
+    this.server = server;
+    await new Promise<void>((resolve, reject) => {
+      server.once("error", reject);
+      server.listen(this.opts.port, "127.0.0.1", () => resolve());
+    });
+    this.timer = setInterval(() => {
+      this.pump().catch(() => {});
+    }, this.opts.pollMs);
+    // Do not keep the process alive only for the poll timer.
+    this.timer.unref?.();
+    return this.port();
+  }
+
+  port(): number {
+    const addr = this.server?.address();
+    return addr && typeof addr === "object" ? addr.port : 0;
+  }
+
+  url(): string {
+    return `http://127.0.0.1:${this.port()}`;
+  }
+
+  async close(): Promise<void> {
+    if (this.timer) clearInterval(this.timer);
+    for (const client of this.clients) client.res.end();
+    this.clients.clear();
+    await new Promise<void>((resolve) => {
+      if (!this.server) return resolve();
+      this.server.close(() => resolve());
+    });
+    this.server = null;
+  }
+
+  private async resolveSession(requested?: string): Promise<string> {
+    if (requested) return requested;
+    if (this.opts.session) return this.opts.session;
+    const sessions = await listSessions(this.opts.projectRoot);
+    return sessions[0] ?? "main";
+  }
+
+  private async handle(
+    req: IncomingMessage,
+    res: ServerResponse
+  ): Promise<void> {
+    const url = new URL(req.url ?? "/", this.url());
+    if (url.pathname === "/" || url.pathname === "/index.html") {
+      const session = await this.resolveSession();
+      res.writeHead(200, { "content-type": "text/html; charset=utf-8" });
+      res.end(renderDashboardHtml(session));
+      return;
+    }
+    if (url.pathname === "/api/sessions") {
+      const sessions = await listSessions(this.opts.projectRoot);
+      res.writeHead(200, { "content-type": "application/json" });
+      res.end(JSON.stringify({ sessions }));
+      return;
+    }
+    if (url.pathname === "/api/state") {
+      const session = await this.resolveSession(
+        url.searchParams.get("session") ?? undefined
+      );
+      const state = reduceEvents(await readLog(this.opts.projectRoot, session));
+      res.writeHead(200, { "content-type": "application/json" });
+      res.end(JSON.stringify(state));
+      return;
+    }
+    if (url.pathname === "/api/stream") {
+      await this.stream(url, res);
+      return;
+    }
+    res.writeHead(404, { "content-type": "text/plain" });
+    res.end("not found");
+  }
+
+  private async stream(url: URL, res: ServerResponse): Promise<void> {
+    const session = await this.resolveSession(
+      url.searchParams.get("session") ?? undefined
+    );
+    res.writeHead(200, {
+      "content-type": "text/event-stream",
+      "cache-control": "no-cache",
+      connection: "keep-alive"
+    });
+    const state = reduceEvents(await readLog(this.opts.projectRoot, session));
+    this.send(res, "snapshot", state);
+    const client: Client = { res, session, lastSeq: state.lastSeq };
+    this.clients.add(client);
+    res.on("close", () => this.clients.delete(client));
+  }
+
+  /** Tail every active session log and push fresh state to its watchers. */
+  private async pump(): Promise<void> {
+    if (this.clients.size === 0) return;
+    const wanted = new Set([...this.clients].map((c) => c.session));
+    const states = new Map<string, DashboardState>();
+    for (const session of wanted) {
+      states.set(
+        session,
+        reduceEvents(await readLog(this.opts.projectRoot, session))
+      );
+    }
+    for (const client of this.clients) {
+      const state = states.get(client.session);
+      if (!state) continue;
+      if (state.lastSeq > client.lastSeq) {
+        client.lastSeq = state.lastSeq;
+        this.send(client.res, "state", state);
+      }
+    }
+  }
+
+  private send(res: ServerResponse, event: string, data: unknown): void {
+    res.write(`event: ${event}\n`);
+    res.write(`data: ${JSON.stringify(data)}\n\n`);
+  }
+}
