@@ -13,10 +13,13 @@
 // crashes would block the session, so every failure path degrades to a hint.
 
 import { readFile, stat } from "node:fs/promises";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { readPayload, sessionId, emit } from "./emit.mjs";
 
+const execFileAsync = promisify(execFile);
 const here = dirname(fileURLToPath(import.meta.url));
 const cwd = process.cwd();
 
@@ -27,6 +30,31 @@ async function readIfExists(path) {
   } catch {
     return null;
   }
+}
+
+// Build the task signal that drives smart recall: the git branch, the files
+// changed in the working tree, and the last prompt the host passed. All cheap
+// to gather and none requires reading file contents.
+async function taskSignal(payload) {
+  const signal = {};
+  try {
+    const { stdout } = await execFileAsync("git", ["rev-parse", "--abbrev-ref", "HEAD"], { cwd });
+    const branch = stdout.trim();
+    if (branch && branch !== "HEAD") signal.branch = branch;
+  } catch {
+    /* not a git repo */
+  }
+  try {
+    const { stdout } = await execFileAsync("git", ["diff", "--name-only", "HEAD"], { cwd });
+    const files = stdout.split("\n").map((s) => s.trim()).filter(Boolean);
+    if (files.length) signal.changedFiles = files.slice(0, 40);
+  } catch {
+    /* no diff */
+  }
+  if (typeof payload.prompt === "string" && payload.prompt.trim()) {
+    signal.lastPrompt = payload.prompt.trim();
+  }
+  return signal;
 }
 
 const payload = await readPayload();
@@ -74,8 +102,46 @@ const memoryIndex = await readIfExists(
   join(cwd, ".claude", "claudepilot", "memory", "MEMORY.md")
 );
 if (memoryIndex) {
+  // Smart recall: rank the store against the task signal and reload only the
+  // relevant subset, plus the index for the rest. This is the whole point: we
+  // never dump the entire store into context.
+  let recallBlock = "";
+  let digestBlock = "";
+  try {
+    const memory = await import(join(here, "..", "dist", "memory", "index.js"));
+    const all = await memory.listMemories(cwd);
+
+    // Reload this session's most recent compaction digest first, so a resumed
+    // session picks the thread straight back up.
+    const digestName = memory.digestMemoryName(session);
+    const digest = all.find((m) => m.name === digestName) ||
+      all.find((m) => (m.tags ?? []).includes("session-digest"));
+    if (digest) {
+      digestBlock =
+        "Last compaction digest (reloaded so the thread survives):\n\n" +
+        `### ${digest.name}\n${digest.body}`;
+    }
+
+    const signal = await taskSignal(payload);
+    const hits = memory.selectRelevant(
+      all.filter((m) => !(m.tags ?? []).includes("session-digest")),
+      signal
+    );
+    recallBlock = memory.renderRecall(hits);
+  } catch {
+    /* dev checkout without dist: fall back to the index */
+  }
+
+  if (digestBlock) {
+    lines.push("");
+    lines.push(digestBlock);
+  }
+  if (recallBlock) {
+    lines.push("");
+    lines.push(recallBlock);
+  }
   lines.push("");
-  lines.push("Persistent memory for this project (load only the bodies you need):");
+  lines.push("Full memory index (load only the bodies you need):");
   lines.push("");
   lines.push(memoryIndex.trim());
 } else {
