@@ -10,7 +10,7 @@
   },
   "plugins": [
     {
-      "name": "claudepilot",
+      "name": "slipstream",
       "source": ".",
       "description": "A bundled MCP server for scoped retrieval, lossless compaction, smart memory recall, shipped subagents and a context-budget statusline that turn Claude Code into a disciplined builder for shipping production sites.",
       "version": "0.2.0",
@@ -18,7 +18,7 @@
         "name": "Sarma",
         "url": "https://sarmalinux.com"
       },
-      "homepage": "https://github.com/sarmakska/claudepilot",
+      "homepage": "https://github.com/sarmakska/slipstream",
       "license": "MIT",
       "keywords": [
         "claude-code",

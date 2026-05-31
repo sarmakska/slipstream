@@ -10,5 +10,5 @@ coverage/
 .vercel/
 .turbo/
 .cache/
-.claude/claudepilot/
+.claude/slipstream/
 *.tsbuildinfo

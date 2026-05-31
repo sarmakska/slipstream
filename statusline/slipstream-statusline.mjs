@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// claudepilot statusline.
+// slipstream statusline.
 //
 // Claude Code invokes this on each render and pipes a JSON object on stdin
 // describing the session. We print one line for the status bar: the context
@@ -36,7 +36,7 @@ const bytes =
   Number(payload.cost?.total_tokens_used ? payload.cost.total_tokens_used * 3.6 : 0) || 0;
 
 const model = payload.model?.display_name || payload.model?.id || "";
-const skill = payload.active_skill || process.env.CLAUDEPILOT_ACTIVE_SKILL || "";
+const skill = payload.active_skill || process.env.SLIPSTREAM_ACTIVE_SKILL || "";
 
 const args = ["statusline", "--root", cwd];
 if (bytes) args.push("--bytes", String(Math.round(bytes)));

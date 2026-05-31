@@ -1,13 +1,13 @@
 {
-  "name": "claudepilot",
+  "name": "slipstream",
   "version": "0.2.0",
   "description": "Turn Claude Code into a disciplined, token-efficient builder: a bundled MCP server for scoped retrieval, lossless compaction, smart memory recall, shipped subagents, a context-budget statusline and a live local agent dashboard for shipping production sites on Cloudflare, Supabase, Vercel and Resend.",
   "author": {
     "name": "Sarma",
     "url": "https://sarmalinux.com"
   },
-  "homepage": "https://github.com/sarmakska/claudepilot",
-  "repository": "https://github.com/sarmakska/claudepilot",
+  "homepage": "https://github.com/sarmakska/slipstream",
+  "repository": "https://github.com/sarmakska/slipstream",
   "license": "MIT",
   "keywords": [
     "claude-code",
@@ -26,11 +26,11 @@
   "hooks": "./hooks/hooks.json",
   "statusLine": {
     "type": "command",
-    "command": "node \"${CLAUDE_PLUGIN_ROOT}/statusline/claudepilot-statusline.mjs\""
+    "command": "node \"${CLAUDE_PLUGIN_ROOT}/statusline/slipstream-statusline.mjs\""
   },
   "outputStyles": "./output-styles",
   "mcpServers": {
-    "claudepilot": {
+    "slipstream": {
       "command": "node",
       "args": ["${CLAUDE_PLUGIN_ROOT}/dist/mcp/index.js"]
     }

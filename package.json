@@ -1,17 +1,17 @@
 {
-  "name": "claudepilot",
+  "name": "slipstream",
   "version": "0.2.0",
   "description": "A Claude Code plugin: a bundled MCP server for scoped retrieval, lossless compaction via a PreCompact digest, smart memory recall, shipped subagents, a context-budget statusline and a live local agent dashboard for shipping production sites on Cloudflare, Supabase, Vercel and Resend.",
   "type": "module",
   "license": "MIT",
   "author": "Sarma",
-  "homepage": "https://github.com/sarmakska/claudepilot",
+  "homepage": "https://github.com/sarmakska/slipstream",
   "repository": {
     "type": "git",
-    "url": "https://github.com/sarmakska/claudepilot.git"
+    "url": "https://github.com/sarmakska/slipstream.git"
   },
   "bin": {
-    "claudepilot": "./dist/cli/index.js"
+    "slipstream": "./dist/cli/index.js"
   },
   "files": [
     "dist",
