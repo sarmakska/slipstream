@@ -1,7 +1,7 @@
 {
   "name": "claudepilot",
   "version": "0.1.0",
-  "description": "A Claude Code plugin that gives Claude persistent memory and token-efficient retrieval, plus a guardrailed skill library for shipping production sites on Cloudflare, Supabase, Vercel and Resend.",
+  "description": "A Claude Code plugin that gives Claude persistent memory, token-efficient retrieval, a guardrailed skill library and a live local agent dashboard for shipping production sites on Cloudflare, Supabase, Vercel and Resend.",
   "type": "module",
   "license": "MIT",
   "author": "Sarma",

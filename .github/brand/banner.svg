@@ -21,6 +21,6 @@
   <text x="210" y="150" font-family="'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace" font-size="34">
     <tspan fill="#34d399" font-weight="600">visitor</tspan><tspan fill="#8b9bb4">@</tspan><tspan fill="#22d3ee" font-weight="600">sarmalinux</tspan><tspan fill="#8b9bb4">:</tspan><tspan fill="#60a5fa">~</tspan><tspan fill="#8b9bb4">$ </tspan><tspan fill="#f5f7fa">claudepilot</tspan>
   </text>
-  <text x="212" y="205" font-family="'Geist','Segoe UI',system-ui,sans-serif" font-size="26" fill="#c4cdda">Persistent memory and token-efficient skills for Claude Code</text>
+  <text x="212" y="205" font-family="'Geist','Segoe UI',system-ui,sans-serif" font-size="24" fill="#c4cdda">A disciplined, token-efficient Claude Code with memory and a live agent dashboard</text>
   <text x="212" y="250" font-family="'Geist Mono', ui-monospace, monospace" font-size="18" fill="#6b7a90">sarmalinux.com  /  github.com/sarmakska</text>
 </svg>

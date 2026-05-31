@@ -1,7 +1,7 @@
 {
   "name": "claudepilot",
   "version": "0.1.0",
-  "description": "Turn Claude Code into a disciplined, token-efficient builder with persistent memory and a guardrailed skill library for shipping production sites on Cloudflare, Supabase, Vercel and Resend.",
+  "description": "Turn Claude Code into a disciplined, token-efficient builder with persistent memory, a guardrailed skill library and a live local agent dashboard for shipping production sites on Cloudflare, Supabase, Vercel and Resend.",
   "author": {
     "name": "Sarma",
     "url": "https://sarmalinux.com"
@@ -14,6 +14,8 @@
     "memory",
     "token-efficiency",
     "skills",
+    "dashboard",
+    "observability",
     "vercel",
     "supabase",
     "cloudflare"
