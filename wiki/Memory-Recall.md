@@ -1,6 +1,6 @@
 # Memory recall
 
-The naive thing a memory layer does is dump the whole store back into context on every session. claudepilot does not, because that gets more expensive the more useful the store becomes: a store of fifty facts would cost more tokens to reload than the session saves. Instead it builds a task signal from what the session is actually about, ranks memories against it, and reloads only the subset that earns its place, under a hard token ceiling.
+The naive thing a memory layer does is dump the whole store back into context on every session. slipstream does not, because that gets more expensive the more useful the store becomes: a store of fifty facts would cost more tokens to reload than the session saves. Instead it builds a task signal from what the session is actually about, ranks memories against it, and reloads only the subset that earns its place, under a hard token ceiling.
 
 ## The task signal
 
@@ -61,15 +61,15 @@ With no branch, no diff and no prompt, `selectRelevant` returns nothing and the 
 There are two ways to recall, for two situations:
 
 - **Automatic, at session start.** Signal-ranked `selectRelevant`, described above. You do nothing.
-- **On demand, mid-session.** `cp_recall(query)` (the MCP tool) or `/claudepilot:recall`, which calls `recallMemories` in `src/memory/store.ts`. This is a free-text query ranking, used when you want a specific prior decision rather than the session's relevant subset.
+- **On demand, mid-session.** `sp_recall(query)` (the MCP tool) or `/slipstream:recall`, which calls `recallMemories` in `src/memory/store.ts`. This is a free-text query ranking, used when you want a specific prior decision rather than the session's relevant subset.
 
 ## Failure modes
 
 | Symptom | Cause | Fix |
 |---|---|---|
 | relevant memory not reloaded | its tags do not match the branch or files | add a tag that names the concept (recall scores tags highest after the branch) |
-| nothing reloaded at all | not a git repo and no prompt, so the signal is empty | the index still loads; recall on demand with `/claudepilot:recall` |
-| too many memories reloaded | several share a strong tag | they still fit under the 1,200 token ceiling; prune stale facts with `/claudepilot:forget` |
+| nothing reloaded at all | not a git repo and no prompt, so the signal is empty | the index still loads; recall on demand with `/slipstream:recall` |
+| too many memories reloaded | several share a strong tag | they still fit under the 1,200 token ceiling; prune stale facts with `/slipstream:forget` |
 
 ## See also
 
@@ -78,4 +78,4 @@ There are two ways to recall, for two situations:
 - [Configuration and tuning](Configuration-and-Tuning) for the recall budget.
 
 ---
-SarmaLinux . sarmalinux.com . [Repository](https://github.com/sarmakska/claudepilot)
+SarmaLinux . sarmalinux.com . [Repository](https://github.com/sarmakska/slipstream)

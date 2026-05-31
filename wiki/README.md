@@ -1,6 +1,6 @@
-# claudepilot wiki
+# slipstream wiki
 
-These pages are the full claudepilot documentation. They are kept in the repository under `wiki/` and mirror the GitHub wiki.
+These pages are the full slipstream documentation. They are kept in the repository under `wiki/` and mirror the GitHub wiki.
 
 **Start here**
 - [Home](Home.md)
@@ -43,4 +43,4 @@ These pages are the full claudepilot documentation. They are kept in the reposit
 - [Roadmap and limitations](Roadmap-and-Limitations.md)
 
 ---
-SarmaLinux . sarmalinux.com . [Repository](https://github.com/sarmakska/claudepilot)
+SarmaLinux . sarmalinux.com . [Repository](https://github.com/sarmakska/slipstream)

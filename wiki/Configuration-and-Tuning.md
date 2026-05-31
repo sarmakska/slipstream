@@ -1,10 +1,10 @@
 # Configuration and tuning
 
-claudepilot works with zero configuration. Everything below has a sensible default; you only touch it to change behaviour deliberately.
+slipstream works with zero configuration. Everything below has a sensible default; you only touch it to change behaviour deliberately.
 
 ## Dashboard settings
 
-`.claude/claudepilot/dashboard.json` in your project (`src/dashboard/settings.ts`):
+`.claude/slipstream/dashboard.json` in your project (`src/dashboard/settings.ts`):
 
 ```jsonc
 {
@@ -17,10 +17,10 @@ Environment overrides, for a single session without editing the file:
 
 | Variable | Effect |
 |---|---|
-| `CLAUDEPILOT_DASHBOARD=0` | disable the dashboard |
-| `CLAUDEPILOT_DASHBOARD=1` | force enable |
-| `CLAUDEPILOT_DASHBOARD_OPEN=0` | keep the browser shut |
-| `CLAUDEPILOT_DASHBOARD_OPEN=1` | force open |
+| `SLIPSTREAM_DASHBOARD=0` | disable the dashboard |
+| `SLIPSTREAM_DASHBOARD=1` | force enable |
+| `SLIPSTREAM_DASHBOARD_OPEN=0` | keep the browser shut |
+| `SLIPSTREAM_DASHBOARD_OPEN=1` | force open |
 
 ## Context budget
 
@@ -33,7 +33,7 @@ Environment overrides, for a single session without editing the file:
 | `COMFORT_FRACTION` | 0.6 | the share treated as comfortably usable (`ok` below this) |
 | `LARGE_FILE_BYTES` | 16,000 | the threshold above which a whole-file read is flagged |
 
-The window can be overridden per call: `cp_budget(bytesRead, windowTokens)` and `claudepilot budget --bytes N --window N`. The levels are `ok` below `COMFORT_FRACTION`, `warn` up to 85%, `compact` above.
+The window can be overridden per call: `sp_budget(bytesRead, windowTokens)` and `slipstream budget --bytes N --window N`. The levels are `ok` below `COMFORT_FRACTION`, `warn` up to 85%, `compact` above.
 
 ## Recall budget
 
@@ -56,18 +56,18 @@ The statusline reads the same budget constants. To change what it shows, edit `f
 
 ## Where state lives
 
-claudepilot writes only under `.claude/claudepilot/` in your project:
+slipstream writes only under `.claude/slipstream/` in your project:
 
 ```
-.claude/claudepilot/
-  map.md  map.json              # the project map (from /claudepilot:map)
+.claude/slipstream/
+  map.md  map.json              # the project map (from /slipstream:map)
   memory/                       # one .md per fact + MEMORY.md index
   dashboard/<session>.jsonl     # append-only event log per session
   dashboard/server.json         # the running server's pid/port/url
   dashboard.json                # optional settings
 ```
 
-Add `.claude/claudepilot/` to `.gitignore` to keep it local, or commit `memory/` if you want the team to share durable facts.
+Add `.claude/slipstream/` to `.gitignore` to keep it local, or commit `memory/` if you want the team to share durable facts.
 
 ## See also
 
@@ -76,4 +76,4 @@ Add `.claude/claudepilot/` to `.gitignore` to keep it local, or commit `memory/`
 - [Security model](Security-Model) for what is written and what is redacted.
 
 ---
-SarmaLinux . sarmalinux.com . [Repository](https://github.com/sarmakska/claudepilot)
+SarmaLinux . sarmalinux.com . [Repository](https://github.com/sarmakska/slipstream)

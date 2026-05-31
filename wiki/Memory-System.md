@@ -1,10 +1,10 @@
 # Memory system
 
-claudepilot gives Claude a persistent, structured memory so durable facts survive across sessions and compactions, and Claude does not re-read the whole codebase to remember a decision it made yesterday.
+slipstream gives Claude a persistent, structured memory so durable facts survive across sessions and compactions, and Claude does not re-read the whole codebase to remember a decision it made yesterday.
 
 ## On disk
 
-Memory lives under your project at `.claude/claudepilot/memory/`:
+Memory lives under your project at `.claude/slipstream/memory/`:
 
 - One Markdown file per fact, named after the memory, with frontmatter and a body.
 - A single `MEMORY.md` index, regenerated from the files, so the files are always the source of truth and the index can never drift.
@@ -32,18 +32,18 @@ The `description` is the recall text: write it as the question that should surfa
 ## The lifecycle, driven by hooks and skills
 
 - At session start, the `SessionStart` hook (`hooks/session-start.mjs`) reads `MEMORY.md` and injects it into the session, so Claude opens with the project's durable facts loaded, for the price of the index alone.
-- During work, the `memory-recall` skill (or `/claudepilot:recall`) ranks memories by their description, tags and type against a query and returns only the winning bodies. You read the relevance logic, not every file.
-- After meaningful work, the `Stop` hook (`hooks/stop.mjs`) occasionally reminds Claude to persist anything durable with `/claudepilot:remember`, so knowledge is captured before the next compaction.
-- When something becomes wrong, `memory-prune` (or `/claudepilot:forget`) removes it, because a wrong durable fact is worse than no fact.
+- During work, the `memory-recall` skill (or `/slipstream:recall`) ranks memories by their description, tags and type against a query and returns only the winning bodies. You read the relevance logic, not every file.
+- After meaningful work, the `Stop` hook (`hooks/stop.mjs`) occasionally reminds Claude to persist anything durable with `/slipstream:remember`, so knowledge is captured before the next compaction.
+- When something becomes wrong, `memory-prune` (or `/slipstream:forget`) removes it, because a wrong durable fact is worse than no fact.
 
 ## The helper commands
 
 ```
-npx claudepilot memory add --type decision --desc "Where we deploy" --body "Cloudflare Pages." --tags "deploy,cloudflare" --root .
-npx claudepilot memory recall "deploy target" --root .
-npx claudepilot memory list --root .
-npx claudepilot memory prune we-deploy-to-cloudflare-pages --root .
-npx claudepilot memory index --root .
+npx slipstream memory add --type decision --desc "Where we deploy" --body "Cloudflare Pages." --tags "deploy,cloudflare" --root .
+npx slipstream memory recall "deploy target" --root .
+npx slipstream memory list --root .
+npx slipstream memory prune we-deploy-to-cloudflare-pages --root .
+npx slipstream memory index --root .
 ```
 
 `addMemory` derives a kebab name from the description if you do not pass one, stamps `created` and `updated`, and preserves the original `created` when you overwrite a memory of the same name. Every write regenerates `MEMORY.md`.
@@ -63,4 +63,4 @@ npx claudepilot memory index --root .
 Two features sit on top of this store. [Memory recall](Memory-Recall) (`src/memory/recall.ts`) ranks memories against a task signal and reloads only the relevant subset at session start, never the whole store. [Lossless compaction](Lossless-Compaction) (`src/memory/digest.ts`) writes a structured session digest to the store before Claude Code compacts, and the next session reloads it first.
 
 ---
-SarmaLinux . sarmalinux.com . [Repository](https://github.com/sarmakska/claudepilot)
+SarmaLinux . sarmalinux.com . [Repository](https://github.com/sarmakska/slipstream)

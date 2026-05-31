@@ -1,6 +1,6 @@
 # Skill catalogue
 
-claudepilot ships 59 Claude Code agent skills. Each is a `SKILL.md` with valid `name` and `description` frontmatter; each shipping skill carries a verification gate. Run `npx claudepilot validate` to list them with live per-category counts.
+slipstream ships 59 Claude Code agent skills. Each is a `SKILL.md` with valid `name` and `description` frontmatter; each shipping skill carries a verification gate. Run `npx slipstream validate` to list them with live per-category counts.
 
 ## Shipping integrations
 
@@ -55,4 +55,4 @@ scoped-read, context-budget, compact-and-offload
 See [Writing a skill](Writing-a-Skill) to add your own, and [Integrations](Integrations) for how the integration skills fit a real deployment.
 
 ---
-SarmaLinux . sarmalinux.com . [Repository](https://github.com/sarmakska/claudepilot)
+SarmaLinux . sarmalinux.com . [Repository](https://github.com/sarmakska/slipstream)

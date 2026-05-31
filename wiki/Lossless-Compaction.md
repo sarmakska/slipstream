@@ -1,10 +1,10 @@
 # Lossless compaction
 
-A long Claude Code session eventually compacts: it summarises the conversation and drops the bulk of the transcript so it can keep going. That summary is lossy by nature. The open task, the decisions made and the next step often blur, and the session loses the thread it was holding. claudepilot makes compaction lossless by intercepting the exact moment before it happens.
+A long Claude Code session eventually compacts: it summarises the conversation and drops the bulk of the transcript so it can keep going. That summary is lossy by nature. The open task, the decisions made and the next step often blur, and the session loses the thread it was holding. slipstream makes compaction lossless by intercepting the exact moment before it happens.
 
 ## The hook
 
-Claude Code fires a `PreCompact` event just before it compacts, with a `trigger` field (`manual` for `/compact`, `auto` when the window fills) and optional `custom_instructions`. claudepilot wires it in `hooks/hooks.json`:
+Claude Code fires a `PreCompact` event just before it compacts, with a `trigger` field (`manual` for `/compact`, `auto` when the window fills) and optional `custom_instructions`. slipstream wires it in `hooks/hooks.json`:
 
 ```json
 "PreCompact": [
@@ -63,7 +63,7 @@ That is the lossless property under test: the thread that compaction would have 
 
 | Symptom | Cause | Fix |
 |---|---|---|
-| no digest written | the plugin `dist/` is not built, so the hook cannot import the memory module | `pnpm build`; `/claudepilot:doctor` flags `precompact-hook` and `mcp-build` |
+| no digest written | the plugin `dist/` is not built, so the hook cannot import the memory module | `pnpm build`; `/slipstream:doctor` flags `precompact-hook` and `mcp-build` |
 | digest open task is generic ("Resume the previous task") | the session had no recorded activity and no `custom_instructions` | nothing to fix; with no signal there is nothing to capture |
 | old digest reloaded on a fresh, unrelated task | the fallback picked the most recent digest | the signal ranking will down-rank it; start a branch named for the new work so recall matches the right facts |
 
@@ -74,4 +74,4 @@ That is the lossless property under test: the thread that compaction would have 
 - [Memory system](Memory-System) for the store layout.
 
 ---
-SarmaLinux . sarmalinux.com . [Repository](https://github.com/sarmakska/claudepilot)
+SarmaLinux . sarmalinux.com . [Repository](https://github.com/sarmakska/slipstream)

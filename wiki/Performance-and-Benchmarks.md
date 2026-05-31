@@ -10,7 +10,7 @@ The project map is regenerated on demand. Over this repository (59 source files,
 files 59  symbols 158  bytes 211,926  generate ~24 ms
 ```
 
-For a project ten times this size, expect map generation in the low hundreds of milliseconds, dominated by file IO. It is cheap enough to regenerate per `/claudepilot:map` invocation rather than cache aggressively.
+For a project ten times this size, expect map generation in the low hundreds of milliseconds, dominated by file IO. It is cheap enough to regenerate per `/slipstream:map` invocation rather than cache aggressively.
 
 ## MCP server cold start and roundtrip
 
@@ -26,14 +26,14 @@ selectRelevant over 50 memories: ~16 us per call
 
 ## The token budget (the number that matters most)
 
-The point of claudepilot is fewer tokens, not faster milliseconds. The measured token figures, at the conservative 3.6 bytes per token estimate:
+The point of slipstream is fewer tokens, not faster milliseconds. The measured token figures, at the conservative 3.6 bytes per token estimate:
 
 | Operation | Bytes | Approx tokens |
 |---|---|---|
 | Read whole `src/map/retrieve.ts` | 4,841 | ~1,345 |
-| `cp_symbol(retrieve.ts, retrieveSymbol)` | 1,381 | ~384 (71% less) |
+| `sp_symbol(retrieve.ts, retrieveSymbol)` | 1,381 | ~384 (71% less) |
 | Read every file in `src/` | 146,150 | ~40,597 |
-| Read the `cp_map` index instead | 7,821 | ~2,173 (5.4% of reading everything) |
+| Read the `sp_map` index instead | 7,821 | ~2,173 (5.4% of reading everything) |
 
 ## Test suite
 
@@ -58,4 +58,4 @@ Your numbers will differ with CPU and disk, but the ratios (slice versus whole f
 - [Architecture](Architecture) for why the hot paths are pure.
 
 ---
-SarmaLinux . sarmalinux.com . [Repository](https://github.com/sarmakska/claudepilot)
+SarmaLinux . sarmalinux.com . [Repository](https://github.com/sarmakska/slipstream)

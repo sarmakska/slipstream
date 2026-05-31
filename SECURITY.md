@@ -1,6 +1,6 @@
 # Security policy
 
-I take the security of claudepilot seriously and I appreciate every responsible
+I take the security of slipstream seriously and I appreciate every responsible
 disclosure.
 
 ## Reporting a vulnerability
@@ -22,7 +22,7 @@ release notes once a fix ships, unless you would rather stay anonymous.
 
 ## Scope
 
-claudepilot runs shell commands that you or your skills define, including
+slipstream runs shell commands that you or your skills define, including
 verification gates. Treat the commands in a skill as code you are about to run.
 Review any skill from a third party before you load it, the same way you would
 review a dependency.

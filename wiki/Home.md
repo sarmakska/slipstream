@@ -1,12 +1,14 @@
-# claudepilot by sarmalinux
+# slipstream by sarmalinux
 
-claudepilot is a Claude Code plugin. You install it into Claude Code in VS Code and it makes Claude work through precise tools instead of whole-file reads, keeps context alive across compaction, ships a guardrailed skill library for production sites on Cloudflare, Supabase, Vercel and Resend, and stands up a live local dashboard so you can watch the agents work.
+> slipstream is not affiliated with or endorsed by Anthropic. Claude and Claude Code are trademarks of Anthropic, referenced here only to describe compatibility.
+
+slipstream is a Claude Code plugin. You install it into Claude Code in VS Code and it makes Claude work through precise tools instead of whole-file reads, keeps context alive across compaction, ships a guardrailed skill library for production sites on Cloudflare, Supabase, Vercel and Resend, and stands up a live local dashboard so you can watch the agents work.
 
 It is not a CLI you run as a product. There is a small helper binary the plugin calls from its hooks, its slash commands and a bundled MCP server, but you never invoke it directly.
 
 ## What you feel on day one
 
-1. **Claude works through precise tools.** A bundled MCP server exposes `cp_map`, `cp_symbol`, `cp_lines` and `cp_search`, so Claude pulls one declaration instead of opening the whole file. See [MCP tools](MCP-Tools) and [Token efficiency](Token-Efficiency).
+1. **Claude works through precise tools.** A bundled MCP server exposes `sp_map`, `sp_symbol`, `sp_lines` and `sp_search`, so Claude pulls one declaration instead of opening the whole file. See [MCP tools](MCP-Tools) and [Token efficiency](Token-Efficiency).
 2. **Context survives compaction.** A `PreCompact` hook writes a structured digest before Claude Code trims the conversation; the next session reloads it. See [Lossless compaction](Lossless-Compaction).
 3. **You watch the agents in a dashboard.** Session start boots a `127.0.0.1` server and prints the URL into chat. See [Live agent dashboard](Live-Agent-Dashboard).
 4. **You see the budget in the statusline.** `cp | ctx 12% ok | mem 4 | skill scoped-read`. See [Statusline](Statusline).
@@ -23,8 +25,8 @@ flowchart TD
     Agents[Subagents]
     SL[Statusline]
   end
-  CC --> MCP[Bundled MCP server cp_*]
-  Hooks --> Helper[claudepilot helper]
+  CC --> MCP[Bundled MCP server sp_*]
+  Hooks --> Helper[slipstream helper]
   Cmds --> Helper
   Agents --> MCP
   MCP --> Map[Project map]
@@ -46,13 +48,13 @@ flowchart TD
 | Page | What it covers |
 |---|---|
 | [Install in VS Code](Install-in-VS-Code) | Marketplace add, install, first run, doctor |
-| [MCP tools](MCP-Tools) | The bundled server and every `cp_` tool |
+| [MCP tools](MCP-Tools) | The bundled server and every `sp_` tool |
 | [Lossless compaction](Lossless-Compaction) | The PreCompact digest and the reload |
 | [Memory recall](Memory-Recall) | Signal-ranked relevant recall, not load-everything |
 | [Live agent dashboard](Live-Agent-Dashboard) | Hooks, event log, server, UI, replay |
 | [Statusline](Statusline) | The status bar line and how to enable it |
 | [Output style](Output-Style) | The terse, token-lean style |
-| [Subagents](Subagents) | cp-shipper, cp-schema, cp-reviewer |
+| [Subagents](Subagents) | sp-shipper, sp-schema, sp-reviewer |
 | [Token efficiency](Token-Efficiency) | The worked before/after numbers |
 | [Architecture](Architecture) | Repo shape, modules, the data path |
 | [Memory system](Memory-System) | The file-based store and the index |
@@ -75,4 +77,4 @@ flowchart TD
 | [Roadmap and limitations](Roadmap-and-Limitations) | What I will and will not add |
 
 ---
-SarmaLinux . sarmalinux.com . [Repository](https://github.com/sarmakska/claudepilot)
+SarmaLinux . sarmalinux.com . [Repository](https://github.com/sarmakska/slipstream)

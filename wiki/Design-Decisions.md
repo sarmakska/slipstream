@@ -1,6 +1,6 @@
 # Design decisions
 
-The choices I made deliberately, and the alternatives I turned down. This is the page to read if you want to know why claudepilot is shaped the way it is.
+The choices I made deliberately, and the alternatives I turned down. This is the page to read if you want to know why slipstream is shaped the way it is.
 
 ## A hand-rolled MCP server, not the SDK
 
@@ -22,7 +22,7 @@ The bundled MCP server (`src/mcp/server.ts`) is a small JSON-RPC-over-stdio loop
 
 `src/context/budget.ts` estimates tokens from bytes at a cautious 3.6 bytes per token.
 
-**Why.** claudepilot cannot read Claude Code's internal token counter. I would rather be honestly approximate and conservative (compact a little early) than precise-looking and wrong. The wording everywhere says "approximate".
+**Why.** slipstream cannot read Claude Code's internal token counter. I would rather be honestly approximate and conservative (compact a little early) than precise-looking and wrong. The wording everywhere says "approximate".
 
 **Rejected.** Pretending to a precise count I cannot obtain.
 
@@ -46,7 +46,7 @@ One Markdown file per fact, with a regenerated index.
 
 ## The helper owns only the objective parts
 
-Indexing, retrieval, budget, validation, event recording, the MCP transport. The judgement (what to remember, when to compact, whether a gate is the right one) stays with the agent following the skills. claudepilot is a set of disciplines and tools, not an autopilot.
+Indexing, retrieval, budget, validation, event recording, the MCP transport. The judgement (what to remember, when to compact, whether a gate is the right one) stays with the agent following the skills. slipstream is a set of disciplines and tools, not an autopilot.
 
 ## See also
 
@@ -55,4 +55,4 @@ Indexing, retrieval, budget, validation, event recording, the MCP transport. The
 - [Comparisons](Comparisons) for how these choices differ from the alternatives.
 
 ---
-SarmaLinux . sarmalinux.com . [Repository](https://github.com/sarmakska/claudepilot)
+SarmaLinux . sarmalinux.com . [Repository](https://github.com/sarmakska/slipstream)

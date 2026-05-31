@@ -1,12 +1,12 @@
 # FAQ
 
-## Do I run claudepilot as a CLI?
+## Do I run slipstream as a CLI?
 
 No. You install it as a Claude Code plugin in VS Code. There is a helper binary the plugin calls from its hooks, slash commands and the MCP server, but you never invoke it directly. The `node dist/cli/index.js ...` lines in the docs are for debugging and scripting.
 
 ## What does it actually save me tokens on?
 
-Reads. Instead of opening a whole file, Claude calls `cp_symbol` for one declaration or `cp_lines` for a window. On this repository a single symbol is 71% fewer tokens than the whole file, and orienting via the map is 5.4% of reading the tree. See [Token efficiency](Token-Efficiency).
+Reads. Instead of opening a whole file, Claude calls `sp_symbol` for one declaration or `sp_lines` for a window. On this repository a single symbol is 71% fewer tokens than the whole file, and orienting via the map is 5.4% of reading the tree. See [Token efficiency](Token-Efficiency).
 
 ## Is the token budget real?
 
@@ -26,7 +26,7 @@ No. It ranks memories against a task signal (git branch, changed files, last pro
 
 ## How do I know the install is working?
 
-Run `/claudepilot:doctor`. It checks the MCP server, every hook including PreCompact, the memory store, the CLI, the statusline, the output style and the subagents, and prints a `PASS`/`FAIL` line per check.
+Run `/slipstream:doctor`. It checks the MCP server, every hook including PreCompact, the memory store, the CLI, the statusline, the output style and the subagents, and prints a `PASS`/`FAIL` line per check.
 
 ## Why not use the MCP SDK?
 
@@ -46,7 +46,7 @@ Node 20 or newer, on the PATH Claude Code uses. The hooks, helper and MCP server
 
 ## Will there be a hosted version?
 
-No. claudepilot stays local-only. If it phoned home it would not be claudepilot. See [Roadmap and limitations](Roadmap-and-Limitations).
+No. slipstream stays local-only. If it phoned home it would not be slipstream. See [Roadmap and limitations](Roadmap-and-Limitations).
 
 ---
-SarmaLinux . sarmalinux.com . [Repository](https://github.com/sarmakska/claudepilot)
+SarmaLinux . sarmalinux.com . [Repository](https://github.com/sarmakska/slipstream)

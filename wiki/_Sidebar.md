@@ -1,4 +1,4 @@
-### claudepilot
+### slipstream
 
 **Start here**
 - [Home](Home)

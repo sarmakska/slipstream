@@ -10,7 +10,7 @@ The suite is 88 tests across 11 files, run with `pnpm test` (Vitest). It runs in
 | `tests/memory.test.ts` | normalise, add/list, preserve created timestamp on overwrite, update, prune, recall ranking from frontmatter, index rendering |
 | `tests/recall.test.ts` | signal ranking by branch, by changed files, by prompt; empty-signal returns nothing; the token-budget ceiling over a 50-memory store; render |
 | `tests/digest.test.ts` | digest build (open task, decisions, files, next step), markdown render, and the lossless property: write a digest, reload it on a stripe branch with the decision intact |
-| `tests/mcp.test.ts` | the pure `handleRequest` (initialize, tools/list, notification, method-not-found), `cp_symbol` returns a slice shorter than the file, `cp_map`/`cp_search` embed no bodies, and a spawned real server answering `tools/list` and a `cp_symbol` call over stdio |
+| `tests/mcp.test.ts` | the pure `handleRequest` (initialize, tools/list, notification, method-not-found), `sp_symbol` returns a slice shorter than the file, `sp_map`/`sp_search` embed no bodies, and a spawned real server answering `tools/list` and a `sp_symbol` call over stdio |
 | `tests/statusline.test.ts` | the exact formatted line for fixed inputs, dropped empty segments, the warn and COMPACT thresholds |
 | `tests/doctor.test.ts` | doctor passes against the real tree, surfaces the MCP/PreCompact/subagent/statusline checks, renders pass/fail, and fails loudly on a deliberately broken install |
 | `tests/context.test.ts` | token estimate, budget levels, the read guard |
@@ -26,7 +26,7 @@ The suite is 88 tests across 11 files, run with `pnpm test` (Vitest). It runs in
 
 ## The headline assertions
 
-- `cp_symbol` must not return the whole file. The MCP test asserts the slice is strictly shorter than the file and excludes a later unrelated declaration.
+- `sp_symbol` must not return the whole file. The MCP test asserts the slice is strictly shorter than the file and excludes a later unrelated declaration.
 - A compaction digest must survive. The digest test writes a digest and reloads it via the same `selectRelevant` the session-start hook uses, asserting the open task and a decision come back.
 - Recall must stay bounded. The recall test builds 50 memories and asserts the reloaded subset stays under the token ceiling and is smaller than the store.
 - The install must be verifiable. The doctor test runs against a broken tree and asserts the right checks turn `FAIL`.
@@ -48,4 +48,4 @@ The MCP stdio test and the doctor test both need `dist/` built, because they exe
 - [MCP tools](MCP-Tools) and [Lossless compaction](Lossless-Compaction) for the features under test.
 
 ---
-SarmaLinux . sarmalinux.com . [Repository](https://github.com/sarmakska/claudepilot)
+SarmaLinux . sarmalinux.com . [Repository](https://github.com/sarmakska/slipstream)

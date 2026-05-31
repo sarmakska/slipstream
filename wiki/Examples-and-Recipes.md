@@ -1,21 +1,21 @@
 # Examples and recipes
 
-Copy-paste flows for the things people actually do with claudepilot. Slash commands run inside Claude Code; the `node dist/cli/index.js ...` lines are what the helper does under the hood, useful for scripting or debugging.
+Copy-paste flows for the things people actually do with slipstream. Slash commands run inside Claude Code; the `node dist/cli/index.js ...` lines are what the helper does under the hood, useful for scripting or debugging.
 
 ## First run on a new project
 
 ```
-/plugin marketplace add sarmakska/claudepilot
-/plugin install claudepilot
-/claudepilot:doctor        # confirm the install is wired
-/claudepilot:map           # build the project map once
+/plugin marketplace add sarmakska/slipstream
+/plugin install slipstream
+/slipstream:doctor        # confirm the install is wired
+/slipstream:map           # build the project map once
 ```
 
-Then work as normal. Claude will reach for `cp_symbol` and `cp_lines` instead of reading whole files.
+Then work as normal. Claude will reach for `sp_symbol` and `sp_lines` instead of reading whole files.
 
 ## Read one symbol instead of a file
 
-In chat, just ask for the function; Claude calls `cp_symbol`. To do it by hand:
+In chat, just ask for the function; Claude calls `sp_symbol`. To do it by hand:
 
 ```
 node dist/cli/index.js slice . src/map/retrieve.ts retrieveSymbol
@@ -33,19 +33,19 @@ node dist/cli/index.js lines . src/cli/index.js 40 80
 node dist/cli/index.js map . --search "session cookie"
 ```
 
-Ranked locations, no file bodies. In chat this is `cp_search`.
+Ranked locations, no file bodies. In chat this is `sp_search`.
 
 ## Save and recall a decision
 
 ```
-/claudepilot:remember
+/slipstream:remember
 # "We verify Stripe webhooks with the raw request body, not the parsed one"
 ```
 
 Later, on a stripe branch, it comes back automatically at session start. On demand:
 
 ```
-/claudepilot:recall stripe webhook
+/slipstream:recall stripe webhook
 ```
 
 ## Survive a compaction
@@ -70,11 +70,11 @@ Prints only the matching memories, with the match reasons.
 
 ## Delegate a pre-push review
 
-In chat: "use cp-reviewer to check this before I push." It runs lint, build, tests and a secret scan, reviews the diff, and ends with `PASS` or `FAIL`. See [Subagents](Subagents).
+In chat: "use sp-reviewer to check this before I push." It runs lint, build, tests and a secret scan, reviews the diff, and ends with `PASS` or `FAIL`. See [Subagents](Subagents).
 
 ## Ship a site end to end
 
-In chat: "use cp-shipper to take this from scaffold to deployed on Vercel." It drives the frontend, backend, integration and deploy skills, running each `## Verify` gate and stopping on a red one.
+In chat: "use sp-shipper to take this from scaffold to deployed on Vercel." It drives the frontend, backend, integration and deploy skills, running each `## Verify` gate and stopping on a red one.
 
 ## Watch the session live
 
@@ -83,7 +83,7 @@ The dashboard URL is printed at session start. Open it for the agents, activity 
 ## Switch to the terse output style
 
 ```
-/output-style claudepilot
+/output-style slipstream
 ```
 
 Shorter, higher-signal answers. Switch back with `/output-style default`. See [Output style](Output-Style).
@@ -95,4 +95,4 @@ Shorter, higher-signal answers. Switch back with `/output-style default`. See [O
 - [Troubleshooting](Troubleshooting) when a step does not behave.
 
 ---
-SarmaLinux . sarmalinux.com . [Repository](https://github.com/sarmakska/claudepilot)
+SarmaLinux . sarmalinux.com . [Repository](https://github.com/sarmakska/slipstream)

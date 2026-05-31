@@ -1,6 +1,6 @@
-# Contributing to claudepilot
+# Contributing to slipstream
 
-Thanks for wanting to add to claudepilot. The plugin is built to grow to
+Thanks for wanting to add to slipstream. The plugin is built to grow to
 hundreds of skills, so the contribution path is deliberately simple and the
 validator does the policing.
 
@@ -26,14 +26,14 @@ directory, named after the skill.
 2. Write the frontmatter. `name` (kebab case) and `description` are the fields
    Claude Code reads; the `description` is the relevance text that decides when
    the skill fires, so make it specific and start it with when to use it. The
-   `claudepilot` block carries the category, an optional `requires` list, and a
+   `slipstream` block carries the category, an optional `requires` list, and a
    verification gate.
 
    ```yaml
    ---
    name: cloudflare-worker
    description: Use when creating or deploying a Cloudflare Worker. Scaffolds wrangler config and verifies a deploy.
-   claudepilot:
+   slipstream:
      category: cloudflare
      verification:
        kind: build
@@ -57,7 +57,7 @@ directory, named after the skill.
 - UK English, no emojis, no em-dashes.
 - Keep skills small and single-purpose. A skill that does one thing well is
   easier to recall and to gate.
-- If a skill depends on another, list it under `claudepilot.requires` using the
+- If a skill depends on another, list it under `slipstream.requires` using the
   other skill's `name`.
 
 ## Pull requests

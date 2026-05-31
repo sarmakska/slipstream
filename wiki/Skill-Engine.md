@@ -1,16 +1,16 @@
 # Skill engine
 
-The skill engine is the contract and loader behind claudepilot's skill library. It lives in `src/engine` and is exercised by the `validate` and `plugin-validate` commands and by the test suite.
+The skill engine is the contract and loader behind slipstream's skill library. It lives in `src/engine` and is exercised by the `validate` and `plugin-validate` commands and by the test suite.
 
 ## The contract
 
-Every skill is a real Claude Code agent skill: a `SKILL.md` with frontmatter that Claude Code reads. claudepilot layers its own metadata under a namespaced `claudepilot` key, so a host that only understands `name` and `description` ignores the rest.
+Every skill is a real Claude Code agent skill: a `SKILL.md` with frontmatter that Claude Code reads. slipstream layers its own metadata under a namespaced `slipstream` key, so a host that only understands `name` and `description` ignores the rest.
 
 ```yaml
 ---
 name: cloudflare-d1
 description: Use when adding a Cloudflare D1 database. Creates the binding and verifies a migration applies.
-claudepilot:
+slipstream:
   category: cloudflare
   requires:
     - cloudflare-worker
@@ -34,9 +34,9 @@ The Zod schema in `src/engine/schema.ts` enforces:
 
 - `name`: kebab case, lower case, starting with a letter, up to 64 characters. This is also the skill's stable id and must match its directory name.
 - `description`: 1 to 1024 characters. This is the relevance text Claude Code matches against, so it should say when to use the skill.
-- `claudepilot.category`: one of the known categories.
-- `claudepilot.verification`: required for every category except `memory` and `context`, which have no build artifact to prove. The gate has a `kind` (`typecheck`, `build`, `test`, `smoke`, `healthcheck` or `command`), a `description`, a runnable `command`, and an optional `expect` substring.
-- `claudepilot.requires`: optional list of other skill names that should run first.
+- `slipstream.category`: one of the known categories.
+- `slipstream.verification`: required for every category except `memory` and `context`, which have no build artifact to prove. The gate has a `kind` (`typecheck`, `build`, `test`, `smoke`, `healthcheck` or `command`), a `description`, a runnable `command`, and an optional `expect` substring.
+- `slipstream.requires`: optional list of other skill names that should run first.
 
 ## The loader
 
@@ -57,10 +57,10 @@ A gate is the honest part of a skill. It is the check the agent runs to prove th
 ## Running the validator
 
 ```
-npx claudepilot validate
+npx slipstream validate
 ```
 
 prints the loaded skills and per-category counts, and exits non-zero with a list of issues if anything is malformed. CI runs this on every push and pull request.
 
 ---
-SarmaLinux . sarmalinux.com . [Repository](https://github.com/sarmakska/claudepilot)
+SarmaLinux . sarmalinux.com . [Repository](https://github.com/sarmakska/slipstream)

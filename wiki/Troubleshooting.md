@@ -3,17 +3,17 @@
 ## Install
 
 ### The plugin does not install
-Run `/plugin` in Claude Code to see installed plugins. If claudepilot is missing, re-run:
+Run `/plugin` in Claude Code to see installed plugins. If slipstream is missing, re-run:
 
 ```
-/plugin marketplace add sarmakska/claudepilot
-/plugin install claudepilot
+/plugin marketplace add sarmakska/slipstream
+/plugin install slipstream
 ```
 
 Confirm you are running the commands inside Claude Code in VS Code, not in a terminal.
 
 ### Slash commands do nothing
-Use the namespaced form: `/claudepilot:map`, not `/map`. If they still do nothing, the plugin did not install; see above.
+Use the namespaced form: `/slipstream:map`, not `/map`. If they still do nothing, the plugin did not install; see above.
 
 ## Node and hooks
 
@@ -25,23 +25,23 @@ That is expected for the silent paths: no memory yet (SessionStart and UserPromp
 
 ## MCP tools
 
-### The cp_ tools are not available
-The bundled MCP server needs `dist/mcp/index.js` to exist. In a dev checkout, run `pnpm build`. `/claudepilot:doctor` flags this as `mcp-build` and `mcp-declared`. If the tools still do not appear, confirm the plugin installed and restart the session so Claude Code spawns the server.
+### The sp_ tools are not available
+The bundled MCP server needs `dist/mcp/index.js` to exist. In a dev checkout, run `pnpm build`. `/slipstream:doctor` flags this as `mcp-build` and `mcp-declared`. If the tools still do not appear, confirm the plugin installed and restart the session so Claude Code spawns the server.
 
-### cp_symbol returns "no symbol X in file"
-The map only indexes the exported surface, so a non-exported symbol is not found. Use `cp_map` to see the exports, or `cp_lines` for a non-exported region.
+### sp_symbol returns "no symbol X in file"
+The map only indexes the exported surface, so a non-exported symbol is not found. Use `sp_map` to see the exports, or `sp_lines` for a non-exported region.
 
 ## Lossless compaction and recall
 
 ### No digest was written on compaction
-The `PreCompact` hook imports the compiled memory module; in a dev checkout, `pnpm build` first. `/claudepilot:doctor` flags `precompact-hook`. With no recorded session activity there may be nothing to digest, which is fine.
+The `PreCompact` hook imports the compiled memory module; in a dev checkout, `pnpm build` first. `/slipstream:doctor` flags `precompact-hook`. With no recorded session activity there may be nothing to digest, which is fine.
 
 ### A relevant memory was not reloaded
 Recall ranks lexically against the branch, changed files and tags. Add a tag that names the concept; tags score highest after the branch. See [Memory recall](Memory-Recall).
 
 ## Doctor and statusline
 
-### /claudepilot:doctor reports a FAIL
+### /slipstream:doctor reports a FAIL
 Read the failing line. A missing `dist/` means the plugin was not built (`pnpm build`); a missing PreCompact line means the hooks file is stale; a missing subagent means `agents/` did not ship. Fix the named item and run it again.
 
 ### The statusline shows only "cp | ctx 0% ok"
@@ -50,38 +50,38 @@ The script degraded because `dist/` is missing or the budget payload had no toke
 ## Token efficiency
 
 ### Claude still reads whole files
-Make sure a map exists: run `/claudepilot:map`. The `PreToolUse` warning and the `UserPromptSubmit` reminder only engage once `.claude/claudepilot/map.md` is present. The warning is a nudge, not a block, so Claude can still choose a whole-file read.
+Make sure a map exists: run `/slipstream:map`. The `PreToolUse` warning and the `UserPromptSubmit` reminder only engage once `.claude/slipstream/map.md` is present. The warning is a nudge, not a block, so Claude can still choose a whole-file read.
 
 ### A slice returns the wrong span
-The brace walker is heuristic. Fall back to a line range: `npx claudepilot lines . <file> <start> <end>`. Widen the range if needed.
+The brace walker is heuristic. Fall back to a line range: `npx slipstream lines . <file> <start> <end>`. Widen the range if needed.
 
 ### The map is stale
-Re-run `/claudepilot:map` after structural changes. The map is a snapshot.
+Re-run `/slipstream:map` after structural changes. The map is a snapshot.
 
 ## Memory
 
 ### Recall returns nothing
-The query shares no terms with any memory's description or tags. Rephrase, or list everything with `npx claudepilot memory list --root .`.
+The query shares no terms with any memory's description or tags. Rephrase, or list everything with `npx slipstream memory list --root .`.
 
 ### MEMORY.md looks out of date
-Regenerate it from the files: `npx claudepilot memory index --root .`.
+Regenerate it from the files: `npx slipstream memory index --root .`.
 
 ### A memory is wrong
-Update it by saving again with the same name, or remove it with `/claudepilot:forget` or `npx claudepilot memory prune <name> --root .`.
+Update it by saving again with the same name, or remove it with `/slipstream:forget` or `npx slipstream memory prune <name> --root .`.
 
 ## Live agent dashboard
 
 ### The URL did not appear in the chat
-The dashboard hook imports the compiled launcher from `dist/`. In a dev checkout, run `pnpm build` first. If the dashboard is disabled, check `.claude/claudepilot/dashboard.json` (`"enabled": false`) or the `CLAUDEPILOT_DASHBOARD=0` environment override.
+The dashboard hook imports the compiled launcher from `dist/`. In a dev checkout, run `pnpm build` first. If the dashboard is disabled, check `.claude/slipstream/dashboard.json` (`"enabled": false`) or the `SLIPSTREAM_DASHBOARD=0` environment override.
 
 ### The browser did not open
-Auto-open is best-effort and skipped on headless or sandboxed machines. Use the URL printed in the chat, or run `npx claudepilot dashboard start . --open`. To stop it opening, set `"autoOpen": false` or export `CLAUDEPILOT_DASHBOARD_OPEN=0`.
+Auto-open is best-effort and skipped on headless or sandboxed machines. Use the URL printed in the chat, or run `npx slipstream dashboard start . --open`. To stop it opening, set `"autoOpen": false` or export `SLIPSTREAM_DASHBOARD_OPEN=0`.
 
 ### No events are showing
-Confirm the hooks are wired with `npx claudepilot plugin-validate` (it lists `PostToolUse` and `SubagentStop`), and that Node is on PATH so the hooks can run. Check the log is growing: `cat .claude/claudepilot/dashboard/<session>.jsonl`. If the file has lines but the UI is empty, you are viewing a different session in the header dropdown.
+Confirm the hooks are wired with `npx slipstream plugin-validate` (it lists `PostToolUse` and `SubagentStop`), and that Node is on PATH so the hooks can run. Check the log is growing: `cat .claude/slipstream/dashboard/<session>.jsonl`. If the file has lines but the UI is empty, you are viewing a different session in the header dropdown.
 
 ### Port in use, or a stale server
-The server binds port 0, so the OS picks a free port and clashes should not happen. If `server.json` points at a dead server, the next start detects the dead pid or closed port and replaces it. To force a clean start, delete `.claude/claudepilot/dashboard/server.json`.
+The server binds port 0, so the OS picks a free port and clashes should not happen. If `server.json` points at a dead server, the next start detects the dead pid or closed port and replaces it. To force a clean start, delete `.claude/slipstream/dashboard/server.json`.
 
 ### A second start spawned nothing
 That is correct. Start is idempotent: a live server is reused, and the helper prints `already running at ...`.
@@ -92,7 +92,7 @@ That is correct. Start is idempotent: a live server is reused, and the helper pr
 It names each problem with its file. Common causes: malformed JSON in `plugin.json` or `marketplace.json`, a hook event not wired in `hooks/hooks.json`, a `SKILL.md` missing `name`, `description` or a verification gate, a skill directory name that does not match its `name`, or a command without frontmatter. Fix the named files and rerun:
 
 ```
-npx claudepilot plugin-validate
+npx slipstream plugin-validate
 ```
 
 ### validate reports skill issues
@@ -107,4 +107,4 @@ Use Node 20 or newer and pnpm 10. Run `pnpm install` first, then `pnpm build`.
 The workflow runs install, lint, build, skill validation, plugin validation and tests. The failing step's log names the cause. Reproduce locally with the same `pnpm` scripts.
 
 ---
-SarmaLinux . sarmalinux.com . [Repository](https://github.com/sarmakska/claudepilot)
+SarmaLinux . sarmalinux.com . [Repository](https://github.com/sarmakska/slipstream)

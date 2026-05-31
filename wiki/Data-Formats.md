@@ -1,6 +1,6 @@
 # Data formats
 
-Every file claudepilot reads or writes is plain text you can open, diff and understand. This page documents the exact shapes, with the source of truth for each.
+Every file slipstream reads or writes is plain text you can open, diff and understand. This page documents the exact shapes, with the source of truth for each.
 
 ## The project map (`map.json`)
 
@@ -32,7 +32,7 @@ Defined by `ProjectMap` in `src/map/types.ts`:
 
 ## A scoped slice (`SymbolSlice`)
 
-What `cp_symbol` and `cp_lines` return, defined in `src/map/types.ts`:
+What `sp_symbol` and `sp_lines` return, defined in `src/map/types.ts`:
 
 ```jsonc
 {
@@ -47,7 +47,7 @@ What `cp_symbol` and `cp_lines` return, defined in `src/map/types.ts`:
 
 ## A memory file
 
-One Markdown file per fact under `.claude/claudepilot/memory/<name>.md`, with YAML frontmatter (`MemoryFrontmatter` in `src/memory/types.ts`):
+One Markdown file per fact under `.claude/slipstream/memory/<name>.md`, with YAML frontmatter (`MemoryFrontmatter` in `src/memory/types.ts`):
 
 ```markdown
 ---
@@ -112,4 +112,4 @@ Records the running dashboard so a second SessionStart reuses it rather than spa
 - [Memory system](Memory-System) for the store lifecycle.
 
 ---
-SarmaLinux . sarmalinux.com . [Repository](https://github.com/sarmakska/claudepilot)
+SarmaLinux . sarmalinux.com . [Repository](https://github.com/sarmakska/slipstream)

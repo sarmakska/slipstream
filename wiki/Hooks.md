@@ -1,6 +1,6 @@
 # Hooks
 
-claudepilot wires seven Claude Code hooks in `hooks/hooks.json`. They are what make the memory and token discipline automatic, and what feed the [live agent dashboard](Live-Agent-Dashboard). Each hook is a dependency-free Node script that prints JSON on stdout and never throws, because a hook that crashes would block the session. Every hook also appends one structured event to the dashboard log via the shared `hooks/emit.mjs` helper; emission is fire-and-forget and detached, so recording can never block the agent.
+slipstream wires seven Claude Code hooks in `hooks/hooks.json`. They are what make the memory and token discipline automatic, and what feed the [live agent dashboard](Live-Agent-Dashboard). Each hook is a dependency-free Node script that prints JSON on stdout and never throws, because a hook that crashes would block the session. Every hook also appends one structured event to the dashboard log via the shared `hooks/emit.mjs` helper; emission is fire-and-forget and detached, so recording can never block the agent.
 
 ## hooks.json
 
@@ -48,7 +48,7 @@ Output shape:
 
 ## Stop: persist durable facts
 
-`hooks/stop.mjs` fires when Claude finishes responding. Roughly one stop in three, it injects a reminder to save any durable decision, convention or gotcha with `/claudepilot:remember`. It is intentionally light and probabilistic so it does not loop or become noise; the agent decides whether anything is worth keeping.
+`hooks/stop.mjs` fires when Claude finishes responding. Roughly one stop in three, it injects a reminder to save any durable decision, convention or gotcha with `/slipstream:remember`. It is intentionally light and probabilistic so it does not loop or become noise; the agent decides whether anything is worth keeping.
 
 ## PreCompact: lossless compaction
 
@@ -70,4 +70,4 @@ Each prints a single JSON object (or nothing, for the silent paths).
 - The memory context does not appear. There is no `MEMORY.md` yet. Save a memory and restart the session.
 
 ---
-SarmaLinux . sarmalinux.com . [Repository](https://github.com/sarmakska/claudepilot)
+SarmaLinux . sarmalinux.com . [Repository](https://github.com/sarmakska/slipstream)

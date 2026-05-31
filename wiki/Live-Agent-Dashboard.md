@@ -1,6 +1,6 @@
 # Live agent dashboard
 
-The headline feature, pillar five. A local observability dashboard for a Claude Code session, driven by claudepilot's plugin hooks. It auto-starts when a session begins, binds `127.0.0.1` on a free port, and streams a live view of the agents to your browser. It watches and visualises the session; it does not control the agents.
+The headline feature, pillar five. A local observability dashboard for a Claude Code session, driven by slipstream's plugin hooks. It auto-starts when a session begins, binds `127.0.0.1` on a free port, and streams a live view of the agents to your browser. It watches and visualises the session; it does not control the agents.
 
 Everything stays on the machine: local-only bind, no telemetry, no account, and obvious secrets are redacted before they ever reach disk.
 
@@ -29,7 +29,7 @@ flowchart LR
   Server -->|server-sent events| UI[Browser UI]
 ```
 
-The flow is: hook fires, hook appends one JSON event to `.claude/claudepilot/dashboard/<session>.jsonl`, the server tails that log, folds the events into state, and pushes the state to every connected browser over server-sent events. The same fold reconstructs a finished session from its log, which is replay.
+The flow is: hook fires, hook appends one JSON event to `.claude/slipstream/dashboard/<session>.jsonl`, the server tails that log, folds the events into state, and pushes the state to every connected browser over server-sent events. The same fold reconstructs a finished session from its log, which is replay.
 
 ## The event schema
 
@@ -60,7 +60,7 @@ The kinds (`EVENT_KINDS`) are `session-start`, `user-prompt`, `pre-tool`, `post-
 | SubagentStop | `hooks/subagent-stop.mjs` | `subagent-stop` against the subagent id |
 | Stop | `hooks/stop.mjs` | `stop` |
 
-All six route through `hooks/emit.mjs`, which reads the hook payload, derives the session id, builds a redacted event and shells out to `claudepilot dashboard emit`. Emission is fire-and-forget and detached, so a hook never blocks the agent and a failure to record is swallowed.
+All six route through `hooks/emit.mjs`, which reads the hook payload, derives the session id, builds a redacted event and shells out to `slipstream dashboard emit`. Emission is fire-and-forget and detached, so a hook never blocks the agent and a failure to record is swallowed.
 
 ## The append-only, concurrency-safe writer
 
@@ -83,14 +83,14 @@ Idempotent start lives in `src/dashboard/launch.ts`. `startDashboard` reads `ser
 Record a session end to end with the helper and replay it:
 
 ```bash
-npx claudepilot dashboard emit --root . --session demo --kind session-start --label "session started"
-npx claudepilot dashboard emit --root . --session demo --kind user-prompt   --label "build the marketing site"
-npx claudepilot dashboard emit --root . --session demo --kind pre-tool      --label "Read src/app.tsx"
-npx claudepilot dashboard emit --root . --session demo --kind post-tool     --label "Read done" --bytes 42000
-npx claudepilot dashboard emit --root . --session demo --kind subagent-stop --agent worker-1 --label "subagent finished"
-npx claudepilot dashboard emit --root . --session demo --kind stop          --label "turn finished"
+npx slipstream dashboard emit --root . --session demo --kind session-start --label "session started"
+npx slipstream dashboard emit --root . --session demo --kind user-prompt   --label "build the marketing site"
+npx slipstream dashboard emit --root . --session demo --kind pre-tool      --label "Read src/app.tsx"
+npx slipstream dashboard emit --root . --session demo --kind post-tool     --label "Read done" --bytes 42000
+npx slipstream dashboard emit --root . --session demo --kind subagent-stop --agent worker-1 --label "subagent finished"
+npx slipstream dashboard emit --root . --session demo --kind stop          --label "turn finished"
 
-npx claudepilot dashboard replay --root . --session demo
+npx slipstream dashboard replay --root . --session demo
 ```
 
 Replay prints the reconstructed state:
@@ -102,13 +102,13 @@ agents: 2, events: 6
   worker-1 [done] 0 tools, ~0 tokens
 ```
 
-The `~11667` is the 42,000-byte read converted at claudepilot's 3.6 bytes-per-token estimate. That is the same number the live token-budget bar shows.
+The `~11667` is the 42,000-byte read converted at slipstream's 3.6 bytes-per-token estimate. That is the same number the live token-budget bar shows.
 
 ## Before and after: a token budget
 
 The dashboard makes the cost of a read visible. The same task two ways, "rename a prop in a 42 KiB component":
 
-| | Without claudepilot | With claudepilot |
+| | Without slipstream | With slipstream |
 |---|---|---|
 | Read | whole file, 42,000 bytes | map slice + one symbol, about 1,800 bytes |
 | Approximate tokens | ~11,667 | ~500 |
@@ -116,7 +116,7 @@ The dashboard makes the cost of a read visible. The same task two ways, "rename 
 
 ## Configuration
 
-Optional `.claude/claudepilot/dashboard.json` under your project:
+Optional `.claude/slipstream/dashboard.json` under your project:
 
 ```jsonc
 {
@@ -125,23 +125,23 @@ Optional `.claude/claudepilot/dashboard.json` under your project:
 }
 ```
 
-Environment overrides, useful per session: `CLAUDEPILOT_DASHBOARD=0` disables the dashboard, `CLAUDEPILOT_DASHBOARD_OPEN=0` keeps the browser shut. The localhost URL is always printed in the chat as a fallback.
+Environment overrides, useful per session: `SLIPSTREAM_DASHBOARD=0` disables the dashboard, `SLIPSTREAM_DASHBOARD_OPEN=0` keeps the browser shut. The localhost URL is always printed in the chat as a fallback.
 
 ## Replay
 
-Because the log is the source of truth, any recorded session can be replayed, not just the live one. List sessions with `npx claudepilot dashboard sessions .`, then either replay in the terminal (`dashboard replay --session <id>`) or pick the session from the header dropdown in the UI. The server reconstructs state from the log and serves it the same way it serves a live session.
+Because the log is the source of truth, any recorded session can be replayed, not just the live one. List sessions with `npx slipstream dashboard sessions .`, then either replay in the terminal (`dashboard replay --session <id>`) or pick the session from the header dropdown in the UI. The server reconstructs state from the log and serves it the same way it serves a live session.
 
 ## Troubleshooting
 
-**Port already in use.** The server binds port 0, so the OS hands it a free port; you should never hit a clash. If `server.json` points at a dead server, `startDashboard` detects the dead pid or closed port and clears the record, then spawns a fresh one. Delete `.claude/claudepilot/dashboard/server.json` to force a clean start.
+**Port already in use.** The server binds port 0, so the OS hands it a free port; you should never hit a clash. If `server.json` points at a dead server, `startDashboard` detects the dead pid or closed port and clears the record, then spawns a fresh one. Delete `.claude/slipstream/dashboard/server.json` to force a clean start.
 
-**The browser did not open.** Auto-open is best-effort and skipped on headless or sandboxed boxes. Use the URL printed in the chat, or run `npx claudepilot dashboard start . --open`.
+**The browser did not open.** Auto-open is best-effort and skipped on headless or sandboxed boxes. Use the URL printed in the chat, or run `npx slipstream dashboard start . --open`.
 
-**No events showing.** Confirm the hooks are wired (`npx claudepilot plugin-validate` lists `PostToolUse` and `SubagentStop`) and that Node is on PATH so the hooks can run. Check the log exists and is growing: `cat .claude/claudepilot/dashboard/<session>.jsonl`. If the file has lines but the UI is empty, you are probably viewing a different session in the dropdown.
+**No events showing.** Confirm the hooks are wired (`npx slipstream plugin-validate` lists `PostToolUse` and `SubagentStop`) and that Node is on PATH so the hooks can run. Check the log exists and is growing: `cat .claude/slipstream/dashboard/<session>.jsonl`. If the file has lines but the UI is empty, you are probably viewing a different session in the dropdown.
 
 **A secret appeared in the stream.** Redaction is blunt and pattern-based (`redactSecrets` in `events.ts`). If a pattern slipped through, it is a bug worth reporting; redaction runs before the event is written, so the log is scrubbed too.
 
 **The dashboard will not start in a dev checkout.** The hook imports the compiled launcher from `dist/`. Run `pnpm build` first.
 
 ---
-SarmaLinux . sarmalinux.com . [Repository](https://github.com/sarmakska/claudepilot)
+SarmaLinux . sarmalinux.com . [Repository](https://github.com/sarmakska/slipstream)

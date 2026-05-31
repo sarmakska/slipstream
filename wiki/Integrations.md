@@ -1,6 +1,6 @@
 # Integrations
 
-claudepilot's skill library targets the stack people actually ship production sites on. This page shows how the integration skills fit together for a real deployment, and what each one's verification gate proves.
+slipstream's skill library targets the stack people actually ship production sites on. This page shows how the integration skills fit together for a real deployment, and what each one's verification gate proves.
 
 ## A typical build, end to end
 
@@ -52,4 +52,4 @@ flowchart LR
 Several skills touch secrets (Cloudflare, Supabase, Vercel, Resend, Stripe). Record where they live, not the values, with a `credential-location` memory, so the next session knows where to look without leaking anything into the transcript.
 
 ---
-SarmaLinux . sarmalinux.com . [Repository](https://github.com/sarmakska/claudepilot)
+SarmaLinux . sarmalinux.com . [Repository](https://github.com/sarmakska/slipstream)

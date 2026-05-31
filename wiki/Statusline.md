@@ -1,6 +1,6 @@
 # Statusline
 
-claudepilot ships a statusline command that keeps the three things a token-disciplined session cares about in view at all times: how full the context budget is, how many durable memories the project has, and which skill or output style is active.
+slipstream ships a statusline command that keeps the three things a token-disciplined session cares about in view at all times: how full the context budget is, how many durable memories the project has, and which skill or output style is active.
 
 ## What it shows
 
@@ -22,16 +22,16 @@ The plugin declares a `statusLine` command in `.claude-plugin/plugin.json`:
 ```json
 "statusLine": {
   "type": "command",
-  "command": "node \"${CLAUDE_PLUGIN_ROOT}/statusline/claudepilot-statusline.mjs\""
+  "command": "node \"${CLAUDE_PLUGIN_ROOT}/statusline/slipstream-statusline.mjs\""
 }
 ```
 
-Claude Code invokes that script on each render and pipes a small JSON payload on stdin (workspace, model, cost). The script (`statusline/claudepilot-statusline.mjs`) reads the payload, counts the project's memories, and calls the helper CLI's `statusline` subcommand, which formats the line through `formatStatusline` in `src/statusline/index.ts`. If `dist/` is missing it degrades to `cp | ctx 0% ok` rather than erroring, because a statusline must never crash the editor.
+Claude Code invokes that script on each render and pipes a small JSON payload on stdin (workspace, model, cost). The script (`statusline/slipstream-statusline.mjs`) reads the payload, counts the project's memories, and calls the helper CLI's `statusline` subcommand, which formats the line through `formatStatusline` in `src/statusline/index.ts`. If `dist/` is missing it degrades to `cp | ctx 0% ok` rather than erroring, because a statusline must never crash the editor.
 
 ```mermaid
 %%{init: {'theme':'base','themeVariables':{'primaryColor':'#0d1117','primaryTextColor':'#f5f7fa','primaryBorderColor':'#38bdf8','lineColor':'#22d3ee','fontFamily':'monospace'}}}%%
 flowchart LR
-  CC[Claude Code render] -->|JSON on stdin| Script[claudepilot-statusline.mjs]
+  CC[Claude Code render] -->|JSON on stdin| Script[slipstream-statusline.mjs]
   Script -->|count memories| Mem[(memory store)]
   Script -->|statusline subcommand| Fmt[formatStatusline]
   Fmt --> Line[cp ... ctx ... mem ... skill ... model]
@@ -46,7 +46,7 @@ If you install the plugin from the marketplace, the statusline is declared in th
 // settings.json
 "statusLine": {
   "type": "command",
-  "command": "node /path/to/claudepilot/statusline/claudepilot-statusline.mjs"
+  "command": "node /path/to/slipstream/statusline/slipstream-statusline.mjs"
 }
 ```
 
@@ -59,7 +59,7 @@ If you install the plugin from the marketplace, the statusline is declared in th
 | Symptom | Cause | Fix |
 |---|---|---|
 | line shows `cp | ctx 0% ok` only | `dist/` not built, script degraded | `pnpm build` in the plugin |
-| memory count always 0 | the project has no `.claude/claudepilot/memory` yet | save a fact with `/claudepilot:remember` |
+| memory count always 0 | the project has no `.claude/slipstream/memory` yet | save a fact with `/slipstream:remember` |
 | budget always 0% | Claude Code's payload did not include token usage | the budget is an estimate; see [Token efficiency](Token-Efficiency) |
 
 ## See also
@@ -69,4 +69,4 @@ If you install the plugin from the marketplace, the statusline is declared in th
 - [Configuration and tuning](Configuration-and-Tuning) for the window override.
 
 ---
-SarmaLinux . sarmalinux.com . [Repository](https://github.com/sarmakska/claudepilot)
+SarmaLinux . sarmalinux.com . [Repository](https://github.com/sarmakska/slipstream)

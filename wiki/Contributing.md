@@ -1,6 +1,6 @@
 # Contributing
 
-claudepilot is one repository that is both the published Claude Code plugin and the helper it calls. This page covers building it, the verify gates, and how to add each kind of extension.
+slipstream is one repository that is both the published Claude Code plugin and the helper it calls. This page covers building it, the verify gates, and how to add each kind of extension.
 
 ## Build and verify
 
@@ -21,7 +21,7 @@ All five gates must pass before a change lands. The MCP and doctor tests use `di
 
 A skill is a `SKILL.md` under `skills/<category>/<name>/`. The full walkthrough is on [Writing a skill](Writing-a-Skill); the short version:
 
-- frontmatter `name` (kebab-case, matching the directory), `description` (a crisp "Use when ..." trigger), and a `claudepilot` block with `category`, optional `requires`, optional `tags`, and a `verification` gate for any shipping category;
+- frontmatter `name` (kebab-case, matching the directory), `description` (a crisp "Use when ..." trigger), and a `slipstream` block with `category`, optional `requires`, optional `tags`, and a `verification` gate for any shipping category;
 - a body with `## Steps` and `## Verify` sections;
 - `pnpm validate` to check it loads.
 
@@ -31,7 +31,7 @@ Add a descriptor to `TOOL_DESCRIPTORS` and a case to `callTool` in `src/mcp/tool
 
 ## Writing a subagent
 
-Add a `<name>.md` under `agents/` with frontmatter `name`, `description` (a "Use when ..." trigger) and `tools`. Prefer the `cp_` MCP tools over `Read` so the agent stays token-disciplined. If the agent should be checked by doctor, add its name to the list in `src/doctor/index.ts` and `src/plugin-validate/index.ts`.
+Add a `<name>.md` under `agents/` with frontmatter `name`, `description` (a "Use when ..." trigger) and `tools`. Prefer the `sp_` MCP tools over `Read` so the agent stays token-disciplined. If the agent should be checked by doctor, add its name to the list in `src/doctor/index.ts` and `src/plugin-validate/index.ts`.
 
 ## Adding a hook
 
@@ -55,4 +55,4 @@ Add a `cmdX` function and a `case` in `main` in `src/cli/index.ts`, and a usage 
 - [Architecture](Architecture) for where each module lives.
 
 ---
-SarmaLinux . sarmalinux.com . [Repository](https://github.com/sarmakska/claudepilot)
+SarmaLinux . sarmalinux.com . [Repository](https://github.com/sarmakska/slipstream)

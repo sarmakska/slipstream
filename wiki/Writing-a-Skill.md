@@ -1,6 +1,6 @@
 # Writing a skill
 
-A skill is a small, single-purpose unit of know-how that Claude Code can invoke. claudepilot skills are ordinary Claude Code agent skills with a verification gate. Here is how to write one that passes the validator and scales to a library of hundreds.
+A skill is a small, single-purpose unit of know-how that Claude Code can invoke. slipstream skills are ordinary Claude Code agent skills with a verification gate. Here is how to write one that passes the validator and scales to a library of hundreds.
 
 ## Layout
 
@@ -18,7 +18,7 @@ The directory name must match the `name` in the frontmatter. The validator enfor
 ---
 name: resend-transactional
 description: Use when sending a transactional email such as a receipt or password reset. Sends through Resend and verifies the API accepts the message.
-claudepilot:
+slipstream:
   category: resend
   requires:
     - resend-setup
@@ -35,9 +35,9 @@ claudepilot:
 
 - `name`: kebab case, lower case. Stable id and directory name.
 - `description`: the relevance text Claude Code uses to decide when the skill fires. Start it with when to use the skill, then say what it does. Be specific; a vague description never fires at the right time.
-- `claudepilot.category`: one of the known categories.
-- `claudepilot.verification`: required for shipping skills. Pick the cheapest honest check that proves the step worked.
-- `claudepilot.requires`: list any prerequisite skills by name.
+- `slipstream.category`: one of the known categories.
+- `slipstream.verification`: required for shipping skills. Pick the cheapest honest check that proves the step worked.
+- `slipstream.requires`: list any prerequisite skills by name.
 
 ## Body
 
@@ -83,7 +83,7 @@ The validator checks your frontmatter, the gate, the body sections and the direc
 - UK English, no emojis, no em-dashes.
 - Update `CHANGELOG.md` under `Unreleased` when you add a skill.
 
-See [CONTRIBUTING](https://github.com/sarmakska/claudepilot/blob/main/CONTRIBUTING.md) for the full path.
+See [CONTRIBUTING](https://github.com/sarmakska/slipstream/blob/main/CONTRIBUTING.md) for the full path.
 
 ---
-SarmaLinux . sarmalinux.com . [Repository](https://github.com/sarmakska/claudepilot)
+SarmaLinux . sarmalinux.com . [Repository](https://github.com/sarmakska/slipstream)
