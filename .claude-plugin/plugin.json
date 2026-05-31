@@ -1,7 +1,7 @@
 {
   "name": "claudepilot",
-  "version": "0.1.0",
-  "description": "Turn Claude Code into a disciplined, token-efficient builder with persistent memory, a guardrailed skill library and a live local agent dashboard for shipping production sites on Cloudflare, Supabase, Vercel and Resend.",
+  "version": "0.2.0",
+  "description": "Turn Claude Code into a disciplined, token-efficient builder: a bundled MCP server for scoped retrieval, lossless compaction, smart memory recall, shipped subagents, a context-budget statusline and a live local agent dashboard for shipping production sites on Cloudflare, Supabase, Vercel and Resend.",
   "author": {
     "name": "Sarma",
     "url": "https://sarmalinux.com"
@@ -22,5 +22,17 @@
   ],
   "skills": "./skills",
   "commands": "./commands",
-  "hooks": "./hooks/hooks.json"
+  "agents": "./agents",
+  "hooks": "./hooks/hooks.json",
+  "statusLine": {
+    "type": "command",
+    "command": "node \"${CLAUDE_PLUGIN_ROOT}/statusline/claudepilot-statusline.mjs\""
+  },
+  "outputStyles": "./output-styles",
+  "mcpServers": {
+    "claudepilot": {
+      "command": "node",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/dist/mcp/index.js"]
+    }
+  }
 }

@@ -51,6 +51,20 @@ export async function validatePlugin(
         issues.push(`plugin.json version "${manifest.version}" is not semver`);
       }
       checks.push("plugin.json manifest is well formed");
+
+      // The bundled MCP server must be declared so Claude Code loads it.
+      const mcp = manifest.mcpServers as Record<string, unknown> | undefined;
+      if (!mcp || !mcp["claudepilot"]) {
+        issues.push("plugin.json does not declare the claudepilot MCP server under mcpServers");
+      } else {
+        checks.push("plugin.json declares the claudepilot MCP server");
+      }
+      // The statusline command must be declared.
+      if (!manifest.statusLine) {
+        issues.push("plugin.json does not declare a statusLine command");
+      } else {
+        checks.push("plugin.json declares a statusLine command");
+      }
     } catch (error) {
       issues.push(`plugin.json is not valid JSON: ${(error as Error).message}`);
     }
@@ -90,7 +104,8 @@ export async function validatePlugin(
         "PreToolUse",
         "PostToolUse",
         "SubagentStop",
-        "Stop"
+        "Stop",
+        "PreCompact"
       ];
       const present = hooks.hooks ?? {};
       for (const event of wanted) {
@@ -99,7 +114,7 @@ export async function validatePlugin(
       if (wanted.every((e) => present[e])) {
         checks.push(
           "hooks.json wires SessionStart, UserPromptSubmit, PreToolUse, " +
-            "PostToolUse, SubagentStop and Stop"
+            "PostToolUse, SubagentStop, Stop and PreCompact"
         );
       }
     } catch (error) {
@@ -121,6 +136,49 @@ export async function validatePlugin(
       }
     }
     if (files.length > 0) checks.push(`${files.length} slash commands have valid frontmatter`);
+  }
+
+  // 4b. subagents have frontmatter with name and description.
+  const agentsDir = join(pluginRoot, "agents");
+  if (!(await exists(agentsDir))) {
+    issues.push(`missing agents directory at ${agentsDir}`);
+  } else {
+    const wantedAgents = ["cp-shipper", "cp-schema", "cp-reviewer"];
+    const agentFiles = (await readdir(agentsDir)).filter((f) => f.endsWith(".md"));
+    for (const a of wantedAgents) {
+      if (!agentFiles.includes(`${a}.md`)) {
+        issues.push(`agents directory is missing ${a}.md`);
+        continue;
+      }
+      const raw = await readFile(join(agentsDir, `${a}.md`), "utf8");
+      const front = raw.startsWith("---") ? raw.split("---")[1] ?? "" : "";
+      if (!/\bname:/.test(front) || !/\bdescription:/.test(front)) {
+        issues.push(`agent ${a}.md is missing name or description frontmatter`);
+      }
+    }
+    if (wantedAgents.every((a) => agentFiles.includes(`${a}.md`))) {
+      checks.push("agents cp-shipper, cp-schema and cp-reviewer have valid frontmatter");
+    }
+  }
+
+  // 4c. the output style is present with frontmatter.
+  const stylePath = join(pluginRoot, "output-styles", "claudepilot.md");
+  if (!(await exists(stylePath))) {
+    issues.push(`missing output style at ${stylePath}`);
+  } else {
+    const raw = await readFile(stylePath, "utf8");
+    if (!raw.startsWith("---") || !/\bdescription:/.test(raw.split("---")[1] ?? "")) {
+      issues.push("output-styles/claudepilot.md is missing frontmatter with a description");
+    } else {
+      checks.push("output-styles/claudepilot.md is present with frontmatter");
+    }
+  }
+
+  // 4d. the statusline script is present.
+  if (!(await exists(join(pluginRoot, "statusline", "claudepilot-statusline.mjs")))) {
+    issues.push("missing statusline script at statusline/claudepilot-statusline.mjs");
+  } else {
+    checks.push("statusline script is present");
   }
 
   // 5. the skill library loads cleanly.

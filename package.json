@@ -1,7 +1,7 @@
 {
   "name": "claudepilot",
-  "version": "0.1.0",
-  "description": "A Claude Code plugin that gives Claude persistent memory, token-efficient retrieval, a guardrailed skill library and a live local agent dashboard for shipping production sites on Cloudflare, Supabase, Vercel and Resend.",
+  "version": "0.2.0",
+  "description": "A Claude Code plugin: a bundled MCP server for scoped retrieval, lossless compaction via a PreCompact digest, smart memory recall, shipped subagents, a context-budget statusline and a live local agent dashboard for shipping production sites on Cloudflare, Supabase, Vercel and Resend.",
   "type": "module",
   "license": "MIT",
   "author": "Sarma",
@@ -17,7 +17,10 @@
     "dist",
     "skills",
     "commands",
+    "agents",
     "hooks",
+    "statusline",
+    "output-styles",
     ".claude-plugin"
   ],
   "engines": {
