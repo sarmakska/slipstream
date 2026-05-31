@@ -3,7 +3,7 @@ name: git-release-tag
 description: >-
   Use when cutting a release: tag a release with an annotated semantic version
   and push the tag.
-claudepilot:
+slipstream:
   category: git
   requires:
     - git-conventional-commit

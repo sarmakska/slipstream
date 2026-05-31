@@ -3,7 +3,7 @@ name: git-init-repo
 description: >-
   Use when starting version control in a new project: initialise a Git
   repository with a sensible default branch and ignore file.
-claudepilot:
+slipstream:
   category: git
   verification:
     kind: command

@@ -3,7 +3,7 @@ name: cloudflare-pages
 description: >-
   Use when deploying a static front end to Cloudflare Pages: publish a built
   static front end to Cloudflare Pages.
-claudepilot:
+slipstream:
   category: cloudflare
   requires:
     - frontend-vite-react

@@ -3,7 +3,7 @@ name: supabase-edge-function
 description: >-
   Use when you need server-side logic close to the Supabase data: write and
   deploy a Deno based edge function for server side logic close to the data.
-claudepilot:
+slipstream:
   category: supabase
   requires:
     - supabase-init

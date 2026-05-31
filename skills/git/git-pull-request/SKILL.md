@@ -3,7 +3,7 @@ name: git-pull-request
 description: >-
   Use when a feature branch is ready for review: push the feature branch and
   open a reviewable pull request with a clear description.
-claudepilot:
+slipstream:
   category: git
   requires:
     - git-conventional-commit

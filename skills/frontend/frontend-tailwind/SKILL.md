@@ -3,7 +3,7 @@ name: frontend-tailwind
 description: >-
   Use when adding Tailwind CSS to a Vite project: wire Tailwind CSS into a Vite
   project for utility first styling.
-claudepilot:
+slipstream:
   category: frontend
   requires:
     - frontend-vite-react

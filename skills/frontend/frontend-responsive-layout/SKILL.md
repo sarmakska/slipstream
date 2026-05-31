@@ -4,7 +4,7 @@ description: >-
   Use when laying out a marketing or landing page that must work on mobile and
   desktop: compose a responsive hero, features and footer layout that holds up
   from mobile to desktop.
-claudepilot:
+slipstream:
   category: frontend
   requires:
     - frontend-tailwind

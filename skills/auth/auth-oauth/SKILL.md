@@ -3,7 +3,7 @@ name: auth-oauth
 description: >-
   Use when adding social or third-party sign in: add a third party OAuth
   provider such as GitHub or Google for social sign in.
-claudepilot:
+slipstream:
   category: auth
   requires:
     - auth-session

@@ -3,7 +3,7 @@ name: supabase-schema
 description: >-
   Use when authoring the database tables for a feature: author a SQL migration
   that creates your core tables with sensible constraints.
-claudepilot:
+slipstream:
   category: supabase
   requires:
     - supabase-init

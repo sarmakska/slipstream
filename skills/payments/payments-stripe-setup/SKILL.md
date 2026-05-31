@@ -3,7 +3,7 @@ name: payments-stripe-setup
 description: >-
   Use when first adding Stripe to a project: install the Stripe SDK and
   configure keys for accepting payments.
-claudepilot:
+slipstream:
   category: payments
   verification:
     kind: typecheck

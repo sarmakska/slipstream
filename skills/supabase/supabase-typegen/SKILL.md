@@ -3,7 +3,7 @@ name: supabase-typegen
 description: >-
   Use when you want fully typed database queries: generate TypeScript types from
   the database schema so queries are fully typed.
-claudepilot:
+slipstream:
   category: supabase
   requires:
     - supabase-schema

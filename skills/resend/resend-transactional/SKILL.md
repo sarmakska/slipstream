@@ -3,7 +3,7 @@ name: resend-transactional
 description: >-
   Use when sending a templated email such as a welcome or receipt: send a
   templated transactional email such as a welcome or receipt message.
-claudepilot:
+slipstream:
   category: resend
   requires:
     - resend-setup

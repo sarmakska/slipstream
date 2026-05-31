@@ -3,7 +3,7 @@ name: resend-setup
 description: >-
   Use when first adding transactional email with Resend: add the Resend SDK and
   configure the API key for transactional email.
-claudepilot:
+slipstream:
   category: resend
   verification:
     kind: typecheck

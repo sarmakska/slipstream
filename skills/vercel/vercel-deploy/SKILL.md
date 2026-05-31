@@ -3,7 +3,7 @@ name: vercel-deploy
 description: >-
   Use when deploying the project to Vercel production: build and deploy the
   project to Vercel production with a verified healthcheck.
-claudepilot:
+slipstream:
   category: vercel
   requires:
     - vercel-env

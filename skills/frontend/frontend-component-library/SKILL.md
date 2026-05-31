@@ -4,7 +4,7 @@ description: >-
   Use when starting a UI and you want reusable accessible primitives: create a
   small set of reusable, accessible UI primitives the rest of the site composes
   from.
-claudepilot:
+slipstream:
   category: frontend
   requires:
     - frontend-vite-react

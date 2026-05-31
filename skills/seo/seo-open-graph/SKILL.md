@@ -3,7 +3,7 @@ name: seo-open-graph
 description: >-
   Use when shared links should render rich social cards: add social preview
   metadata so shared links render rich cards.
-claudepilot:
+slipstream:
   category: seo
   requires:
     - seo-meta-tags

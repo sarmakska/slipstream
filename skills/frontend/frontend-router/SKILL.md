@@ -3,7 +3,7 @@ name: frontend-router
 description: >-
   Use when a front end needs multiple pages and routing: install a router and
   define the page routes for a multi page front end.
-claudepilot:
+slipstream:
   category: frontend
   requires:
     - frontend-vite-react

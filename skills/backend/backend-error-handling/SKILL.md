@@ -3,7 +3,7 @@ name: backend-error-handling
 description: >-
   Use when an API needs consistent error responses: catch unhandled errors
   centrally and return consistent JSON error envelopes.
-claudepilot:
+slipstream:
   category: backend
   requires:
     - backend-hono-api

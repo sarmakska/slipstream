@@ -3,7 +3,7 @@ name: vercel-link
 description: >-
   Use when first connecting a repository to a Vercel project: link the local
   repository to a Vercel project so deploys and env vars are scoped correctly.
-claudepilot:
+slipstream:
   category: vercel
   verification:
     kind: command

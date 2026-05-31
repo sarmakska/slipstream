@@ -3,7 +3,7 @@ name: supabase-rls
 description: >-
   Use when tables must restrict each user to their own rows: lock down tables
   with row level security so users only read and write their own rows.
-claudepilot:
+slipstream:
   category: supabase
   requires:
     - supabase-schema

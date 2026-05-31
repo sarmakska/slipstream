@@ -3,7 +3,7 @@ name: backend-zod-validation
 description: >-
   Use when API input must be validated and rejected if malformed: add schema
   validation middleware so every endpoint rejects malformed input with a 400.
-claudepilot:
+slipstream:
   category: backend
   requires:
     - backend-hono-api

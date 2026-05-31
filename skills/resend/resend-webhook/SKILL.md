@@ -3,7 +3,7 @@ name: resend-webhook
 description: >-
   Use when you need to track email delivery, bounces and complaints: receive
   Resend webhooks to track delivery, bounce and complaint events.
-claudepilot:
+slipstream:
   category: resend
   requires:
     - resend-setup

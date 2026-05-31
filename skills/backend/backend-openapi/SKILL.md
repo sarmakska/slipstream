@@ -3,7 +3,7 @@ name: backend-openapi
 description: >-
   Use when consumers need an OpenAPI spec for the API: generate an OpenAPI
   specification from the API routes and serve it for consumers.
-claudepilot:
+slipstream:
   category: backend
   requires:
     - backend-zod-validation

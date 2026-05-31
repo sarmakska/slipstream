@@ -3,7 +3,7 @@ name: seo-structured-data
 description: >-
   Use when pages need JSON-LD so search engines understand the content: add
   JSON-LD structured data so search engines understand your content.
-claudepilot:
+slipstream:
   category: seo
   requires:
     - seo-meta-tags

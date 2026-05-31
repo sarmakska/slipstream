@@ -3,7 +3,7 @@ name: payments-webhooks
 description: >-
   Use when payment state must stay in sync with Stripe: receive and verify
   Stripe webhook events to keep your records in sync with Stripe.
-claudepilot:
+slipstream:
   category: payments
   requires:
     - payments-stripe-setup

@@ -3,7 +3,7 @@ name: auth-password-reset
 description: >-
   Use when users need to reset a forgotten password: let users reset a forgotten
   password with a single use, time limited token sent by email.
-claudepilot:
+slipstream:
   category: auth
   requires:
     - auth-session

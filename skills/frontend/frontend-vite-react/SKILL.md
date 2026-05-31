@@ -3,7 +3,7 @@ name: frontend-vite-react
 description: >-
   Use when starting a new React single-page front end: create a Vite single page
   app with React and TypeScript as the front end foundation.
-claudepilot:
+slipstream:
   category: frontend
   verification:
     kind: build

@@ -3,7 +3,7 @@ name: vercel-preview
 description: >-
   Use when every branch should get an isolated preview deploy: ensure every
   branch gets an isolated preview deployment for review.
-claudepilot:
+slipstream:
   category: vercel
   requires:
     - vercel-link

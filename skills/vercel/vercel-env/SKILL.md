@@ -3,7 +3,7 @@ name: vercel-env
 description: >-
   Use when environment variables must reach Vercel: push environment variables
   to Vercel for the preview and production environments.
-claudepilot:
+slipstream:
   category: vercel
   requires:
     - vercel-link

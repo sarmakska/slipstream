@@ -3,7 +3,7 @@ name: supabase-storage
 description: >-
   Use when the app stores user-uploaded files: create a storage bucket with
   policies for user uploaded assets.
-claudepilot:
+slipstream:
   category: supabase
   requires:
     - supabase-rls

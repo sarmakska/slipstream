@@ -3,7 +3,7 @@ name: seo-meta-tags
 description: >-
   Use when pages need title, description and canonical tags for search: add
   title, description and canonical tags to every page for search engines.
-claudepilot:
+slipstream:
   category: seo
   requires:
     - frontend-router

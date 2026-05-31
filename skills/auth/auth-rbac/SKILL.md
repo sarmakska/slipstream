@@ -3,7 +3,7 @@ name: auth-rbac
 description: >-
   Use when routes or actions must be gated by user role: gate routes and actions
   behind roles so only authorised users can perform them.
-claudepilot:
+slipstream:
   category: auth
   requires:
     - auth-session

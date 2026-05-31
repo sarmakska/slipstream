@@ -3,7 +3,7 @@ name: analytics-events
 description: >-
   Use when you need product analytics: track the handful of events that
   actually matter, such as sign up and purchase.
-claudepilot:
+slipstream:
   category: analytics
   requires:
     - analytics-plausible

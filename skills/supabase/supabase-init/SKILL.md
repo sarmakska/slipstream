@@ -3,7 +3,7 @@ name: supabase-init
 description: >-
   Use when starting local Supabase development: link a local Supabase project
   and start the local development stack.
-claudepilot:
+slipstream:
   category: supabase
   verification:
     kind: command

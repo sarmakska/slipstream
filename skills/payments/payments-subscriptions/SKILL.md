@@ -3,7 +3,7 @@ name: payments-subscriptions
 description: >-
   Use when selling recurring subscriptions: sell recurring subscriptions with
   Stripe Billing and manage plan changes.
-claudepilot:
+slipstream:
   category: payments
   requires:
     - payments-checkout

@@ -3,7 +3,7 @@ name: auth-session
 description: >-
   Use when issuing authenticated session cookies: issue HTTP only, secure, same
   site session cookies for authenticated requests.
-claudepilot:
+slipstream:
   category: auth
   requires:
     - backend-hono-api

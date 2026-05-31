@@ -3,7 +3,7 @@ name: cloudflare-secrets
 description: >-
   Use when a Worker needs secret values kept out of source: store sensitive
   values as Worker secrets rather than committing them.
-claudepilot:
+slipstream:
   category: cloudflare
   requires:
     - cloudflare-worker

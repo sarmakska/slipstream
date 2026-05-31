@@ -4,7 +4,7 @@ description: >-
   Use when you want to measure real-user performance (Core Web Vitals): measure
   and report Largest Contentful Paint, Interaction to Next Paint and Cumulative
   Layout Shift.
-claudepilot:
+slipstream:
   category: analytics
   requires:
     - frontend-vite-react

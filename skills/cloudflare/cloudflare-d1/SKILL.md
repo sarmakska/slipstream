@@ -3,7 +3,7 @@ name: cloudflare-d1
 description: >-
   Use when the app needs a SQLite database on Cloudflare: create a Cloudflare D1
   SQLite database and run an initial migration.
-claudepilot:
+slipstream:
   category: cloudflare
   requires:
     - cloudflare-worker

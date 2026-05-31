@@ -3,7 +3,7 @@ name: frontend-forms
 description: >-
   Use when building forms that need validation and accessible errors: build
   forms with client side validation and accessible error messaging.
-claudepilot:
+slipstream:
   category: frontend
   requires:
     - frontend-vite-react

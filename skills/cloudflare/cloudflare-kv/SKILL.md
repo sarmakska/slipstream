@@ -3,7 +3,7 @@ name: cloudflare-kv
 description: >-
   Use when you need a low-latency edge cache or key-value store: create a
   Workers KV namespace and use it as a low latency cache.
-claudepilot:
+slipstream:
   category: cloudflare
   requires:
     - cloudflare-worker

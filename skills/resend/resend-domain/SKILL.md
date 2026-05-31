@@ -3,7 +3,7 @@ name: resend-domain
 description: >-
   Use when transactional email must send from a custom verified domain: add and
   verify a custom sending domain so email lands in the inbox, not spam.
-claudepilot:
+slipstream:
   category: resend
   requires:
     - resend-setup

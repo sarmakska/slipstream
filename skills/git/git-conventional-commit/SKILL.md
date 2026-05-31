@@ -3,7 +3,7 @@ name: git-conventional-commit
 description: >-
   Use when committing work and you want a clean, changelog-shaped history:
   record work as small conventional commits so history reads as a changelog.
-claudepilot:
+slipstream:
   category: git
   requires:
     - git-feature-branch

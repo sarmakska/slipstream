@@ -3,7 +3,7 @@ name: backend-hono-api
 description: >-
   Use when scaffolding an HTTP API that runs on Node and the edge: create a Hono
   based HTTP API that runs on both Node and edge runtimes.
-claudepilot:
+slipstream:
   category: backend
   verification:
     kind: typecheck

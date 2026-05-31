@@ -3,7 +3,7 @@ name: cloudflare-r2
 description: >-
   Use when the app needs object storage on Cloudflare: create an R2 object
   storage bucket and bind it to a Worker.
-claudepilot:
+slipstream:
   category: cloudflare
   requires:
     - cloudflare-worker

@@ -3,7 +3,7 @@ name: frontend-dark-mode
 description: >-
   Use when adding a light/dark theme toggle: add a persisted light and dark
   theme toggle driven by a CSS class on the root element.
-claudepilot:
+slipstream:
   category: frontend
   requires:
     - frontend-tailwind
