@@ -45,6 +45,23 @@ Regenerate it from the files: `npx claudepilot memory index --root .`.
 ### A memory is wrong
 Update it by saving again with the same name, or remove it with `/claudepilot:forget` or `npx claudepilot memory prune <name> --root .`.
 
+## Live agent dashboard
+
+### The URL did not appear in the chat
+The dashboard hook imports the compiled launcher from `dist/`. In a dev checkout, run `pnpm build` first. If the dashboard is disabled, check `.claude/claudepilot/dashboard.json` (`"enabled": false`) or the `CLAUDEPILOT_DASHBOARD=0` environment override.
+
+### The browser did not open
+Auto-open is best-effort and skipped on headless or sandboxed machines. Use the URL printed in the chat, or run `npx claudepilot dashboard start . --open`. To stop it opening, set `"autoOpen": false` or export `CLAUDEPILOT_DASHBOARD_OPEN=0`.
+
+### No events are showing
+Confirm the hooks are wired with `npx claudepilot plugin-validate` (it lists `PostToolUse` and `SubagentStop`), and that Node is on PATH so the hooks can run. Check the log is growing: `cat .claude/claudepilot/dashboard/<session>.jsonl`. If the file has lines but the UI is empty, you are viewing a different session in the header dropdown.
+
+### Port in use, or a stale server
+The server binds port 0, so the OS picks a free port and clashes should not happen. If `server.json` points at a dead server, the next start detects the dead pid or closed port and replaces it. To force a clean start, delete `.claude/claudepilot/dashboard/server.json`.
+
+### A second start spawned nothing
+That is correct. Start is idempotent: a live server is reused, and the helper prints `already running at ...`.
+
 ## Validation
 
 ### plugin-validate fails
