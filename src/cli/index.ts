@@ -1,0 +1,338 @@
+#!/usr/bin/env node
+import { writeFile, mkdir, readFile } from "node:fs/promises";
+import { resolve } from "node:path";
+import { loadSkills, SkillValidationError } from "../engine/index.js";
+import {
+  generateMap,
+  mapToJson,
+  mapToMarkdown,
+  retrieveSymbol,
+  retrieveLines,
+  searchMap
+} from "../map/index.js";
+import {
+  addMemory,
+  listMemories,
+  recallMemories,
+  pruneMemory,
+  regenerateIndex,
+  memoryDir,
+  type MemoryType
+} from "../memory/index.js";
+import { budget, guardRead } from "../context/index.js";
+import { buildMindMap, mindMapToMermaid } from "../dashboard/model.js";
+import { renderArtifact } from "../dashboard/artifact.js";
+import { validatePlugin } from "../plugin-validate/index.js";
+import { resolveSkillsDir, resolvePluginRoot } from "./skills-dir.js";
+
+function getFlag(args: string[], name: string): string | undefined {
+  const idx = args.indexOf(`--${name}`);
+  if (idx === -1) return undefined;
+  return args[idx + 1];
+}
+
+const USAGE = `claudepilot internal helper
+
+This is the helper binary the claudepilot Claude Code plugin calls from its
+hooks and slash commands. You do not run it as a product; install the plugin in
+Claude Code in VS Code instead. See the README.
+
+Usage:
+  claudepilot map [root] [--json out] [--md out] [--search "query"]
+  claudepilot slice <root> <file> <symbol>
+  claudepilot lines <root> <file> <start> <end>
+  claudepilot guard <root> <file>
+  claudepilot budget --bytes N [--window N]
+  claudepilot memory add --type T --desc "..." --body "..." [--tags a,b] [--root .]
+  claudepilot memory recall "query" [--root .] [--limit 5]
+  claudepilot memory list [--root .]
+  claudepilot memory prune <name> [--root .]
+  claudepilot memory index [--root .]
+  claudepilot mindmap [root] [--mermaid] [--html out.html]
+  claudepilot status [root] [--bytes N]
+  claudepilot validate [--skills dir]
+  claudepilot plugin-validate [--plugin dir]
+`;
+
+async function cmdMap(args: string[]): Promise<number> {
+  const root = args[0] && !args[0].startsWith("--") ? args[0] : ".";
+  const map = await generateMap(root);
+  const search = getFlag(args, "search");
+  if (search) {
+    console.log(JSON.stringify(searchMap(map, search), null, 2));
+    return 0;
+  }
+  const jsonOut = getFlag(args, "json");
+  const mdOut = getFlag(args, "md");
+  if (jsonOut) {
+    await mkdir(resolve(jsonOut, ".."), { recursive: true });
+    await writeFile(resolve(jsonOut), mapToJson(map), "utf8");
+    console.log(`wrote ${map.stats.fileCount} files to ${jsonOut}`);
+  }
+  if (mdOut) {
+    await mkdir(resolve(mdOut, ".."), { recursive: true });
+    await writeFile(resolve(mdOut), mapToMarkdown(map), "utf8");
+    console.log(`wrote markdown map to ${mdOut}`);
+  }
+  if (!jsonOut && !mdOut) console.log(mapToMarkdown(map));
+  return 0;
+}
+
+async function cmdSlice(args: string[]): Promise<number> {
+  const [root, file, symbol] = args;
+  if (!root || !file || !symbol) {
+    console.error("usage: claudepilot slice <root> <file> <symbol>");
+    return 2;
+  }
+  const map = await generateMap(root);
+  const slice = await retrieveSymbol(map, file, symbol);
+  if (!slice) {
+    console.error(`no symbol "${symbol}" found in ${file}`);
+    return 1;
+  }
+  console.log(`// ${slice.path}:${slice.startLine}-${slice.endLine} (${slice.kind})`);
+  console.log(slice.code);
+  return 0;
+}
+
+async function cmdLines(args: string[]): Promise<number> {
+  const [root, file, startRaw, endRaw] = args;
+  if (!root || !file || !startRaw || !endRaw) {
+    console.error("usage: claudepilot lines <root> <file> <start> <end>");
+    return 2;
+  }
+  const slice = await retrieveLines(
+    resolve(root),
+    file,
+    Number(startRaw),
+    Number(endRaw)
+  );
+  if (!slice) {
+    console.error(`could not read ${file}`);
+    return 1;
+  }
+  console.log(`// ${slice.path}:${slice.startLine}-${slice.endLine}`);
+  console.log(slice.code);
+  return 0;
+}
+
+async function cmdGuard(args: string[]): Promise<number> {
+  const [root, file] = args;
+  if (!root || !file) {
+    console.error("usage: claudepilot guard <root> <file>");
+    return 2;
+  }
+  const target = resolve(root, file);
+  let bytes = 0;
+  try {
+    bytes = (await readFile(target)).byteLength;
+  } catch {
+    console.error(`cannot stat ${file}`);
+    return 1;
+  }
+  const guard = guardRead(bytes, file);
+  console.log(JSON.stringify(guard, null, 2));
+  return 0;
+}
+
+function cmdBudget(args: string[]): number {
+  const bytes = Number(getFlag(args, "bytes") ?? 0);
+  const window = getFlag(args, "window");
+  const report = budget({
+    bytesRead: bytes,
+    windowTokens: window ? Number(window) : undefined
+  });
+  console.log(JSON.stringify(report, null, 2));
+  return 0;
+}
+
+async function cmdMemory(args: string[]): Promise<number> {
+  const sub = args[0];
+  const rest = args.slice(1);
+  const root = getFlag(rest, "root") ?? ".";
+  switch (sub) {
+    case "add": {
+      const type = getFlag(rest, "type") as MemoryType | undefined;
+      const desc = getFlag(rest, "desc");
+      const body = getFlag(rest, "body");
+      const name = getFlag(rest, "name");
+      const tags = getFlag(rest, "tags");
+      if (!type || !desc || !body) {
+        console.error("usage: claudepilot memory add --type T --desc ... --body ...");
+        return 2;
+      }
+      const m = await addMemory(root, {
+        name,
+        type,
+        description: desc,
+        body,
+        tags: tags ? tags.split(",").map((t) => t.trim()) : []
+      });
+      console.log(`saved memory "${m.name}" (${m.type}) to ${m.sourcePath}`);
+      return 0;
+    }
+    case "recall": {
+      const query = rest.find((a) => !a.startsWith("--")) ?? "";
+      const limit = Number(getFlag(rest, "limit") ?? 5);
+      const hits = recallMemories(await listMemories(root), query, limit);
+      if (hits.length === 0) {
+        console.log("no matching memories");
+        return 0;
+      }
+      for (const m of hits) {
+        console.log(`## ${m.name} (${m.type})`);
+        console.log(m.description);
+        console.log("");
+        console.log(m.body);
+        console.log("");
+      }
+      return 0;
+    }
+    case "list": {
+      const all = await listMemories(root);
+      console.log(`${all.length} memories in ${memoryDir(root)}`);
+      for (const m of all) console.log(`  ${m.name} [${m.type}] ${m.description}`);
+      return 0;
+    }
+    case "prune": {
+      const name = rest.find((a) => !a.startsWith("--"));
+      if (!name) {
+        console.error("usage: claudepilot memory prune <name>");
+        return 2;
+      }
+      const ok = await pruneMemory(root, name);
+      console.log(ok ? `pruned "${name}"` : `no memory named "${name}"`);
+      return ok ? 0 : 1;
+    }
+    case "index": {
+      const rendered = await regenerateIndex(root);
+      console.log(rendered);
+      return 0;
+    }
+    default:
+      console.error("usage: claudepilot memory <add|recall|list|prune|index>");
+      return 2;
+  }
+}
+
+async function cmdMindmap(args: string[]): Promise<number> {
+  const root = args[0] && !args[0].startsWith("--") ? args[0] : ".";
+  const map = await generateMap(root);
+  const tree = buildMindMap(map);
+  const htmlOut = getFlag(args, "html");
+  if (htmlOut) {
+    await writeFile(resolve(htmlOut), renderArtifact(map, tree), "utf8");
+    console.log(`wrote mind map artifact to ${htmlOut}`);
+    return 0;
+  }
+  console.log(mindMapToMermaid(tree));
+  return 0;
+}
+
+async function cmdStatus(args: string[]): Promise<number> {
+  const root = args[0] && !args[0].startsWith("--") ? args[0] : ".";
+  const bytes = Number(getFlag(args, "bytes") ?? 0);
+  const map = await generateMap(root);
+  const report = budget({ bytesRead: bytes });
+  const memories = await listMemories(root);
+  console.log("# claudepilot status");
+  console.log("");
+  console.log(
+    `Project: ${map.stats.fileCount} files, ${map.stats.symbolCount} exported symbols.`
+  );
+  console.log(
+    `Context budget: about ${report.approxTokens} of ${report.windowTokens} ` +
+      `tokens used (${(report.usedFraction * 100).toFixed(0)} percent), level ${report.level}.`
+  );
+  console.log(`Advice: ${report.advice}`);
+  console.log(`Memory: ${memories.length} durable facts stored.`);
+  console.log("");
+  console.log("## Mind map");
+  console.log("");
+  console.log("```mermaid");
+  console.log(mindMapToMermaid(buildMindMap(map)));
+  console.log("```");
+  return 0;
+}
+
+async function cmdValidate(args: string[]): Promise<number> {
+  const skillsDir = resolveSkillsDir(getFlag(args, "skills"));
+  try {
+    const skills = await loadSkills(skillsDir);
+    const byCategory = new Map<string, number>();
+    for (const skill of skills) {
+      byCategory.set(skill.category, (byCategory.get(skill.category) ?? 0) + 1);
+    }
+    console.log(`OK: ${skills.length} skills loaded from ${skillsDir}`);
+    for (const [cat, count] of [...byCategory.entries()].sort()) {
+      console.log(`  ${cat}: ${count}`);
+    }
+    return 0;
+  } catch (error) {
+    if (error instanceof SkillValidationError) {
+      console.error(`FAILED: ${error.issues.length} issues`);
+      for (const issue of error.issues) {
+        console.error(`  ${issue.sourcePath}: ${issue.message}`);
+      }
+      return 1;
+    }
+    console.error((error as Error).message);
+    return 1;
+  }
+}
+
+async function cmdPluginValidate(args: string[]): Promise<number> {
+  const pluginRoot = getFlag(args, "plugin") ?? resolvePluginRoot();
+  const result = await validatePlugin(pluginRoot, resolveSkillsDir());
+  if (result.ok) {
+    console.log(`OK: plugin valid (${result.checks.length} checks passed)`);
+    for (const c of result.checks) console.log(`  pass: ${c}`);
+    return 0;
+  }
+  console.error(`FAILED: ${result.issues.length} plugin issues`);
+  for (const issue of result.issues) console.error(`  ${issue}`);
+  return 1;
+}
+
+async function main(): Promise<number> {
+  const [, , command, ...rest] = process.argv;
+  switch (command) {
+    case "map":
+      return cmdMap(rest);
+    case "slice":
+      return cmdSlice(rest);
+    case "lines":
+      return cmdLines(rest);
+    case "guard":
+      return cmdGuard(rest);
+    case "budget":
+      return cmdBudget(rest);
+    case "memory":
+      return cmdMemory(rest);
+    case "mindmap":
+      return cmdMindmap(rest);
+    case "status":
+      return cmdStatus(rest);
+    case "validate":
+      return cmdValidate(rest);
+    case "plugin-validate":
+      return cmdPluginValidate(rest);
+    case undefined:
+    case "help":
+    case "--help":
+    case "-h":
+      console.log(USAGE);
+      return 0;
+    default:
+      console.error(`unknown command: ${command}\n`);
+      console.log(USAGE);
+      return 2;
+  }
+}
+
+main()
+  .then((code) => process.exit(code))
+  .catch((error) => {
+    console.error(error instanceof Error ? error.message : String(error));
+    process.exit(1);
+  });
