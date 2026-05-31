@@ -1,7 +1,7 @@
 ---
 name: no-gate
 description: This shipping skill omits the required verification gate and must be rejected.
-claudepilot:
+slipstream:
   category: backend
 ---
 

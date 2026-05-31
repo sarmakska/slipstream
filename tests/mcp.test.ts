@@ -21,11 +21,11 @@ describe("mcp request handler", () => {
       ctx
     );
     expect(res?.result).toMatchObject({
-      serverInfo: { name: "claudepilot" }
+      serverInfo: { name: "slipstream" }
     });
   });
 
-  it("lists every cp_ tool", async () => {
+  it("lists every sp_ tool", async () => {
     const res = await handleRequest(
       { jsonrpc: "2.0", id: 2, method: "tools/list" } as JsonRpcRequest,
       ctx
@@ -33,15 +33,15 @@ describe("mcp request handler", () => {
     const tools = (res?.result as { tools: Array<{ name: string }> }).tools;
     const names = tools.map((t) => t.name).sort();
     expect(names).toEqual([
-      "cp_budget",
-      "cp_forget",
-      "cp_lines",
-      "cp_map",
-      "cp_mindmap",
-      "cp_recall",
-      "cp_remember",
-      "cp_search",
-      "cp_symbol"
+      "sp_budget",
+      "sp_forget",
+      "sp_lines",
+      "sp_map",
+      "sp_mindmap",
+      "sp_recall",
+      "sp_remember",
+      "sp_search",
+      "sp_symbol"
     ]);
     // Every description is a crisp "Use ..." trigger.
     for (const t of tools) expect(t.description.startsWith("Use")).toBe(true);
@@ -64,10 +64,10 @@ describe("mcp request handler", () => {
   });
 });
 
-describe("cp_symbol returns a scoped slice, not the whole file", () => {
+describe("sp_symbol returns a scoped slice, not the whole file", () => {
   it("returns just the requested symbol", async () => {
     const result = await callTool(
-      "cp_symbol",
+      "sp_symbol",
       { file: "src/greet.ts", symbol: "greet" },
       ctx
     );
@@ -81,7 +81,7 @@ describe("cp_symbol returns a scoped slice, not the whole file", () => {
 
   it("errors cleanly for an unknown symbol", async () => {
     const result = await callTool(
-      "cp_symbol",
+      "sp_symbol",
       { file: "src/greet.ts", symbol: "nope" },
       ctx
     );
@@ -89,16 +89,16 @@ describe("cp_symbol returns a scoped slice, not the whole file", () => {
   });
 });
 
-describe("cp_map and cp_search never embed file contents", () => {
-  it("cp_map returns the index without source bodies", async () => {
-    const result = await callTool("cp_map", {}, ctx);
+describe("sp_map and sp_search never embed file contents", () => {
+  it("sp_map returns the index without source bodies", async () => {
+    const result = await callTool("sp_map", {}, ctx);
     const out = result.content[0]?.text ?? "";
     expect(out).toContain("# Project map");
     expect(out).not.toContain("return `hello");
   });
 
-  it("cp_search returns locations not bodies", async () => {
-    const result = await callTool("cp_search", { query: "greet" }, ctx);
+  it("sp_search returns locations not bodies", async () => {
+    const result = await callTool("sp_search", { query: "greet" }, ctx);
     const out = result.content[0]?.text ?? "";
     expect(out).toContain("src/greet.ts");
     expect(out).not.toContain("return `hello");
@@ -106,7 +106,7 @@ describe("cp_map and cp_search never embed file contents", () => {
 });
 
 describe("the bundled server runs over real stdio", () => {
-  it("spawns, answers tools/list and a cp_symbol call", async () => {
+  it("spawns, answers tools/list and a sp_symbol call", async () => {
     const entry = join(here, "..", "dist", "mcp", "index.js");
     const child = spawn(process.execPath, [entry], {
       cwd: sample,
@@ -136,7 +136,7 @@ describe("the bundled server runs over real stdio", () => {
       jsonrpc: "2.0",
       id: 3,
       method: "tools/call",
-      params: { name: "cp_symbol", arguments: { file: "src/greet.ts", symbol: "greet" } }
+      params: { name: "sp_symbol", arguments: { file: "src/greet.ts", symbol: "greet" } }
     });
 
     // Wait until the three responses have arrived, then close stdin.
@@ -156,7 +156,7 @@ describe("the bundled server runs over real stdio", () => {
     const list = responses.find((r) => r["id"] === 2);
     const tools = (list?.["result"] as { tools: Array<{ name: string }> }).tools;
     expect(tools.length).toBe(TOOL_DESCRIPTORS.length);
-    expect(tools.some((t) => t.name === "cp_symbol")).toBe(true);
+    expect(tools.some((t) => t.name === "sp_symbol")).toBe(true);
 
     const call = responses.find((r) => r["id"] === 3);
     const text = (call?.["result"] as { content: Array<{ text: string }> }).content[0]?.text ?? "";

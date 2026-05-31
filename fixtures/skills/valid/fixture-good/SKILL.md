@@ -1,7 +1,7 @@
 ---
 name: fixture-good
 description: A minimal but complete skill used to prove the loader accepts valid Claude Code SKILL.md input.
-claudepilot:
+slipstream:
   category: frontend
   verification:
     kind: typecheck

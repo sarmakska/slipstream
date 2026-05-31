@@ -1,7 +1,7 @@
 ---
 name: Bad_Name
 description: This skill has an invalid name, an invalid category, and no required sections.
-claudepilot:
+slipstream:
   category: nonsense
   verification:
     kind: build

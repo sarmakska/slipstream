@@ -62,7 +62,7 @@ describe("digestToMarkdown", () => {
 describe("digest persistence and reload (lossless compaction)", () => {
   let root: string;
   beforeEach(async () => {
-    root = await mkdtemp(join(tmpdir(), "claudepilot-digest-"));
+    root = await mkdtemp(join(tmpdir(), "slipstream-digest-"));
   });
   afterEach(async () => {
     await rm(root, { recursive: true, force: true });

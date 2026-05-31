@@ -14,7 +14,7 @@ const fixtures = join(here, "..", "fixtures", "skills");
 const VALID = `---
 name: example-skill
 description: A complete example skill in the Claude Code SKILL.md format.
-claudepilot:
+slipstream:
   category: backend
   verification:
     kind: build
@@ -32,11 +32,11 @@ Run the build.
 `;
 
 describe("skill schema", () => {
-  it("accepts well formed Claude Code frontmatter with a claudepilot block", () => {
+  it("accepts well formed Claude Code frontmatter with a slipstream block", () => {
     const result = skillFrontmatterSchema.safeParse({
       name: "ok-skill",
       description: "fine",
-      claudepilot: {
+      slipstream: {
         category: "git",
         verification: { kind: "test", description: "tests pass", command: "pnpm test" }
       }
@@ -48,7 +48,7 @@ describe("skill schema", () => {
     const result = skillFrontmatterSchema.safeParse({
       name: "ok-skill",
       description: "fine",
-      claudepilot: {
+      slipstream: {
         category: "marketing",
         verification: { kind: "test", description: "x", command: "y" }
       }
@@ -60,14 +60,14 @@ describe("skill schema", () => {
     const result = skillFrontmatterSchema.safeParse({
       name: "Bad_Name",
       description: "fine",
-      claudepilot: { category: "git" }
+      slipstream: { category: "git" }
     });
     expect(result.success).toBe(false);
   });
 
   it("requires name and description, the fields Claude Code reads", () => {
     const result = skillFrontmatterSchema.safeParse({
-      claudepilot: { category: "git" }
+      slipstream: { category: "git" }
     });
     expect(result.success).toBe(false);
   });
@@ -93,7 +93,7 @@ describe("parseSkill", () => {
     const raw = `---
 name: no-gate
 description: missing verification
-claudepilot:
+slipstream:
   category: git
 ---
 
@@ -114,7 +114,7 @@ y
     const raw = `---
 name: memory-add
 description: a memory skill needs no build gate
-claudepilot:
+slipstream:
   category: memory
 ---
 

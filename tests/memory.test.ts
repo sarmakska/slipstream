@@ -17,7 +17,7 @@ import {
 let root: string;
 
 beforeEach(async () => {
-  root = await mkdtemp(join(tmpdir(), "claudepilot-mem-"));
+  root = await mkdtemp(join(tmpdir(), "slipstream-mem-"));
 });
 
 afterEach(async () => {

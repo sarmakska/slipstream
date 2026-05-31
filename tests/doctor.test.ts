@@ -29,7 +29,7 @@ describe("runDoctor against the real plugin tree", () => {
   it("renders a pass/fail report", async () => {
     const report = await runDoctor(pluginRoot, pluginRoot);
     const rendered = renderDoctor(report);
-    expect(rendered).toContain("# claudepilot doctor");
+    expect(rendered).toContain("# slipstream doctor");
     expect(rendered).toMatch(/PASS\s+mcp-declared/);
   });
 });
@@ -37,12 +37,12 @@ describe("runDoctor against the real plugin tree", () => {
 describe("runDoctor fails loudly on a broken install", () => {
   let broken: string;
   beforeEach(async () => {
-    broken = await mkdtemp(join(tmpdir(), "claudepilot-doctor-"));
+    broken = await mkdtemp(join(tmpdir(), "slipstream-doctor-"));
     // A plugin tree missing dist, the MCP declaration and the PreCompact hook.
     await mkdir(join(broken, ".claude-plugin"), { recursive: true });
     await writeFile(
       join(broken, ".claude-plugin", "plugin.json"),
-      JSON.stringify({ name: "claudepilot", version: "0.0.0" }),
+      JSON.stringify({ name: "slipstream", version: "0.0.0" }),
       "utf8"
     );
     await mkdir(join(broken, "hooks"), { recursive: true });

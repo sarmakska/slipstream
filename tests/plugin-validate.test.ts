@@ -9,7 +9,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = join(here, "..");
 
 describe("validatePlugin", () => {
-  it("passes on the real claudepilot plugin", async () => {
+  it("passes on the real slipstream plugin", async () => {
     const result = await validatePlugin(repoRoot, join(repoRoot, "skills"));
     if (!result.ok) {
       throw new Error("plugin invalid:\n" + result.issues.join("\n"));
@@ -19,7 +19,7 @@ describe("validatePlugin", () => {
   });
 
   it("fails when the manifest is missing", async () => {
-    const dir = await mkdtemp(join(tmpdir(), "claudepilot-plugin-"));
+    const dir = await mkdtemp(join(tmpdir(), "slipstream-plugin-"));
     try {
       const result = await validatePlugin(dir, join(repoRoot, "skills"));
       expect(result.ok).toBe(false);
@@ -30,7 +30,7 @@ describe("validatePlugin", () => {
   });
 
   it("fails when a hook event is not wired", async () => {
-    const dir = await mkdtemp(join(tmpdir(), "claudepilot-plugin-"));
+    const dir = await mkdtemp(join(tmpdir(), "slipstream-plugin-"));
     try {
       await mkdir(join(dir, ".claude-plugin"), { recursive: true });
       await mkdir(join(dir, "hooks"), { recursive: true });
@@ -38,7 +38,7 @@ describe("validatePlugin", () => {
       await writeFile(
         join(dir, ".claude-plugin", "plugin.json"),
         JSON.stringify({
-          name: "claudepilot",
+          name: "slipstream",
           version: "0.1.0",
           description: "x",
           author: "Sarma"
@@ -46,7 +46,7 @@ describe("validatePlugin", () => {
       );
       await writeFile(
         join(dir, ".claude-plugin", "marketplace.json"),
-        JSON.stringify({ name: "m", plugins: [{ name: "claudepilot", source: "." }] })
+        JSON.stringify({ name: "m", plugins: [{ name: "slipstream", source: "." }] })
       );
       // Only wires SessionStart, missing the other three.
       await writeFile(

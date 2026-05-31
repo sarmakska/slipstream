@@ -24,7 +24,7 @@ import { startDashboard, liveServer } from "../src/dashboard/launch.js";
 let root: string;
 
 beforeEach(async () => {
-  root = await mkdtemp(join(tmpdir(), "claudepilot-dash-"));
+  root = await mkdtemp(join(tmpdir(), "slipstream-dash-"));
 });
 
 afterEach(async () => {
@@ -162,7 +162,7 @@ describe("server", () => {
 
     try {
       const html = await fetch(`http://127.0.0.1:${port}/`).then((r) => r.text());
-      expect(html).toContain("claudepilot live");
+      expect(html).toContain("slipstream live");
 
       // Consume the SSE stream by hand: read the snapshot frame, then append a
       // fresh event and assert a "state" frame arrives carrying it.
