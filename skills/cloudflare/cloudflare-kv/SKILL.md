@@ -1,6 +1,8 @@
 ---
 name: cloudflare-kv
-description: Create a Workers KV namespace and use it as a low latency cache.
+description: >-
+  Use when you need a low-latency edge cache or key-value store: create a
+  Workers KV namespace and use it as a low latency cache.
 claudepilot:
   category: cloudflare
   requires:

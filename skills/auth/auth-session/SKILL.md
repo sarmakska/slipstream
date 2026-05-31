@@ -1,6 +1,8 @@
 ---
 name: auth-session
-description: 'Issue HTTP only, secure, same site session cookies for authenticated requests.'
+description: >-
+  Use when issuing authenticated session cookies: issue HTTP only, secure, same
+  site session cookies for authenticated requests.
 claudepilot:
   category: auth
   requires:

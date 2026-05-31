@@ -1,6 +1,8 @@
 ---
 name: auth-oauth
-description: Add a third party OAuth provider such as GitHub or Google for social sign in.
+description: >-
+  Use when adding social or third-party sign in: add a third party OAuth
+  provider such as GitHub or Google for social sign in.
 claudepilot:
   category: auth
   requires:

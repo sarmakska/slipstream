@@ -1,6 +1,8 @@
 ---
 name: backend-hono-api
-description: Create a Hono based HTTP API that runs on both Node and edge runtimes.
+description: >-
+  Use when scaffolding an HTTP API that runs on Node and the edge: create a Hono
+  based HTTP API that runs on both Node and edge runtimes.
 claudepilot:
   category: backend
   verification:

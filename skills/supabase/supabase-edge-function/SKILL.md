@@ -1,8 +1,8 @@
 ---
 name: supabase-edge-function
 description: >-
-  Write and deploy a Deno based edge function for server side logic close to the
-  data.
+  Use when you need server-side logic close to the Supabase data: write and
+  deploy a Deno based edge function for server side logic close to the data.
 claudepilot:
   category: supabase
   requires:

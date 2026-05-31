@@ -1,6 +1,8 @@
 ---
 name: seo-meta-tags
-description: 'Add title, description and canonical tags to every page for search engines.'
+description: >-
+  Use when pages need title, description and canonical tags for search: add
+  title, description and canonical tags to every page for search engines.
 claudepilot:
   category: seo
   requires:

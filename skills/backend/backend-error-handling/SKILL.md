@@ -1,6 +1,8 @@
 ---
 name: backend-error-handling
-description: Catch unhandled errors centrally and return consistent JSON error envelopes.
+description: >-
+  Use when an API needs consistent error responses: catch unhandled errors
+  centrally and return consistent JSON error envelopes.
 claudepilot:
   category: backend
   requires:

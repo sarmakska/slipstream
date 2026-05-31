@@ -1,6 +1,8 @@
 ---
 name: cloudflare-pages
-description: Publish a built static front end to Cloudflare Pages.
+description: >-
+  Use when deploying a static front end to Cloudflare Pages: publish a built
+  static front end to Cloudflare Pages.
 claudepilot:
   category: cloudflare
   requires:

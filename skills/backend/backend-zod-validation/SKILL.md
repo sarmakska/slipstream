@@ -1,8 +1,8 @@
 ---
 name: backend-zod-validation
 description: >-
-  Add schema validation middleware so every endpoint rejects malformed input
-  with a 400.
+  Use when API input must be validated and rejected if malformed: add schema
+  validation middleware so every endpoint rejects malformed input with a 400.
 claudepilot:
   category: backend
   requires:

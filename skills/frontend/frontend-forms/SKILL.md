@@ -1,6 +1,8 @@
 ---
 name: frontend-forms
-description: Build forms with client side validation and accessible error messaging.
+description: >-
+  Use when building forms that need validation and accessible errors: build
+  forms with client side validation and accessible error messaging.
 claudepilot:
   category: frontend
   requires:

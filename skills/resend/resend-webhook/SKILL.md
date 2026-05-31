@@ -1,6 +1,8 @@
 ---
 name: resend-webhook
-description: 'Receive Resend webhooks to track delivery, bounce and complaint events.'
+description: >-
+  Use when you need to track email delivery, bounces and complaints: receive
+  Resend webhooks to track delivery, bounce and complaint events.
 claudepilot:
   category: resend
   requires:

@@ -1,6 +1,8 @@
 ---
 name: payments-stripe-setup
-description: Install the Stripe SDK and configure keys for accepting payments.
+description: >-
+  Use when first adding Stripe to a project: install the Stripe SDK and
+  configure keys for accepting payments.
 claudepilot:
   category: payments
   verification:

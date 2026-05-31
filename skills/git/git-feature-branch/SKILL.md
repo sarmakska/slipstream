@@ -1,6 +1,9 @@
 ---
 name: git-feature-branch
-description: Create a focused feature branch off the default branch for each unit of work.
+description: >-
+  Use when starting a new unit of work that should not land on the default
+  branch: create a focused feature branch off the default branch for each unit
+  of work.
 claudepilot:
   category: git
   requires:

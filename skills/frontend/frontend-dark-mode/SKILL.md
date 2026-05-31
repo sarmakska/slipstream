@@ -1,8 +1,8 @@
 ---
 name: frontend-dark-mode
 description: >-
-  Add a persisted light and dark theme toggle driven by a CSS class on the root
-  element.
+  Use when adding a light/dark theme toggle: add a persisted light and dark
+  theme toggle driven by a CSS class on the root element.
 claudepilot:
   category: frontend
   requires:

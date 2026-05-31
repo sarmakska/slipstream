@@ -1,6 +1,8 @@
 ---
 name: cloudflare-d1
-description: Create a Cloudflare D1 SQLite database and run an initial migration.
+description: >-
+  Use when the app needs a SQLite database on Cloudflare: create a Cloudflare D1
+  SQLite database and run an initial migration.
 claudepilot:
   category: cloudflare
   requires:

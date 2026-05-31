@@ -1,6 +1,8 @@
 ---
 name: analytics-plausible
-description: 'Add a lightweight, cookieless analytics script that respects visitor privacy.'
+description: >-
+  Use when adding privacy-friendly site analytics: add a lightweight, cookieless
+  analytics script that respects visitor privacy.
 claudepilot:
   category: analytics
   requires:

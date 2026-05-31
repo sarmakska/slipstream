@@ -1,8 +1,8 @@
 ---
 name: supabase-auth
 description: >-
-  Add email and password authentication backed by Supabase Auth in the front
-  end.
+  Use when adding email and password sign in backed by Supabase: add email and
+  password authentication backed by Supabase Auth in the front end.
 claudepilot:
   category: supabase
   requires:

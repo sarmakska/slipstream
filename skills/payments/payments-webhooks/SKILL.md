@@ -1,8 +1,8 @@
 ---
 name: payments-webhooks
 description: >-
-  Receive and verify Stripe webhook events to keep your records in sync with
-  Stripe.
+  Use when payment state must stay in sync with Stripe: receive and verify
+  Stripe webhook events to keep your records in sync with Stripe.
 claudepilot:
   category: payments
   requires:

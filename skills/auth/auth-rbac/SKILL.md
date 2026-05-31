@@ -1,8 +1,8 @@
 ---
 name: auth-rbac
 description: >-
-  Gate routes and actions behind roles so only authorised users can perform
-  them.
+  Use when routes or actions must be gated by user role: gate routes and actions
+  behind roles so only authorised users can perform them.
 claudepilot:
   category: auth
   requires:

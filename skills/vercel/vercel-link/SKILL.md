@@ -1,8 +1,8 @@
 ---
 name: vercel-link
 description: >-
-  Link the local repository to a Vercel project so deploys and env vars are
-  scoped correctly.
+  Use when first connecting a repository to a Vercel project: link the local
+  repository to a Vercel project so deploys and env vars are scoped correctly.
 claudepilot:
   category: vercel
   verification:

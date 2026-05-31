@@ -1,6 +1,8 @@
 ---
 name: cloudflare-worker
-description: Create a Cloudflare Worker with Wrangler that serves an API at the edge.
+description: >-
+  Use when building an API or handler at the Cloudflare edge: create a
+  Cloudflare Worker with Wrangler that serves an API at the edge.
 claudepilot:
   category: cloudflare
   verification:

@@ -1,6 +1,8 @@
 ---
 name: seo-sitemap
-description: Emit a sitemap.xml and robots.txt so crawlers can discover and index pages.
+description: >-
+  Use when crawlers need a sitemap and robots file: emit a sitemap.xml and
+  robots.txt so crawlers can discover and index pages.
 claudepilot:
   category: seo
   requires:

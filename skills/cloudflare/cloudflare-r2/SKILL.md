@@ -1,6 +1,8 @@
 ---
 name: cloudflare-r2
-description: Create an R2 object storage bucket and bind it to a Worker.
+description: >-
+  Use when the app needs object storage on Cloudflare: create an R2 object
+  storage bucket and bind it to a Worker.
 claudepilot:
   category: cloudflare
   requires:

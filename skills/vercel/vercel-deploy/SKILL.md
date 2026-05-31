@@ -1,6 +1,8 @@
 ---
 name: vercel-deploy
-description: Build and deploy the project to Vercel production with a verified healthcheck.
+description: >-
+  Use when deploying the project to Vercel production: build and deploy the
+  project to Vercel production with a verified healthcheck.
 claudepilot:
   category: vercel
   requires:

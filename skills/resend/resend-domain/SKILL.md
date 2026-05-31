@@ -1,6 +1,8 @@
 ---
 name: resend-domain
-description: 'Add and verify a custom sending domain so email lands in the inbox, not spam.'
+description: >-
+  Use when transactional email must send from a custom verified domain: add and
+  verify a custom sending domain so email lands in the inbox, not spam.
 claudepilot:
   category: resend
   requires:

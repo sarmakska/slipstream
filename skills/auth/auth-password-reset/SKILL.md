@@ -1,8 +1,8 @@
 ---
 name: auth-password-reset
 description: >-
-  Let users reset a forgotten password with a single use, time limited token
-  sent by email.
+  Use when users need to reset a forgotten password: let users reset a forgotten
+  password with a single use, time limited token sent by email.
 claudepilot:
   category: auth
   requires:

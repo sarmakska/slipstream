@@ -1,8 +1,8 @@
 ---
 name: analytics-events
 description: >-
-  Track the handful of events that actually matter, such as sign up and
-  purchase.
+  Use when you need product analytics: track the handful of events that
+  actually matter, such as sign up and purchase.
 claudepilot:
   category: analytics
   requires:

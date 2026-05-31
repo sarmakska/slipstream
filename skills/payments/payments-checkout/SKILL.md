@@ -1,6 +1,8 @@
 ---
 name: payments-checkout
-description: Start a hosted Stripe Checkout session for a one time purchase.
+description: >-
+  Use when selling a one-time purchase: start a hosted Stripe Checkout session
+  for a one time purchase.
 claudepilot:
   category: payments
   requires:

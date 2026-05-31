@@ -1,6 +1,8 @@
 ---
 name: frontend-tailwind
-description: Wire Tailwind CSS into a Vite project for utility first styling.
+description: >-
+  Use when adding Tailwind CSS to a Vite project: wire Tailwind CSS into a Vite
+  project for utility first styling.
 claudepilot:
   category: frontend
   requires:

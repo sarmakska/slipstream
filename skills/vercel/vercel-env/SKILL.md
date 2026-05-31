@@ -1,8 +1,8 @@
 ---
 name: vercel-env
 description: >-
-  Push environment variables to Vercel for the preview and production
-  environments.
+  Use when environment variables must reach Vercel: push environment variables
+  to Vercel for the preview and production environments.
 claudepilot:
   category: vercel
   requires:

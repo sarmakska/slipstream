@@ -1,6 +1,8 @@
 ---
 name: git-release-tag
-description: Tag a release with an annotated semantic version and push the tag.
+description: >-
+  Use when cutting a release: tag a release with an annotated semantic version
+  and push the tag.
 claudepilot:
   category: git
   requires:

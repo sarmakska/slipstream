@@ -1,6 +1,8 @@
 ---
 name: git-init-repo
-description: Initialise a Git repository with a sensible default branch and ignore file.
+description: >-
+  Use when starting version control in a new project: initialise a Git
+  repository with a sensible default branch and ignore file.
 claudepilot:
   category: git
   verification:

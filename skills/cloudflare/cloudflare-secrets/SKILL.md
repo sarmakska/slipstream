@@ -1,6 +1,8 @@
 ---
 name: cloudflare-secrets
-description: Store sensitive values as Worker secrets rather than committing them.
+description: >-
+  Use when a Worker needs secret values kept out of source: store sensitive
+  values as Worker secrets rather than committing them.
 claudepilot:
   category: cloudflare
   requires:

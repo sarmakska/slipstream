@@ -1,8 +1,9 @@
 ---
 name: frontend-component-library
 description: >-
-  Create a small set of reusable, accessible UI primitives the rest of the site
-  composes from.
+  Use when starting a UI and you want reusable accessible primitives: create a
+  small set of reusable, accessible UI primitives the rest of the site composes
+  from.
 claudepilot:
   category: frontend
   requires:

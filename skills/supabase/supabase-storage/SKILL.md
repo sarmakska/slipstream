@@ -1,6 +1,8 @@
 ---
 name: supabase-storage
-description: Create a storage bucket with policies for user uploaded assets.
+description: >-
+  Use when the app stores user-uploaded files: create a storage bucket with
+  policies for user uploaded assets.
 claudepilot:
   category: supabase
   requires:

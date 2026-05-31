@@ -1,6 +1,8 @@
 ---
 name: payments-subscriptions
-description: Sell recurring subscriptions with Stripe Billing and manage plan changes.
+description: >-
+  Use when selling recurring subscriptions: sell recurring subscriptions with
+  Stripe Billing and manage plan changes.
 claudepilot:
   category: payments
   requires:

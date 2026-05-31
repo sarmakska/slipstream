@@ -1,8 +1,8 @@
 ---
 name: git-pull-request
 description: >-
-  Push the feature branch and open a reviewable pull request with a clear
-  description.
+  Use when a feature branch is ready for review: push the feature branch and
+  open a reviewable pull request with a clear description.
 claudepilot:
   category: git
   requires:

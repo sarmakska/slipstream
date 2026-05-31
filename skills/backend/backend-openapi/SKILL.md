@@ -1,8 +1,8 @@
 ---
 name: backend-openapi
 description: >-
-  Generate an OpenAPI specification from the API routes and serve it for
-  consumers.
+  Use when consumers need an OpenAPI spec for the API: generate an OpenAPI
+  specification from the API routes and serve it for consumers.
 claudepilot:
   category: backend
   requires:

@@ -1,6 +1,8 @@
 ---
 name: resend-setup
-description: Add the Resend SDK and configure the API key for transactional email.
+description: >-
+  Use when first adding transactional email with Resend: add the Resend SDK and
+  configure the API key for transactional email.
 claudepilot:
   category: resend
   verification:

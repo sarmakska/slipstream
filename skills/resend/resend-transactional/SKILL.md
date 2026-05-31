@@ -1,6 +1,8 @@
 ---
 name: resend-transactional
-description: Send a templated transactional email such as a welcome or receipt message.
+description: >-
+  Use when sending a templated email such as a welcome or receipt: send a
+  templated transactional email such as a welcome or receipt message.
 claudepilot:
   category: resend
   requires:

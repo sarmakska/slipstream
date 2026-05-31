@@ -1,6 +1,8 @@
 ---
 name: supabase-init
-description: Link a local Supabase project and start the local development stack.
+description: >-
+  Use when starting local Supabase development: link a local Supabase project
+  and start the local development stack.
 claudepilot:
   category: supabase
   verification:

@@ -1,8 +1,8 @@
 ---
 name: backend-rate-limit
 description: >-
-  Protect public endpoints with a token bucket rate limiter keyed by client
-  identity.
+  Use when a public endpoint needs abuse protection: protect public endpoints
+  with a token bucket rate limiter keyed by client identity.
 claudepilot:
   category: backend
   requires:
