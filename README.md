@@ -121,22 +121,53 @@ Delegate with the Task tool, for example "use cp-reviewer to check this before I
 
 After install, run `/claudepilot:doctor`. It checks the whole install end to end (MCP server built and declared, every hook including `PreCompact` wired, the memory store reachable, the helper CLI built, the statusline, output style and subagents present, the plugin manifest valid) and prints a `PASS`/`FAIL` line per check, so you know it is working.
 
-## Install in VS Code and go
+## Run it in any IDE
 
-You need Claude Code running in VS Code and Node 20 or newer on your PATH (the hooks and helper run on Node).
+claudepilot has two layers. The full plugin (skills, hooks, memory, lossless compaction, the statusline and the live dashboard) runs inside Claude Code. The MCP tools, which are the token-saving core (cp_map, cp_symbol, cp_lines and the memory tools), are standard Model Context Protocol and run in any MCP-capable editor, including Antigravity, Cursor and Windsurf.
+
+### Claude Code: the full experience
+
+This works in the Claude Code CLI, the Claude Code VS Code extension and the JetBrains extension. You need Node 20 or newer on your PATH (the hooks and helper run on Node).
 
 ```
 /plugin marketplace add sarmakska/claudepilot
 /plugin install claudepilot
 ```
 
-Open your project. At session start the dashboard boots, the memory index loads, and Claude is nudged to read the map before whole files. Build the map once so reads stay scoped:
+Open your project, build the map once with `/claudepilot:map`, then work as normal. Verify the install with `/claudepilot:doctor`, save durable decisions with `/claudepilot:remember`, recall them with `/claudepilot:recall`, and check the plan, budget and mind map with `/claudepilot:status`. At session start the dashboard boots, the memory index loads, and Claude is nudged to read the map before whole files.
+
+### Any MCP-capable IDE: Antigravity, Cursor, Windsurf and others
+
+These editors do not load Claude Code plugins, so the skills, hooks, slash commands and dashboard are not available there. The MCP tools are. Build the server once, then register it.
 
 ```
-/claudepilot:map
+git clone https://github.com/sarmakska/claudepilot
+cd claudepilot
+pnpm install
+pnpm build
 ```
 
-Then work as normal. Verify the install with `/claudepilot:doctor`, save durable decisions with `/claudepilot:remember`, recall them with `/claudepilot:recall`, and check the plan, budget and mind map with `/claudepilot:status`.
+Register the server in your editor's MCP configuration, using the absolute path to the built entry point:
+
+```json
+{
+  "mcpServers": {
+    "claudepilot": {
+      "command": "node",
+      "args": ["/absolute/path/to/claudepilot/dist/mcp/index.js"]
+    }
+  }
+}
+```
+
+Where that config lives, by editor:
+
+- Antigravity IDE: open Settings, find the MCP section, and add the block above.
+- Cursor: put it in `.cursor/mcp.json` in the project, or add it under Settings, then MCP.
+- Windsurf: edit `~/.codeium/windsurf/mcp_config.json`, or add it under Settings, then Cascade MCP.
+- Any other MCP client: wherever that client reads an `mcpServers` block.
+
+Once it loads, the agent gains `cp_map`, `cp_symbol`, `cp_lines`, `cp_search`, `cp_remember`, `cp_recall`, `cp_forget`, `cp_budget` and `cp_mindmap`. Ask it to orient with `cp_map` and to read single declarations with `cp_symbol` rather than whole files, which is where the token saving comes from. The full plugin layer still needs Claude Code, so for skills, hooks and the dashboard, open the same project there.
 
 ## Architecture
 
