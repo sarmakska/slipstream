@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { loadSkills, SkillValidationError } from "../engine/index.js";
 
 /**
- * The plugin validator. It proves the published claudepilot plugin is a valid
+ * The plugin validator. It proves the published slipstream plugin is a valid
  * Claude Code plugin: a well formed plugin.json manifest, a marketplace.json
  * that points at it, valid hooks wiring, slash command files with frontmatter,
  * and a skill library that loads cleanly. It is run from tests and from the
@@ -41,8 +41,8 @@ export async function validatePlugin(
   } else {
     try {
       const manifest = (await readJson(manifestPath)) as Record<string, unknown>;
-      if (manifest.name !== "claudepilot") {
-        issues.push(`plugin.json name must be "claudepilot", got ${String(manifest.name)}`);
+      if (manifest.name !== "slipstream") {
+        issues.push(`plugin.json name must be "slipstream", got ${String(manifest.name)}`);
       }
       for (const field of ["version", "description", "author"]) {
         if (!manifest[field]) issues.push(`plugin.json is missing "${field}"`);
@@ -54,10 +54,10 @@ export async function validatePlugin(
 
       // The bundled MCP server must be declared so Claude Code loads it.
       const mcp = manifest.mcpServers as Record<string, unknown> | undefined;
-      if (!mcp || !mcp["claudepilot"]) {
-        issues.push("plugin.json does not declare the claudepilot MCP server under mcpServers");
+      if (!mcp || !mcp["slipstream"]) {
+        issues.push("plugin.json does not declare the slipstream MCP server under mcpServers");
       } else {
-        checks.push("plugin.json declares the claudepilot MCP server");
+        checks.push("plugin.json declares the slipstream MCP server");
       }
       // The statusline command must be declared.
       if (!manifest.statusLine) {
@@ -81,10 +81,10 @@ export async function validatePlugin(
       const plugins = market.plugins as Array<Record<string, unknown>> | undefined;
       if (!Array.isArray(plugins) || plugins.length === 0) {
         issues.push("marketplace.json must list at least one plugin");
-      } else if (!plugins.some((p) => p.name === "claudepilot")) {
-        issues.push("marketplace.json does not list a plugin named claudepilot");
+      } else if (!plugins.some((p) => p.name === "slipstream")) {
+        issues.push("marketplace.json does not list a plugin named slipstream");
       } else {
-        checks.push("marketplace.json lists the claudepilot plugin");
+        checks.push("marketplace.json lists the slipstream plugin");
       }
     } catch (error) {
       issues.push(`marketplace.json is not valid JSON: ${(error as Error).message}`);
@@ -143,7 +143,7 @@ export async function validatePlugin(
   if (!(await exists(agentsDir))) {
     issues.push(`missing agents directory at ${agentsDir}`);
   } else {
-    const wantedAgents = ["cp-shipper", "cp-schema", "cp-reviewer"];
+    const wantedAgents = ["sp-shipper", "sp-schema", "sp-reviewer"];
     const agentFiles = (await readdir(agentsDir)).filter((f) => f.endsWith(".md"));
     for (const a of wantedAgents) {
       if (!agentFiles.includes(`${a}.md`)) {
@@ -157,26 +157,26 @@ export async function validatePlugin(
       }
     }
     if (wantedAgents.every((a) => agentFiles.includes(`${a}.md`))) {
-      checks.push("agents cp-shipper, cp-schema and cp-reviewer have valid frontmatter");
+      checks.push("agents sp-shipper, sp-schema and sp-reviewer have valid frontmatter");
     }
   }
 
   // 4c. the output style is present with frontmatter.
-  const stylePath = join(pluginRoot, "output-styles", "claudepilot.md");
+  const stylePath = join(pluginRoot, "output-styles", "slipstream.md");
   if (!(await exists(stylePath))) {
     issues.push(`missing output style at ${stylePath}`);
   } else {
     const raw = await readFile(stylePath, "utf8");
     if (!raw.startsWith("---") || !/\bdescription:/.test(raw.split("---")[1] ?? "")) {
-      issues.push("output-styles/claudepilot.md is missing frontmatter with a description");
+      issues.push("output-styles/slipstream.md is missing frontmatter with a description");
     } else {
-      checks.push("output-styles/claudepilot.md is present with frontmatter");
+      checks.push("output-styles/slipstream.md is present with frontmatter");
     }
   }
 
   // 4d. the statusline script is present.
-  if (!(await exists(join(pluginRoot, "statusline", "claudepilot-statusline.mjs")))) {
-    issues.push("missing statusline script at statusline/claudepilot-statusline.mjs");
+  if (!(await exists(join(pluginRoot, "statusline", "slipstream-statusline.mjs")))) {
+    issues.push("missing statusline script at statusline/slipstream-statusline.mjs");
   } else {
     checks.push("statusline script is present");
   }

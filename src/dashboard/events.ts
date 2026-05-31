@@ -1,5 +1,5 @@
 /**
- * The live dashboard event model. Every claudepilot hook that fires during a
+ * The live dashboard event model. Every slipstream hook that fires during a
  * Claude Code session appends one of these to an append-only log. The dashboard
  * server tails that log and the UI reduces the stream into agent state. The
  * schema is deliberately small and flat so it is cheap to write, cheap to parse,
@@ -13,7 +13,7 @@
 
 import { z } from "zod";
 
-/** The lifecycle points claudepilot observes. Mirrors the wired hooks. */
+/** The lifecycle points slipstream observes. Mirrors the wired hooks. */
 export const EVENT_KINDS = [
   "session-start",
   "user-prompt",

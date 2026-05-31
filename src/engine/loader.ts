@@ -63,13 +63,13 @@ export function parseSkill(
   }
 
   const front = result.data;
-  const meta = front.claudepilot;
+  const meta = front.slipstream;
 
   // A skill outside the gateless categories must carry a verification gate.
   if (!GATELESS_CATEGORIES.has(meta.category) && !meta.verification) {
     issues.push({
       sourcePath,
-      message: `category "${meta.category}" requires a claudepilot.verification gate`
+      message: `category "${meta.category}" requires a slipstream.verification gate`
     });
   }
 

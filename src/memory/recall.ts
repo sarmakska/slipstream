@@ -2,7 +2,7 @@
  * Smart, relevant recall at SessionStart. The naive thing a memory layer does is
  * dump the whole store back into context on every session. That defeats the
  * point: a store that grows to fifty facts would cost more tokens to reload than
- * the session saves. claudepilot instead builds a task signal from what the
+ * the session saves. slipstream instead builds a task signal from what the
  * session is actually about, ranks memories against it, and returns only the
  * subset that earns its place, plus a hard token ceiling so a session start can
  * never blow the budget on its own bookkeeping.

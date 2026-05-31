@@ -3,7 +3,7 @@
  * conversation is summarised and the bulk of the transcript is dropped. That is
  * exactly the moment the thread gets lost: the model keeps a lossy summary, but
  * the open task, the decisions made, the files touched and the next step often
- * blur. claudepilot intercepts that moment and writes a structured digest to the
+ * blur. slipstream intercepts that moment and writes a structured digest to the
  * memory store as a durable fact, so the next SessionStart can reload the exact
  * working context the compaction would otherwise have softened.
  *
@@ -118,7 +118,7 @@ export function digestToMarkdown(d: SessionDigest): string {
   return lines.join("\n").trim();
 }
 
-/** The stable memory name claudepilot uses for the latest digest of a session. */
+/** The stable memory name slipstream uses for the latest digest of a session. */
 export function digestMemoryName(session: string): string {
   const safe = session.toLowerCase().replace(/[^a-z0-9]+/g, "-").slice(0, 40);
   return `session-digest-${safe || "main"}`;

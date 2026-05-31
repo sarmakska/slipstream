@@ -49,35 +49,35 @@ function getFlag(args: string[], name: string): string | undefined {
   return args[idx + 1];
 }
 
-const USAGE = `claudepilot internal helper
+const USAGE = `slipstream internal helper
 
-This is the helper binary the claudepilot Claude Code plugin calls from its
+This is the helper binary the slipstream Claude Code plugin calls from its
 hooks and slash commands. You do not run it as a product; install the plugin in
 Claude Code in VS Code instead. See the README.
 
 Usage:
-  claudepilot map [root] [--json out] [--md out] [--search "query"]
-  claudepilot slice <root> <file> <symbol>
-  claudepilot lines <root> <file> <start> <end>
-  claudepilot guard <root> <file>
-  claudepilot budget --bytes N [--window N]
-  claudepilot memory add --type T --desc "..." --body "..." [--tags a,b] [--root .]
-  claudepilot memory recall "query" [--root .] [--limit 5]
-  claudepilot memory list [--root .]
-  claudepilot memory prune <name> [--root .]
-  claudepilot memory index [--root .]
-  claudepilot mindmap [root] [--mermaid] [--html out.html]
-  claudepilot status [root] [--bytes N]
-  claudepilot dashboard start [--root .] [--session S] [--open] [--foreground]
-  claudepilot dashboard emit --kind K --label "..." [--root .] [--session S] [--agent A] [--bytes N]
-  claudepilot dashboard replay [--root .] [--session S]
-  claudepilot dashboard sessions [--root .]
-  claudepilot validate [--skills dir]
-  claudepilot plugin-validate [--plugin dir]
-  claudepilot doctor [--plugin dir] [--root .]
-  claudepilot statusline [--root .] [--bytes N] [--skill S] [--model M]
-  claudepilot recall-signal [--root .] [--branch B] [--files a,b] [--prompt "..."]
-  claudepilot digest [--root .] [--session S] [--trigger auto|manual] [--activity "a||b"] [--files a,b] [--open-task "..."]
+  slipstream map [root] [--json out] [--md out] [--search "query"]
+  slipstream slice <root> <file> <symbol>
+  slipstream lines <root> <file> <start> <end>
+  slipstream guard <root> <file>
+  slipstream budget --bytes N [--window N]
+  slipstream memory add --type T --desc "..." --body "..." [--tags a,b] [--root .]
+  slipstream memory recall "query" [--root .] [--limit 5]
+  slipstream memory list [--root .]
+  slipstream memory prune <name> [--root .]
+  slipstream memory index [--root .]
+  slipstream mindmap [root] [--mermaid] [--html out.html]
+  slipstream status [root] [--bytes N]
+  slipstream dashboard start [--root .] [--session S] [--open] [--foreground]
+  slipstream dashboard emit --kind K --label "..." [--root .] [--session S] [--agent A] [--bytes N]
+  slipstream dashboard replay [--root .] [--session S]
+  slipstream dashboard sessions [--root .]
+  slipstream validate [--skills dir]
+  slipstream plugin-validate [--plugin dir]
+  slipstream doctor [--plugin dir] [--root .]
+  slipstream statusline [--root .] [--bytes N] [--skill S] [--model M]
+  slipstream recall-signal [--root .] [--branch B] [--files a,b] [--prompt "..."]
+  slipstream digest [--root .] [--session S] [--trigger auto|manual] [--activity "a||b"] [--files a,b] [--open-task "..."]
 `;
 
 async function cmdMap(args: string[]): Promise<number> {
@@ -107,7 +107,7 @@ async function cmdMap(args: string[]): Promise<number> {
 async function cmdSlice(args: string[]): Promise<number> {
   const [root, file, symbol] = args;
   if (!root || !file || !symbol) {
-    console.error("usage: claudepilot slice <root> <file> <symbol>");
+    console.error("usage: slipstream slice <root> <file> <symbol>");
     return 2;
   }
   const map = await generateMap(root);
@@ -124,7 +124,7 @@ async function cmdSlice(args: string[]): Promise<number> {
 async function cmdLines(args: string[]): Promise<number> {
   const [root, file, startRaw, endRaw] = args;
   if (!root || !file || !startRaw || !endRaw) {
-    console.error("usage: claudepilot lines <root> <file> <start> <end>");
+    console.error("usage: slipstream lines <root> <file> <start> <end>");
     return 2;
   }
   const slice = await retrieveLines(
@@ -145,7 +145,7 @@ async function cmdLines(args: string[]): Promise<number> {
 async function cmdGuard(args: string[]): Promise<number> {
   const [root, file] = args;
   if (!root || !file) {
-    console.error("usage: claudepilot guard <root> <file>");
+    console.error("usage: slipstream guard <root> <file>");
     return 2;
   }
   const target = resolve(root, file);
@@ -184,7 +184,7 @@ async function cmdMemory(args: string[]): Promise<number> {
       const name = getFlag(rest, "name");
       const tags = getFlag(rest, "tags");
       if (!type || !desc || !body) {
-        console.error("usage: claudepilot memory add --type T --desc ... --body ...");
+        console.error("usage: slipstream memory add --type T --desc ... --body ...");
         return 2;
       }
       const m = await addMemory(root, {
@@ -223,7 +223,7 @@ async function cmdMemory(args: string[]): Promise<number> {
     case "prune": {
       const name = rest.find((a) => !a.startsWith("--"));
       if (!name) {
-        console.error("usage: claudepilot memory prune <name>");
+        console.error("usage: slipstream memory prune <name>");
         return 2;
       }
       const ok = await pruneMemory(root, name);
@@ -236,7 +236,7 @@ async function cmdMemory(args: string[]): Promise<number> {
       return 0;
     }
     default:
-      console.error("usage: claudepilot memory <add|recall|list|prune|index>");
+      console.error("usage: slipstream memory <add|recall|list|prune|index>");
       return 2;
   }
 }
@@ -261,7 +261,7 @@ async function cmdStatus(args: string[]): Promise<number> {
   const map = await generateMap(root);
   const report = budget({ bytesRead: bytes });
   const memories = await listMemories(root);
-  console.log("# claudepilot status");
+  console.log("# slipstream status");
   console.log("");
   console.log(
     `Project: ${map.stats.fileCount} files, ${map.stats.symbolCount} exported symbols.`
@@ -300,8 +300,8 @@ async function cmdDashboard(args: string[]): Promise<number> {
       if (wantOpen) openInBrowser(result.url);
       console.log(
         result.started
-          ? `claudepilot dashboard running at ${result.url}`
-          : `claudepilot dashboard already running at ${result.url}`
+          ? `slipstream dashboard running at ${result.url}`
+          : `slipstream dashboard already running at ${result.url}`
       );
       // In the foreground case startDashboard returns the live server; keep the
       // process alive so `--foreground` actually serves.
@@ -316,7 +316,7 @@ async function cmdDashboard(args: string[]): Promise<number> {
       const agent = getFlag(rest, "agent") ?? "main";
       const bytes = getFlag(rest, "bytes");
       if (!kind) {
-        console.error("usage: claudepilot dashboard emit --kind K --label ...");
+        console.error("usage: slipstream dashboard emit --kind K --label ...");
         return 2;
       }
       const data: Record<string, unknown> = {};
@@ -358,7 +358,7 @@ async function cmdDashboard(args: string[]): Promise<number> {
       return 0;
     }
     default:
-      console.error("usage: claudepilot dashboard <start|emit|replay|sessions>");
+      console.error("usage: slipstream dashboard <start|emit|replay|sessions>");
       return 2;
   }
 }

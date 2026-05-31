@@ -13,7 +13,7 @@ export function renderDashboardHtml(session: string): string {
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>claudepilot live . ${escapeHtml(session)}</title>
+<title>slipstream live . ${escapeHtml(session)}</title>
 <style>
   :root {
     --bg:#06060c; --surface:#0d1117; --line:#1b2430; --sky:#38bdf8;
@@ -68,7 +68,7 @@ export function renderDashboardHtml(session: string): string {
 </head>
 <body>
 <header>
-  <h1><span class="prompt">visitor</span><span class="at">@</span><span class="host">sarmalinux</span><span class="at">:</span><span class="path">~</span><span class="at">$</span> claudepilot live</h1>
+  <h1><span class="prompt">visitor</span><span class="at">@</span><span class="host">sarmalinux</span><span class="at">:</span><span class="path">~</span><span class="at">$</span> slipstream live</h1>
   <span class="pill" id="conn"><span class="live">connecting</span></span>
   <span class="pill">session <select id="sessions"></select></span>
   <span class="pill" id="clock">00:00</span>
@@ -98,7 +98,7 @@ export function renderDashboardHtml(session: string): string {
 </main>
 <footer>
   SarmaLinux . <a href="https://sarmalinux.com">sarmalinux.com</a> .
-  <a href="https://github.com/sarmakska/claudepilot">github.com/sarmakska/claudepilot</a>
+  <a href="https://github.com/sarmakska/slipstream">github.com/sarmakska/slipstream</a>
 </footer>
 <script type="module">
   const escape = (s) => String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");

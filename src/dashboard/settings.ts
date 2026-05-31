@@ -1,6 +1,6 @@
 /**
- * Dashboard settings. claudepilot reads optional knobs from
- * .claude/claudepilot/dashboard.json under the project, with environment
+ * Dashboard settings. slipstream reads optional knobs from
+ * .claude/slipstream/dashboard.json under the project, with environment
  * overrides so a session can be tuned without editing a file. Everything has a
  * sensible default, so the file is optional.
  */
@@ -21,7 +21,7 @@ export const DEFAULT_SETTINGS: DashboardSettings = {
 };
 
 function settingsPath(projectRoot: string): string {
-  return join(resolve(projectRoot), ".claude", "claudepilot", "dashboard.json");
+  return join(resolve(projectRoot), ".claude", "slipstream", "dashboard.json");
 }
 
 /** Read settings, layering env overrides over the file over the defaults. */
@@ -36,11 +36,11 @@ export async function loadSettings(
   }
   const merged: DashboardSettings = { ...DEFAULT_SETTINGS, ...fromFile };
 
-  // CLAUDEPILOT_DASHBOARD=0 disables; CLAUDEPILOT_DASHBOARD_OPEN=0 disables open.
-  if (process.env.CLAUDEPILOT_DASHBOARD === "0") merged.enabled = false;
-  if (process.env.CLAUDEPILOT_DASHBOARD === "1") merged.enabled = true;
-  if (process.env.CLAUDEPILOT_DASHBOARD_OPEN === "0") merged.autoOpen = false;
-  if (process.env.CLAUDEPILOT_DASHBOARD_OPEN === "1") merged.autoOpen = true;
+  // SLIPSTREAM_DASHBOARD=0 disables; SLIPSTREAM_DASHBOARD_OPEN=0 disables open.
+  if (process.env.SLIPSTREAM_DASHBOARD === "0") merged.enabled = false;
+  if (process.env.SLIPSTREAM_DASHBOARD === "1") merged.enabled = true;
+  if (process.env.SLIPSTREAM_DASHBOARD_OPEN === "0") merged.autoOpen = false;
+  if (process.env.SLIPSTREAM_DASHBOARD_OPEN === "1") merged.autoOpen = true;
 
   return merged;
 }

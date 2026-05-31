@@ -1,5 +1,5 @@
 /**
- * The persistent memory model. claudepilot stores durable facts as one file per
+ * The persistent memory model. slipstream stores durable facts as one file per
  * memory under the user's project .claude/ space, each carrying frontmatter so
  * Claude Code can match a memory to the work in front of it without reading
  * every memory file. A single MEMORY.md index lists them all, so a session can

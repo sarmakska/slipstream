@@ -1,6 +1,6 @@
 /**
  * Starting and stopping the dashboard from the outside. The SessionStart hook
- * calls startDashboard; the same function powers `claudepilot dashboard start`.
+ * calls startDashboard; the same function powers `slipstream dashboard start`.
  *
  * Idempotency is the tricky part. Several SessionStart hooks can fire across a
  * working day (startup, resume, a reload), and each must reuse the running

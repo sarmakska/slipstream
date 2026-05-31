@@ -4,7 +4,7 @@ import { mindMapToMermaid } from "./model.js";
 
 /**
  * Render a self contained HTML artifact for the project mind map and stats. The
- * primary claudepilot experience is in chat, but a single file HTML artifact is
+ * primary slipstream experience is in chat, but a single file HTML artifact is
  * handy to open in a browser or attach to a PR. It pulls Mermaid from a CDN and
  * carries the SarmaLinux palette so it matches the brand.
  */
@@ -17,7 +17,7 @@ export function renderArtifact(map: ProjectMap, tree: MindMapNode): string {
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>claudepilot mind map: ${escapeHtml(projectName)}</title>
+<title>slipstream mind map: ${escapeHtml(projectName)}</title>
 <style>
   :root {
     --bg: #06060c; --surface: #0d1117; --sky: #38bdf8; --cyan: #22d3ee;
@@ -45,8 +45,8 @@ export function renderArtifact(map: ProjectMap, tree: MindMapNode): string {
 </head>
 <body>
 <header>
-  <h1><span class="prompt">visitor@sarmalinux</span>:<span class="path">~</span>$ claudepilot mindmap</h1>
-  <div class="tagline">claudepilot by sarmalinux . live project mind map for ${escapeHtml(projectName)}</div>
+  <h1><span class="prompt">visitor@sarmalinux</span>:<span class="path">~</span>$ slipstream mindmap</h1>
+  <div class="tagline">slipstream by sarmalinux . live project mind map for ${escapeHtml(projectName)}</div>
 </header>
 <section class="stats">
   <div class="stat"><b>${map.stats.fileCount}</b><span>files indexed</span></div>
@@ -60,7 +60,7 @@ ${escapeHtml(mermaid)}
   </pre>
 </section>
 <footer>
-  Generated ${escapeHtml(map.generatedAt)} . SarmaLinux . <a href="https://sarmalinux.com">sarmalinux.com</a> . <a href="https://github.com/sarmakska/claudepilot">github.com/sarmakska/claudepilot</a>
+  Generated ${escapeHtml(map.generatedAt)} . SarmaLinux . <a href="https://sarmalinux.com">sarmalinux.com</a> . <a href="https://github.com/sarmakska/slipstream">github.com/sarmakska/slipstream</a>
 </footer>
 <script type="module">
   import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";

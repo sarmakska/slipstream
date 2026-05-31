@@ -1,6 +1,6 @@
 /**
  * The append-only event log. One file per session under
- * .claude/claudepilot/dashboard/<session>.jsonl, one JSON event per line.
+ * .claude/slipstream/dashboard/<session>.jsonl, one JSON event per line.
  *
  * Two properties matter and both come from how we write:
  *
@@ -25,7 +25,7 @@ import { join, resolve } from "node:path";
 import type { DashboardEvent, EventDraft } from "./events.js";
 import { parseEvent } from "./events.js";
 
-export const DASHBOARD_SUBDIR = join(".claude", "claudepilot", "dashboard");
+export const DASHBOARD_SUBDIR = join(".claude", "slipstream", "dashboard");
 
 export function dashboardDir(projectRoot: string): string {
   return join(resolve(projectRoot), DASHBOARD_SUBDIR);

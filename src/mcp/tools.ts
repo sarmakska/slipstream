@@ -1,12 +1,12 @@
 /**
- * The claudepilot tool surface, exposed over MCP so Claude Code works through
+ * The slipstream tool surface, exposed over MCP so Claude Code works through
  * precise calls instead of whole-file reads. Every tool here is a thin wrapper
  * over the same library the CLI uses, so there is one implementation of the map,
  * the slicing and the memory store, and the MCP server is just another caller.
  *
- * The design rule for every tool: return the smallest correct thing. cp_map
- * returns the index with no file contents, cp_symbol returns one declaration not
- * the file, cp_search returns locations not bodies. That discipline is the token
+ * The design rule for every tool: return the smallest correct thing. sp_map
+ * returns the index with no file contents, sp_symbol returns one declaration not
+ * the file, sp_search returns locations not bodies. That discipline is the token
  * win the whole plugin is built around, so it lives in the tool layer where it
  * cannot be bypassed.
  */
@@ -54,10 +54,10 @@ function err(s: string): ToolResult {
   return { content: [{ type: "text", text: s }], isError: true };
 }
 
-/** Every tool the claudepilot MCP server exposes, with its JSON schema. */
+/** Every tool the slipstream MCP server exposes, with its JSON schema. */
 export const TOOL_DESCRIPTORS: ToolDescriptor[] = [
   {
-    name: "cp_map",
+    name: "sp_map",
     description:
       "Use first, instead of reading files, to orient in a project. Returns the compact project map (files, exported symbols, one-line purpose). No file contents.",
     inputSchema: {
@@ -68,7 +68,7 @@ export const TOOL_DESCRIPTORS: ToolDescriptor[] = [
     }
   },
   {
-    name: "cp_symbol",
+    name: "sp_symbol",
     description:
       "Use to read one declaration instead of a whole file. Returns just the source slice of a single exported symbol (function, class, type, const) with its doc comment.",
     inputSchema: {
@@ -82,7 +82,7 @@ export const TOOL_DESCRIPTORS: ToolDescriptor[] = [
     }
   },
   {
-    name: "cp_lines",
+    name: "sp_lines",
     description:
       "Use to read a known line window instead of a whole file. Returns exactly the lines start..end of a file.",
     inputSchema: {
@@ -97,7 +97,7 @@ export const TOOL_DESCRIPTORS: ToolDescriptor[] = [
     }
   },
   {
-    name: "cp_search",
+    name: "sp_search",
     description:
       "Use to find where something lives without reading files. Ranks files by how well their path, symbols and purpose match a query. Returns locations, not contents.",
     inputSchema: {
@@ -111,7 +111,7 @@ export const TOOL_DESCRIPTORS: ToolDescriptor[] = [
     }
   },
   {
-    name: "cp_remember",
+    name: "sp_remember",
     description:
       "Use to persist a durable decision, convention or gotcha so it survives compaction and future sessions. Writes one memory file with frontmatter.",
     inputSchema: {
@@ -127,7 +127,7 @@ export const TOOL_DESCRIPTORS: ToolDescriptor[] = [
     }
   },
   {
-    name: "cp_recall",
+    name: "sp_recall",
     description:
       "Use to pull back relevant durable facts before acting on a prior decision. Ranks the memory store by a query using frontmatter, returns only matching bodies.",
     inputSchema: {
@@ -141,7 +141,7 @@ export const TOOL_DESCRIPTORS: ToolDescriptor[] = [
     }
   },
   {
-    name: "cp_forget",
+    name: "sp_forget",
     description: "Use to delete a stored memory by name and refresh the index.",
     inputSchema: {
       type: "object",
@@ -153,7 +153,7 @@ export const TOOL_DESCRIPTORS: ToolDescriptor[] = [
     }
   },
   {
-    name: "cp_budget",
+    name: "sp_budget",
     description:
       "Use to check the context budget. Returns ok/warn/compact level and an approximate token estimate for a given number of bytes pulled into context.",
     inputSchema: {
@@ -165,7 +165,7 @@ export const TOOL_DESCRIPTORS: ToolDescriptor[] = [
     }
   },
   {
-    name: "cp_mindmap",
+    name: "sp_mindmap",
     description: "Use to see project structure as a themed Mermaid mind map for chat.",
     inputSchema: {
       type: "object",
@@ -195,14 +195,14 @@ export async function callTool(
 ): Promise<ToolResult> {
   try {
     switch (name) {
-      case "cp_map": {
+      case "sp_map": {
         const map = await generateMap(rootOf(args, ctx));
         return text(mapToMarkdown(map));
       }
-      case "cp_symbol": {
+      case "sp_symbol": {
         const file = String(args["file"] ?? "");
         const symbol = String(args["symbol"] ?? "");
-        if (!file || !symbol) return err("cp_symbol needs file and symbol");
+        if (!file || !symbol) return err("sp_symbol needs file and symbol");
         const map = await generateMap(rootOf(args, ctx));
         const slice = await retrieveSymbol(map, file, symbol);
         if (!slice) return err(`no symbol "${symbol}" in ${file}`);
@@ -210,20 +210,20 @@ export async function callTool(
           `// ${slice.path}:${slice.startLine}-${slice.endLine} (${slice.kind})\n${slice.code}`
         );
       }
-      case "cp_lines": {
+      case "sp_lines": {
         const file = String(args["file"] ?? "");
         const start = Number(args["start"]);
         const end = Number(args["end"]);
         if (!file || !Number.isFinite(start) || !Number.isFinite(end)) {
-          return err("cp_lines needs file, start and end");
+          return err("sp_lines needs file, start and end");
         }
         const slice = await retrieveLines(rootOf(args, ctx), file, start, end);
         if (!slice) return err(`could not read ${file}`);
         return text(`// ${slice.path}:${slice.startLine}-${slice.endLine}\n${slice.code}`);
       }
-      case "cp_search": {
+      case "sp_search": {
         const query = String(args["query"] ?? "");
-        if (!query) return err("cp_search needs a query");
+        if (!query) return err("sp_search needs a query");
         const limit = Number(args["limit"]) || 8;
         const map = await generateMap(rootOf(args, ctx));
         const hits = searchMap(map, query, limit);
@@ -233,9 +233,9 @@ export async function callTool(
         );
         return text(lines.join("\n"));
       }
-      case "cp_remember": {
+      case "sp_remember": {
         const fact = String(args["fact"] ?? "");
-        if (!fact) return err("cp_remember needs a fact");
+        if (!fact) return err("sp_remember needs a fact");
         const type = (args["type"] as MemoryType) ?? "decision";
         const tags = Array.isArray(args["tags"])
           ? (args["tags"] as unknown[]).map(String)
@@ -248,9 +248,9 @@ export async function callTool(
         });
         return text(`remembered "${m.name}" (${m.type})`);
       }
-      case "cp_recall": {
+      case "sp_recall": {
         const query = String(args["query"] ?? "");
-        if (!query) return err("cp_recall needs a query");
+        if (!query) return err("sp_recall needs a query");
         const limit = Number(args["limit"]) || 5;
         const hits = recallMemories(await listMemories(rootOf(args, ctx)), query, limit);
         if (hits.length === 0) return text("no matching memories");
@@ -260,13 +260,13 @@ export async function callTool(
             .join("\n\n")
         );
       }
-      case "cp_forget": {
+      case "sp_forget": {
         const memName = String(args["name"] ?? "");
-        if (!memName) return err("cp_forget needs a name");
+        if (!memName) return err("sp_forget needs a name");
         const ok = await pruneMemory(rootOf(args, ctx), memName);
         return text(ok ? `forgot "${memName}"` : `no memory named "${memName}"`);
       }
-      case "cp_budget": {
+      case "sp_budget": {
         const bytesRead = Number(args["bytesRead"]) || 0;
         const windowTokens = args["windowTokens"] ? Number(args["windowTokens"]) : undefined;
         const report = budget({ bytesRead, windowTokens });
@@ -275,7 +275,7 @@ export async function callTool(
             `window=${report.windowTokens} used=${(report.usedFraction * 100).toFixed(0)}%\n${report.advice}`
         );
       }
-      case "cp_mindmap": {
+      case "sp_mindmap": {
         const map = await generateMap(rootOf(args, ctx));
         return text("```mermaid\n" + mindMapToMermaid(buildMindMap(map)) + "\n```");
       }

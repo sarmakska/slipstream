@@ -1,5 +1,5 @@
 /**
- * Context budgeting. claudepilot cannot read Claude Code's real token counter,
+ * Context budgeting. slipstream cannot read Claude Code's real token counter,
  * so it works from an honest estimate: it counts the bytes an agent has pulled
  * into context (file reads, slices, command output) and converts them to an
  * approximate token figure, then reports headroom against a configurable
@@ -13,7 +13,7 @@ export const BYTES_PER_TOKEN = 3.6;
 /** Default model context window in tokens. Override per model as needed. */
 export const DEFAULT_WINDOW_TOKENS = 200_000;
 
-/** The share of the window claudepilot treats as comfortably usable. */
+/** The share of the window slipstream treats as comfortably usable. */
 export const COMFORT_FRACTION = 0.6;
 
 export interface BudgetInput {

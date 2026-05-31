@@ -65,7 +65,7 @@ export function buildMindMap(map: ProjectMap): MindMapNode {
 
 /**
  * Render a mind map tree as a Mermaid flowchart, themed with the SarmaLinux
- * palette. This is what the in chat /claudepilot:mindmap command prints, so the
+ * palette. This is what the in chat /slipstream:mindmap command prints, so the
  * user sees the project structure inside Claude Code without a separate
  * dashboard. The tree is collapsed to directories and files to keep the diagram
  * legible; symbol leaves are dropped to keep it readable in chat.

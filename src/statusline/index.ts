@@ -1,7 +1,7 @@
 /**
  * The statusline. Claude Code calls a statusline command on each render and
  * pipes a small JSON object on stdin describing the session; the command prints
- * one line that Claude Code shows in the status bar. claudepilot uses that line
+ * one line that Claude Code shows in the status bar. slipstream uses that line
  * to keep the three things a token-disciplined session cares about always in
  * view: how full the context budget is, how many durable memories the project
  * has, and which skill or output style is active.
@@ -12,7 +12,7 @@
 
 import { budget, type BudgetReport } from "../context/budget.js";
 
-/** The subset of the Claude Code statusline payload claudepilot reads. */
+/** The subset of the Claude Code statusline payload slipstream reads. */
 export interface StatuslineInput {
   /** Approximate bytes pulled into context this session, if known. */
   bytesRead?: number;

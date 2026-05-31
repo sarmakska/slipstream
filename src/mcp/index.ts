@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Entry point for the bundled claudepilot MCP server. Claude Code spawns this
+ * Entry point for the bundled slipstream MCP server. Claude Code spawns this
  * over stdio (see the mcpServers block in .claude-plugin/plugin.json). The
  * project root is the directory Claude Code launches it in, which is the user's
  * project, so the default root is the process cwd.
@@ -18,7 +18,7 @@ const invokedDirectly =
 
 if (invokedDirectly) {
   runStdioServer({ defaultRoot: process.cwd() }).catch((error) => {
-    process.stderr.write(`claudepilot mcp server crashed: ${String(error)}\n`);
+    process.stderr.write(`slipstream mcp server crashed: ${String(error)}\n`);
     process.exit(1);
   });
 }

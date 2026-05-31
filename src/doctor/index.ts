@@ -1,5 +1,5 @@
 /**
- * /claudepilot:doctor. A new user installs the plugin and wants one answer: is
+ * /slipstream:doctor. A new user installs the plugin and wants one answer: is
  * it actually working? Doctor checks the install end to end and prints a plain
  * pass/fail line per check, so the answer is unambiguous. It is deliberately
  * read-only: it never writes, starts a server or mutates state, so running it is
@@ -61,11 +61,11 @@ export async function runDoctor(
     const manifest = (await readJson(manifestPath)) as {
       mcpServers?: Record<string, unknown>;
     };
-    mcpDeclared = Boolean(manifest.mcpServers && manifest.mcpServers["claudepilot"]);
+    mcpDeclared = Boolean(manifest.mcpServers && manifest.mcpServers["slipstream"]);
   } catch {
     mcpDeclared = false;
   }
-  add("mcp-declared", mcpDeclared, "plugin.json mcpServers.claudepilot");
+  add("mcp-declared", mcpDeclared, "plugin.json mcpServers.slipstream");
 
   // 3. Hooks are wired, including the lossless-compaction PreCompact hook.
   const hooksPath = join(pluginRoot, "hooks", "hooks.json");
@@ -85,14 +85,14 @@ export async function runDoctor(
   add("precompact-hook", preCompact, "PreCompact hook for lossless compaction");
 
   // 4. The memory directory is present (or absent but creatable).
-  const memDir = join(projectRoot, ".claude", "claudepilot", "memory");
+  const memDir = join(projectRoot, ".claude", "slipstream", "memory");
   add("memory-dir", await exists(memDir), `${memDir} (created on first remember)`);
   // This check is informational; absence is fine on a fresh project, so do not
   // fail the whole report just for an empty store.
   const memCheck = checks[checks.length - 1];
   if (memCheck && !memCheck.pass) {
     memCheck.pass = true;
-    memCheck.detail = `no memory yet at ${memDir}; will be created on first /claudepilot:remember`;
+    memCheck.detail = `no memory yet at ${memDir}; will be created on first /slipstream:remember`;
   }
 
   // 5. The map can be refreshed (the helper CLI is built).
@@ -100,15 +100,15 @@ export async function runDoctor(
   add("cli-build", await exists(cliEntry), cliEntry);
 
   // 6. The statusline script is present.
-  const statusline = join(pluginRoot, "statusline", "claudepilot-statusline.mjs");
+  const statusline = join(pluginRoot, "statusline", "slipstream-statusline.mjs");
   add("statusline", await exists(statusline), statusline);
 
   // 7. The output style is present.
-  const outputStyle = join(pluginRoot, "output-styles", "claudepilot.md");
+  const outputStyle = join(pluginRoot, "output-styles", "slipstream.md");
   add("output-style", await exists(outputStyle), outputStyle);
 
   // 8. The subagents are present.
-  const agents = ["cp-shipper", "cp-schema", "cp-reviewer"];
+  const agents = ["sp-shipper", "sp-schema", "sp-reviewer"];
   let agentsOk = true;
   for (const a of agents) {
     if (!(await exists(join(pluginRoot, "agents", `${a}.md`)))) agentsOk = false;
@@ -129,12 +129,12 @@ export async function runDoctor(
 /** Render the report as a pass/fail block for the slash command output. */
 export function renderDoctor(report: DoctorReport): string {
   const lines: string[] = [];
-  lines.push("# claudepilot doctor");
+  lines.push("# slipstream doctor");
   lines.push("");
   for (const c of report.checks) {
     lines.push(`${c.pass ? "PASS" : "FAIL"}  ${c.id}: ${c.detail}`);
   }
   lines.push("");
-  lines.push(report.ok ? "All checks passed. claudepilot is wired correctly." : "Some checks failed. See the lines marked FAIL above.");
+  lines.push(report.ok ? "All checks passed. slipstream is wired correctly." : "Some checks failed. See the lines marked FAIL above.");
   return lines.join("\n");
 }

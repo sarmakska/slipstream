@@ -24,7 +24,7 @@ export function resolveSkillsDir(override?: string): string {
 
 /**
  * Resolve the plugin root, the directory that holds .claude-plugin, commands and
- * hooks. claudepilot keeps the plugin at the package root so a single tree is
+ * hooks. slipstream keeps the plugin at the package root so a single tree is
  * both the npm helper and the Claude Code plugin.
  */
 export function resolvePluginRoot(override?: string): string {

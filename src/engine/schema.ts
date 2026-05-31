@@ -1,8 +1,8 @@
 import { z } from "zod";
 
 /**
- * The categories a claudepilot skill can belong to. These map onto the
- * integration surfaces claudepilot targets, plus the cross cutting concerns
+ * The categories a slipstream skill can belong to. These map onto the
+ * integration surfaces slipstream targets, plus the cross cutting concerns
  * every production site needs.
  */
 export const SKILL_CATEGORIES = [
@@ -25,7 +25,7 @@ export type SkillCategory = (typeof SKILL_CATEGORIES)[number];
 
 /**
  * The verification gate. Every shipping skill MUST declare how to prove the
- * step worked. A skill without an honest check is not a skill claudepilot will
+ * step worked. A skill without an honest check is not a skill slipstream will
  * trust to continue a flow, because the agent relies on this gate to decide
  * whether it is safe to move on to the next step.
  */
@@ -54,13 +54,13 @@ export const skillVerificationSchema = z.object({
 export type SkillVerification = z.infer<typeof skillVerificationSchema>;
 
 /**
- * The claudepilot extension block carried in SKILL.md frontmatter under the
- * `claudepilot` key. It holds the category, the verification gate and the
+ * The slipstream extension block carried in SKILL.md frontmatter under the
+ * `slipstream` key. It holds the category, the verification gate and the
  * dependency list. Keeping it under a namespaced key means the rest of the
  * frontmatter stays a valid Claude Code agent skill: a host that only knows
  * `name` and `description` simply ignores the extra block.
  */
-export const claudepilotMetaSchema = z.object({
+export const slipstreamMetaSchema = z.object({
   category: z.enum(SKILL_CATEGORIES),
   /** Other skill names that should run before this one. */
   requires: z.array(z.string()).default([]),
@@ -73,12 +73,12 @@ export const claudepilotMetaSchema = z.object({
   tags: z.array(z.string()).default([])
 });
 
-export type ClaudepilotMeta = z.infer<typeof claudepilotMetaSchema>;
+export type SlipstreamMeta = z.infer<typeof slipstreamMetaSchema>;
 
 /**
  * The Claude Code SKILL.md frontmatter contract. `name` and `description` are
  * the fields Claude Code itself reads to decide when to invoke a skill;
- * `description` is the relevance text. The `claudepilot` block is the
+ * `description` is the relevance text. The `slipstream` block is the
  * namespaced extension this plugin layers on top.
  */
 export const skillFrontmatterSchema = z.object({
@@ -93,13 +93,13 @@ export const skillFrontmatterSchema = z.object({
   description: z.string().min(1).max(1024),
   /** Optional list of tools the skill is allowed to use, Claude Code spec. */
   "allowed-tools": z.array(z.string()).optional(),
-  claudepilot: claudepilotMetaSchema
+  slipstream: slipstreamMetaSchema
 });
 
 export type SkillFrontmatter = z.infer<typeof skillFrontmatterSchema>;
 
 /**
- * A fully loaded skill: validated frontmatter, flattened claudepilot metadata
+ * A fully loaded skill: validated frontmatter, flattened slipstream metadata
  * and the Markdown body that carries the runnable instructions for the agent.
  */
 export interface Skill {

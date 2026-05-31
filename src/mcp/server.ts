@@ -1,6 +1,6 @@
 /**
  * A minimal MCP server over JSON-RPC 2.0, framed by newline-delimited JSON on
- * stdio. claudepilot ships this rather than pulling in the full MCP SDK for one
+ * stdio. slipstream ships this rather than pulling in the full MCP SDK for one
  * reason: a plugin that bundles a server should add as little to a user's
  * install as possible, and the slice of the protocol Claude Code drives is
  * small and stable (initialize, tools/list, tools/call). Implementing it
@@ -15,7 +15,7 @@
 import { callTool, TOOL_DESCRIPTORS, type ToolContext } from "./tools.js";
 
 export const PROTOCOL_VERSION = "2024-11-05";
-export const SERVER_NAME = "claudepilot";
+export const SERVER_NAME = "slipstream";
 export const SERVER_VERSION = "0.2.0";
 
 export interface JsonRpcRequest {
@@ -50,7 +50,7 @@ function fail(
 /**
  * Handle one JSON-RPC request and produce a response, or null for a
  * notification (a request with no id, which must not be answered). This is the
- * whole protocol surface claudepilot implements.
+ * whole protocol surface slipstream implements.
  */
 export async function handleRequest(
   req: JsonRpcRequest,
