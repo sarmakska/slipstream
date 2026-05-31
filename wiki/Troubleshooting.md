@@ -23,6 +23,30 @@ The plugin's hooks and helper run on Node. Install Node 20 or newer and restart 
 ### A hook prints nothing
 That is expected for the silent paths: no memory yet (SessionStart and UserPromptSubmit stay quiet), a small file read (PreToolUse does not warn), or a stop that did not draw the probabilistic reminder.
 
+## MCP tools
+
+### The cp_ tools are not available
+The bundled MCP server needs `dist/mcp/index.js` to exist. In a dev checkout, run `pnpm build`. `/claudepilot:doctor` flags this as `mcp-build` and `mcp-declared`. If the tools still do not appear, confirm the plugin installed and restart the session so Claude Code spawns the server.
+
+### cp_symbol returns "no symbol X in file"
+The map only indexes the exported surface, so a non-exported symbol is not found. Use `cp_map` to see the exports, or `cp_lines` for a non-exported region.
+
+## Lossless compaction and recall
+
+### No digest was written on compaction
+The `PreCompact` hook imports the compiled memory module; in a dev checkout, `pnpm build` first. `/claudepilot:doctor` flags `precompact-hook`. With no recorded session activity there may be nothing to digest, which is fine.
+
+### A relevant memory was not reloaded
+Recall ranks lexically against the branch, changed files and tags. Add a tag that names the concept; tags score highest after the branch. See [Memory recall](Memory-Recall).
+
+## Doctor and statusline
+
+### /claudepilot:doctor reports a FAIL
+Read the failing line. A missing `dist/` means the plugin was not built (`pnpm build`); a missing PreCompact line means the hooks file is stale; a missing subagent means `agents/` did not ship. Fix the named item and run it again.
+
+### The statusline shows only "cp | ctx 0% ok"
+The script degraded because `dist/` is missing or the budget payload had no token data. Build the plugin; the budget is an estimate either way. See [Statusline](Statusline).
+
 ## Token efficiency
 
 ### Claude still reads whole files

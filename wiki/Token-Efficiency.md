@@ -1,6 +1,30 @@
 # Token efficiency
 
-The fastest way to run a Claude Code session into the ground is to read whole files until the context window is full. claudepilot is built so you rarely hit that wall. This is honest guidance backed by hooks and a budget estimate, not a literal guarantee.
+The fastest way to run a Claude Code session into the ground is to read whole files until the context window is full. claudepilot is built so you rarely hit that wall. This is honest guidance backed by the MCP tools, hooks and a budget estimate, not a literal guarantee.
+
+## The worked before/after numbers
+
+These are real, measured on this machine (Apple Silicon, Node 25) by running the helper on this repository. The token figures use claudepilot's own conservative 3.6 bytes-per-token estimate (`src/context/budget.ts`).
+
+A task that needs the body of `retrieveSymbol` in `src/map/retrieve.ts`:
+
+```
+$ wc -c src/map/retrieve.ts
+    4841 src/map/retrieve.ts                                   # whole file
+$ node dist/cli/index.js slice . src/map/retrieve.ts retrieveSymbol | wc -c
+    1381                                                       # cp_symbol slice
+```
+
+| Approach | Bytes into context | Approx tokens | Saving |
+|---|---|---|---|
+| Whole-file `Read` of `retrieve.ts` | 4,841 | ~1,345 | baseline |
+| `cp_symbol(retrieve.ts, retrieveSymbol)` | 1,381 | ~384 | **71% fewer** |
+
+The gap widens with file size. Orienting in the whole `src/` tree by reading every file is about 40,597 tokens (146,150 bytes). Reading the `cp_map` index instead is about 2,173 tokens (7,821 bytes), **5.4% of reading everything**. So the first move of every session, orienting in the codebase, costs roughly one twentieth of what reading the files would.
+
+## The MCP tools are the front door
+
+The bundled MCP server (`src/mcp`) exposes the map and scoped retrieval as tools Claude calls directly: `cp_map`, `cp_symbol`, `cp_lines`, `cp_search`. A single `cp_symbol` call replaces a whole-file `Read`. See [MCP tools](MCP-Tools) for the full surface and the discipline that keeps each result minimal.
 
 ## The project map
 

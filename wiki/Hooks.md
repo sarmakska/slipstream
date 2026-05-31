@@ -1,6 +1,6 @@
 # Hooks
 
-claudepilot wires six Claude Code hooks in `hooks/hooks.json`. They are what make the memory and token discipline automatic, and what feed the [live agent dashboard](Live-Agent-Dashboard). Each hook is a dependency-free Node script that prints JSON on stdout and never throws, because a hook that crashes would block the session. Every hook also appends one structured event to the dashboard log via the shared `hooks/emit.mjs` helper; emission is fire-and-forget and detached, so recording can never block the agent.
+claudepilot wires seven Claude Code hooks in `hooks/hooks.json`. They are what make the memory and token discipline automatic, and what feed the [live agent dashboard](Live-Agent-Dashboard). Each hook is a dependency-free Node script that prints JSON on stdout and never throws, because a hook that crashes would block the session. Every hook also appends one structured event to the dashboard log via the shared `hooks/emit.mjs` helper; emission is fire-and-forget and detached, so recording can never block the agent.
 
 ## hooks.json
 
@@ -12,7 +12,8 @@ claudepilot wires six Claude Code hooks in `hooks/hooks.json`. They are what mak
     "PreToolUse": [{ "matcher": "Read", "hooks": [{ "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/pre-tool-use.mjs\"" }] }],
     "PostToolUse": [{ "hooks": [{ "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/post-tool-use.mjs\"" }] }],
     "SubagentStop": [{ "hooks": [{ "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/subagent-stop.mjs\"" }] }],
-    "Stop": [{ "hooks": [{ "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/stop.mjs\"" }] }]
+    "Stop": [{ "hooks": [{ "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/stop.mjs\"" }] }],
+    "PreCompact": [{ "hooks": [{ "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/pre-compact.mjs\"" }] }]
   }
 }
 ```
@@ -21,7 +22,7 @@ claudepilot wires six Claude Code hooks in `hooks/hooks.json`. They are what mak
 
 ## SessionStart: boot the dashboard, load memory, nudge the map
 
-`hooks/session-start.mjs` first boots the live dashboard (idempotently) and prints its `127.0.0.1` URL into the chat, then reads `.claude/claudepilot/memory/MEMORY.md` and injects it as `additionalContext`, so Claude opens the session with the project's durable facts loaded. It also reminds Claude to read the project map before whole files, and records a `session-start` event. If there is no memory yet, it suggests saving one. It matches both `startup` and `resume`.
+`hooks/session-start.mjs` first boots the live dashboard (idempotently) and prints its `127.0.0.1` URL into the chat. It then reloads the most recent compaction digest for this session (see [Lossless compaction](Lossless-Compaction)), runs signal-ranked recall over the rest of the store (branch, changed files, last prompt; see [Memory recall](Memory-Recall)), and injects the digest, the relevant subset and the `MEMORY.md` index as `additionalContext`, so Claude opens the session with the right durable facts loaded rather than the whole store. It also reminds Claude to read the project map before whole files, and records a `session-start` event. It matches both `startup` and `resume`.
 
 Output shape:
 
@@ -48,6 +49,10 @@ Output shape:
 ## Stop: persist durable facts
 
 `hooks/stop.mjs` fires when Claude finishes responding. Roughly one stop in three, it injects a reminder to save any durable decision, convention or gotcha with `/claudepilot:remember`. It is intentionally light and probabilistic so it does not loop or become noise; the agent decides whether anything is worth keeping.
+
+## PreCompact: lossless compaction
+
+`hooks/pre-compact.mjs` fires just before Claude Code compacts the conversation. It reconstructs the session from the dashboard event log, builds a structured digest (open task, decisions, files touched, next step), writes it to the memory store as a durable fact, and emits a dashboard event. On the next session start the digest is reloaded first. The hook never throws, so it cannot interfere with compaction. Claude Code passes a `trigger` field (`manual` for `/compact`, `auto` when the window fills) and optional `custom_instructions`, which become the open-task hint. See [Lossless compaction](Lossless-Compaction) for the full walkthrough.
 
 ## Testing a hook by hand
 

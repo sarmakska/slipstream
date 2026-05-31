@@ -1,54 +1,77 @@
 # claudepilot by sarmalinux
 
-claudepilot is a Claude Code plugin. You install it into Claude Code in VS Code and it keeps Claude working for hours without exhausting context or wasting tokens, gives it a persistent memory that survives compaction, ships a guardrailed skill library for production sites on Cloudflare, Supabase, Vercel and Resend, and stands up a live local dashboard so you can watch the agents work.
+claudepilot is a Claude Code plugin. You install it into Claude Code in VS Code and it makes Claude work through precise tools instead of whole-file reads, keeps context alive across compaction, ships a guardrailed skill library for production sites on Cloudflare, Supabase, Vercel and Resend, and stands up a live local dashboard so you can watch the agents work.
 
-It is not a CLI you run as a product. There is a small helper binary the plugin calls from its hooks and slash commands, but you never invoke it directly.
+It is not a CLI you run as a product. There is a small helper binary the plugin calls from its hooks, its slash commands and a bundled MCP server, but you never invoke it directly.
 
-## Thirty-second tour
+## What you feel on day one
+
+1. **Claude works through precise tools.** A bundled MCP server exposes `cp_map`, `cp_symbol`, `cp_lines` and `cp_search`, so Claude pulls one declaration instead of opening the whole file. See [MCP tools](MCP-Tools) and [Token efficiency](Token-Efficiency).
+2. **Context survives compaction.** A `PreCompact` hook writes a structured digest before Claude Code trims the conversation; the next session reloads it. See [Lossless compaction](Lossless-Compaction).
+3. **You watch the agents in a dashboard.** Session start boots a `127.0.0.1` server and prints the URL into chat. See [Live agent dashboard](Live-Agent-Dashboard).
+4. **You see the budget in the statusline.** `cp | ctx 12% ok | mem 4 | skill scoped-read`. See [Statusline](Statusline).
+
+## System diagram
 
 ```mermaid
 %%{init: {'theme':'base','themeVariables':{'primaryColor':'#0d1117','primaryTextColor':'#f5f7fa','primaryBorderColor':'#38bdf8','lineColor':'#22d3ee','fontFamily':'monospace'}}}%%
-flowchart LR
-  CC[Claude Code in VS Code] --> Hooks[Hooks]
-  CC --> Cmds[Slash commands]
+flowchart TD
+  subgraph CC[Claude Code in VS Code]
+    Hooks[Hooks incl. PreCompact]
+    Cmds[Slash commands]
+    Skills[59 agent skills]
+    Agents[Subagents]
+    SL[Statusline]
+  end
+  CC --> MCP[Bundled MCP server cp_*]
   Hooks --> Helper[claudepilot helper]
   Cmds --> Helper
-  Helper --> Map[Project map]
-  Helper --> Mem[Persistent memory]
-  Helper --> Budget[Token budget]
+  Agents --> MCP
+  MCP --> Map[Project map]
+  Helper --> Map
+  MCP --> Mem[Persistent memory]
+  Helper --> Mem
+  Hooks -->|PreCompact| Digest[Session digest]
+  Digest --> Mem
   Hooks --> Log[(Event log)]
-  Log --> Server[Local SSE server]
+  Log --> Server[Local SSE server 127.0.0.1]
   Server --> UI[Live dashboard]
-  Map --> Tokens[Fewer tokens per read]
-  Mem --> Survive[Survives compaction]
+  SL --> Budget[Context budget]
+  Map -->|read index, pull one slice| Tokens[Fewer tokens per read]
+  Mem -->|reloaded at session start| Survive[Context survives compaction]
 ```
-
-When a session starts, the dashboard boots on `127.0.0.1`, the memory index loads, and Claude is nudged to read the compact map before whole files. As it works, hooks append events to a log the dashboard tails live; durable facts go to memory; every shipping skill ends in a verification gate.
-
-## The five pillars
-
-1. **Token efficiency.** A compact project map, scoped retrieval by symbol or line range, hooks that nudge scoped reads, and a conservative budget estimate.
-2. **Persistent memory.** One fact per file with frontmatter, a regenerated `MEMORY.md` index, loaded at session start so knowledge survives across sessions.
-3. **Guardrailed skill library.** 59 agent skills; each shipping skill carries a verification gate.
-4. **Mind map and status in the chat.** A themed Mermaid map and a status panel with the plan, budget and memory count.
-5. **Live agent dashboard.** An auto-launching, local-only observability server: agents, activity, token budget, plan and mind map, streamed live with replay.
 
 ## Navigation
 
 | Page | What it covers |
 |---|---|
-| [Install in VS Code](Install-in-VS-Code) | Marketplace add, install, first run |
-| [Architecture](Architecture) | Repo shape, modules, design decisions and rejected trade-offs |
-| [Live agent dashboard](Live-Agent-Dashboard) | The headline feature: hooks, event log, server, UI, replay |
-| [Token efficiency](Token-Efficiency) | Map, scoped reads, the budget estimate |
-| [Memory system](Memory-System) | The file-based store and recall |
+| [Install in VS Code](Install-in-VS-Code) | Marketplace add, install, first run, doctor |
+| [MCP tools](MCP-Tools) | The bundled server and every `cp_` tool |
+| [Lossless compaction](Lossless-Compaction) | The PreCompact digest and the reload |
+| [Memory recall](Memory-Recall) | Signal-ranked relevant recall, not load-everything |
+| [Live agent dashboard](Live-Agent-Dashboard) | Hooks, event log, server, UI, replay |
+| [Statusline](Statusline) | The status bar line and how to enable it |
+| [Output style](Output-Style) | The terse, token-lean style |
+| [Subagents](Subagents) | cp-shipper, cp-schema, cp-reviewer |
+| [Token efficiency](Token-Efficiency) | The worked before/after numbers |
+| [Architecture](Architecture) | Repo shape, modules, the data path |
+| [Memory system](Memory-System) | The file-based store and the index |
 | [Skill engine](Skill-Engine) | The skill contract and loader |
 | [Skill catalogue](Skill-Catalogue) | The 59 skills by category |
-| [Writing a skill](Writing-a-Skill) | Author a new skill that passes validation |
+| [Writing a skill](Writing-a-Skill) | Author a skill that passes validation |
 | [Hooks](Hooks) | Every wired hook and what it emits |
-| [Mind map and status](Mind-Map-and-Status) | The in-chat diagram and status panel |
+| [Configuration and tuning](Configuration-and-Tuning) | Every knob and env var |
+| [Data formats](Data-Formats) | Map JSON, memory frontmatter, the event log |
+| [Performance and benchmarks](Performance-and-Benchmarks) | Real numbers from this machine |
+| [Design decisions](Design-Decisions) | Choices made and alternatives rejected |
+| [Security model](Security-Model) | Local-only, redaction, what to trust |
+| [Testing strategy](Testing-Strategy) | What the 88 tests cover and why |
+| [Examples and recipes](Examples-and-Recipes) | Copy-paste flows |
+| [Comparisons](Comparisons) | Versus the obvious alternatives |
 | [Integrations](Integrations) | Cloudflare, Supabase, Vercel, Resend |
-| [Troubleshooting](Troubleshooting) | Concrete symptoms and fixes |
+| [Contributing](Contributing) | Build, test, write an extension |
+| [FAQ](FAQ) | Common questions |
+| [Troubleshooting](Troubleshooting) | Symptoms and fixes |
 | [Roadmap and limitations](Roadmap-and-Limitations) | What I will and will not add |
 
 ---

@@ -56,7 +56,11 @@ npx claudepilot memory index --root .
 
 - Recall returns nothing. The query shares no terms with any memory's description or tags. Rephrase, or list everything with `memory list`.
 - Two memories say contradictory things. Prune or update the stale one. Keeping memory clean is part of the discipline.
-- The index looks out of date. Run `npx claudepilot memory index --root .` to regenerate it from the files.
+- The index looks out of date. Run `node dist/cli/index.js memory index --root .` to regenerate it from the files.
+
+## How recall and compaction build on the store
+
+Two features sit on top of this store. [Memory recall](Memory-Recall) (`src/memory/recall.ts`) ranks memories against a task signal and reloads only the relevant subset at session start, never the whole store. [Lossless compaction](Lossless-Compaction) (`src/memory/digest.ts`) writes a structured session digest to the store before Claude Code compacts, and the next session reloads it first.
 
 ---
 SarmaLinux . sarmalinux.com . [Repository](https://github.com/sarmakska/claudepilot)
