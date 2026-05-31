@@ -8,8 +8,18 @@
 
 import { stat } from "node:fs/promises";
 import { join } from "node:path";
+import { readPayload, sessionId, emit } from "./emit.mjs";
 
 const cwd = process.cwd();
+
+const payload = await readPayload();
+const session = sessionId(payload);
+const prompt = typeof payload.prompt === "string" ? payload.prompt : "";
+emit({
+  session,
+  kind: "user-prompt",
+  label: prompt ? prompt.slice(0, 200) : "user prompt"
+});
 
 async function fileExists(path) {
   try {

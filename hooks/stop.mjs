@@ -7,6 +7,12 @@
 // in the transcript via additionalContext, and it only fires occasionally so it
 // is not noisy. The agent decides what, if anything, is worth a memory.
 
+import { readPayload, sessionId, emit } from "./emit.mjs";
+
+const payload = await readPayload();
+const session = sessionId(payload);
+emit({ session, kind: "stop", label: "turn finished" });
+
 const output = {
   hookSpecificOutput: {
     hookEventName: "Stop",

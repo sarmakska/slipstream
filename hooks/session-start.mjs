@@ -1,18 +1,23 @@
 #!/usr/bin/env node
 // claudepilot SessionStart hook.
 //
-// It opens every session token-efficient and memory-aware. It loads the project
-// memory index (the MEMORY.md the memory store maintains) so durable facts
-// survive across sessions without re-reading the codebase, and it nudges Claude
-// Code to read the compact project map before opening whole files.
+// It opens every session token-efficient, memory-aware and observable. It:
+//  1. starts the live agent dashboard if it is not already running (idempotent),
+//     binding 127.0.0.1 on a free port, and prints the localhost url in chat;
+//  2. records a session-start event so the dashboard has something to show;
+//  3. loads the project memory index so durable facts survive across sessions;
+//  4. nudges Claude Code to read the compact project map before whole files.
 //
 // Output is the additionalContext field of a hookSpecificOutput object, which
 // Claude Code injects into the session. The script never throws: a hook that
 // crashes would block the session, so every failure path degrades to a hint.
 
 import { readFile, stat } from "node:fs/promises";
-import { join } from "node:path";
+import { join, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
+import { readPayload, sessionId, emit } from "./emit.mjs";
 
+const here = dirname(fileURLToPath(import.meta.url));
 const cwd = process.cwd();
 
 async function readIfExists(path) {
@@ -24,8 +29,39 @@ async function readIfExists(path) {
   }
 }
 
+const payload = await readPayload();
+const session = sessionId(payload);
+
+// Boot the dashboard. We import the compiled launcher directly so we can read
+// back the chosen url; if dist is not built yet (dev checkout) this is skipped.
+let dashboardLine = null;
+try {
+  const launch = await import(join(here, "..", "dist", "dashboard", "index.js"));
+  const settings = await launch.loadSettings(cwd);
+  if (settings.enabled) {
+    const result = await launch.startDashboard({
+      projectRoot: cwd,
+      session,
+      detached: true
+    });
+    if (settings.autoOpen && result.started) launch.openInBrowser(result.url);
+    dashboardLine =
+      `Live agent dashboard: ${result.url} ` +
+      (result.started ? "(just started)" : "(already running)") +
+      ". It streams this session locally; nothing leaves the machine.";
+  }
+} catch {
+  // No dashboard available in this checkout; carry on.
+}
+
+emit({ session, kind: "session-start", label: "session started" });
+
 const lines = [];
 lines.push("claudepilot is active in this project.");
+if (dashboardLine) {
+  lines.push("");
+  lines.push(dashboardLine);
+}
 lines.push("");
 lines.push("Token discipline: prefer the project map over whole files.");
 lines.push(

@@ -9,25 +9,24 @@
 // LARGE_FILE_BYTES in src/context/budget.ts.
 
 import { stat } from "node:fs/promises";
+import { readPayload, sessionId, emit } from "./emit.mjs";
 
 const LARGE_FILE_BYTES = 16000;
 const BYTES_PER_TOKEN = 3.6;
 
-async function readStdin() {
-  let data = "";
-  for await (const chunk of process.stdin) data += chunk;
-  return data;
-}
-
 async function main() {
-  let payload;
-  try {
-    payload = JSON.parse((await readStdin()) || "{}");
-  } catch {
-    process.exit(0);
-  }
+  const payload = await readPayload();
+  const session = sessionId(payload);
+  const toolName = payload.tool_name ?? "Read";
 
   const input = payload.tool_input ?? {};
+  const targetLabel = input.file_path ?? input.path ?? "";
+  emit({
+    session,
+    kind: "pre-tool",
+    label: `${toolName} ${targetLabel}`.trim()
+  });
+
   const filePath = input.file_path ?? input.path;
   if (!filePath) process.exit(0);
 
