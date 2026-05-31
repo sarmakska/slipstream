@@ -1,8 +1,8 @@
 ---
-description: Verify the whole claudepilot install end to end and print a pass/fail report.
+description: Verify the whole slipstream install end to end and print a pass/fail report.
 ---
 
-Run claudepilot's self-check so you know the plugin is wired correctly: the MCP
+Run slipstream's self-check so you know the plugin is wired correctly: the MCP
 server is built and declared, every hook (including the PreCompact
 lossless-compaction hook) is wired, the memory store is reachable, the helper
 CLI is built, and the statusline, output style and subagents are present.
@@ -18,5 +18,5 @@ CLI is built, and the statusline, output style and subagents are present.
 
 ## Verify
 
-The final line reads "All checks passed. claudepilot is wired correctly." If it
+The final line reads "All checks passed. slipstream is wired correctly." If it
 does not, address each FAIL line and run the command again.

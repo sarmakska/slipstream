@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// claudepilot SubagentStop hook.
+// slipstream SubagentStop hook.
 //
 // Claude Code fires this when a Task subagent finishes. We record it against the
 // subagent's own id so its activity groups separately in the dashboard and its

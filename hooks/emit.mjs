@@ -1,4 +1,4 @@
-// Shared helper for the claudepilot dashboard hooks.
+// Shared helper for the slipstream dashboard hooks.
 //
 // Each lifecycle hook reads its JSON payload from stdin, derives a session id
 // and a short redacted label, and appends one event to the project event log by

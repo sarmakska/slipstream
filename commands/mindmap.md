@@ -6,9 +6,9 @@ Show the project structure as a live mind map inside Claude Code, so you and the
 
 ## Steps
 
-1. Run `npx claudepilot mindmap .` to print a Mermaid flowchart of the project, themed with the SarmaLinux palette.
+1. Run `npx slipstream mindmap .` to print a Mermaid flowchart of the project, themed with the SarmaLinux palette.
 2. Render the Mermaid block in your reply so the user sees the diagram in chat.
-3. To produce a shareable file, run `npx claudepilot mindmap . --html .claude/claudepilot/mindmap.html`, which writes a self-contained HTML artifact the user can open in a browser.
+3. To produce a shareable file, run `npx slipstream mindmap . --html .claude/slipstream/mindmap.html`, which writes a self-contained HTML artifact the user can open in a browser.
 
 ## Verify
 

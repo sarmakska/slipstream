@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// claudepilot UserPromptSubmit hook.
+// slipstream UserPromptSubmit hook.
 //
 // On each new user prompt it reminds Claude Code to retrieve scoped context: to
 // recall relevant memories and to read the project map before opening files.
@@ -31,16 +31,16 @@ async function fileExists(path) {
 }
 
 const hasMap = await fileExists(
-  join(cwd, ".claude", "claudepilot", "map.md")
+  join(cwd, ".claude", "slipstream", "map.md")
 );
 const hasMemory = await fileExists(
-  join(cwd, ".claude", "claudepilot", "memory", "MEMORY.md")
+  join(cwd, ".claude", "slipstream", "memory", "MEMORY.md")
 );
 
 const hints = [];
 if (hasMemory) {
   hints.push(
-    "Before answering, recall relevant durable facts with /claudepilot:recall " +
+    "Before answering, recall relevant durable facts with /slipstream:recall " +
       "if this touches a prior decision."
   );
 }
@@ -57,7 +57,7 @@ if (hints.length === 0) {
 const output = {
   hookSpecificOutput: {
     hookEventName: "UserPromptSubmit",
-    additionalContext: "claudepilot reminder: " + hints.join(" ")
+    additionalContext: "slipstream reminder: " + hints.join(" ")
   }
 };
 

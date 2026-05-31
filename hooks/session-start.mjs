@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// claudepilot SessionStart hook.
+// slipstream SessionStart hook.
 //
 // It opens every session token-efficient, memory-aware and observable. It:
 //  1. starts the live agent dashboard if it is not already running (idempotent),
@@ -85,7 +85,7 @@ try {
 emit({ session, kind: "session-start", label: "session started" });
 
 const lines = [];
-lines.push("claudepilot is active in this project.");
+lines.push("slipstream is active in this project.");
 if (dashboardLine) {
   lines.push("");
   lines.push(dashboardLine);
@@ -93,13 +93,13 @@ if (dashboardLine) {
 lines.push("");
 lines.push("Token discipline: prefer the project map over whole files.");
 lines.push(
-  "Run /claudepilot:map to refresh .claude/claudepilot/map.md, read that index, " +
+  "Run /slipstream:map to refresh .claude/slipstream/map.md, read that index, " +
     "then pull single symbols or line ranges with the slice helper instead of " +
     "reading entire files."
 );
 
 const memoryIndex = await readIfExists(
-  join(cwd, ".claude", "claudepilot", "memory", "MEMORY.md")
+  join(cwd, ".claude", "slipstream", "memory", "MEMORY.md")
 );
 if (memoryIndex) {
   // Smart recall: rank the store against the task signal and reload only the
@@ -148,7 +148,7 @@ if (memoryIndex) {
   lines.push("");
   lines.push(
     "No project memory yet. As you make durable decisions, record them with " +
-      "/claudepilot:remember so the next session does not start from zero."
+      "/slipstream:remember so the next session does not start from zero."
   );
 }
 

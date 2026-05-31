@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// claudepilot PreCompact hook: lossless compaction.
+// slipstream PreCompact hook: lossless compaction.
 //
 // Claude Code fires PreCompact just before it summarises and trims the
 // conversation. That is the moment the thread is most likely to get lost. This
@@ -68,7 +68,7 @@ try {
     hookSpecificOutput: {
       hookEventName: "PreCompact",
       additionalContext:
-        `claudepilot saved a compaction digest ("${digest.openTask}") to memory ` +
+        `slipstream saved a compaction digest ("${digest.openTask}") to memory ` +
         `as ${saved.name}. It will be reloaded on the next session so the thread ` +
         `is not lost.`
     }

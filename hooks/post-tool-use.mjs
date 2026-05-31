@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// claudepilot PostToolUse hook.
+// slipstream PostToolUse hook.
 //
 // Records that a tool call finished and, when the tool was a file read, how many
 // bytes it pulled into context. The dashboard turns those bytes into an

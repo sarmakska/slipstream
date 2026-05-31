@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// claudepilot PreToolUse hook for the Read tool.
+// slipstream PreToolUse hook for the Read tool.
 //
 // It enforces the token discipline at the moment it matters: just before a file
 // is read. If the target file is large and the agent is about to read the whole
@@ -50,7 +50,7 @@ async function main() {
       hookEventName: "PreToolUse",
       permissionDecision: "allow",
       additionalContext:
-        `claudepilot: ${filePath} is large (about ${approxTokens} tokens). ` +
+        `slipstream: ${filePath} is large (about ${approxTokens} tokens). ` +
         "Consider reading the project map first, then pulling the specific " +
         "symbol or a line range instead of the whole file to protect your " +
         "context budget."

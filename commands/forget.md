@@ -1,5 +1,5 @@
 ---
-description: Prune a stale or wrong memory from claudepilot persistent memory.
+description: Prune a stale or wrong memory from slipstream persistent memory.
 argument-hint: "[memory name]"
 ---
 
@@ -9,9 +9,9 @@ Memory to prune: $ARGUMENTS
 
 ## Steps
 
-1. Run `npx claudepilot memory list --root .` to find the exact memory name.
-2. Run `npx claudepilot memory prune <name> --root .`. The helper deletes the file and regenerates `MEMORY.md`.
+1. Run `npx slipstream memory list --root .` to find the exact memory name.
+2. Run `npx slipstream memory prune <name> --root .`. The helper deletes the file and regenerates `MEMORY.md`.
 
 ## Verify
 
-Run `npx claudepilot memory list --root .` again and confirm the memory is gone.
+Run `npx slipstream memory list --root .` again and confirm the memory is gone.

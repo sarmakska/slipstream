@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// claudepilot Stop hook.
+// slipstream Stop hook.
 //
 // When Claude Code finishes responding, this nudges it to persist anything
 // durable it learned so the knowledge survives the next compaction or session.
@@ -17,8 +17,8 @@ const output = {
   hookSpecificOutput: {
     hookEventName: "Stop",
     additionalContext:
-      "claudepilot: if this turn produced a durable decision, convention, or " +
-      "gotcha, save it with /claudepilot:remember so it survives future " +
+      "slipstream: if this turn produced a durable decision, convention, or " +
+      "gotcha, save it with /slipstream:remember so it survives future " +
       "sessions and compactions. Skip if nothing lasting changed."
   }
 };
