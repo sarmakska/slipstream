@@ -1,0 +1,14 @@
+node_modules/
+dist/
+build/
+.next/
+coverage/
+*.log
+.DS_Store
+.env
+.env*.local
+.vercel/
+.turbo/
+.cache/
+.claude/claudepilot/
+*.tsbuildinfo
