@@ -22,6 +22,17 @@ import {
 import { budget, guardRead } from "../context/index.js";
 import { buildMindMap, mindMapToMermaid } from "../dashboard/model.js";
 import { renderArtifact } from "../dashboard/artifact.js";
+import {
+  appendEvent,
+  readLog,
+  listSessions,
+  makeEvent,
+  reduceEvents,
+  startDashboard,
+  openInBrowser,
+  loadSettings,
+  type EventKind
+} from "../dashboard/index.js";
 import { validatePlugin } from "../plugin-validate/index.js";
 import { resolveSkillsDir, resolvePluginRoot } from "./skills-dir.js";
 
@@ -50,6 +61,10 @@ Usage:
   claudepilot memory index [--root .]
   claudepilot mindmap [root] [--mermaid] [--html out.html]
   claudepilot status [root] [--bytes N]
+  claudepilot dashboard start [--root .] [--session S] [--open] [--foreground]
+  claudepilot dashboard emit --kind K --label "..." [--root .] [--session S] [--agent A] [--bytes N]
+  claudepilot dashboard replay [--root .] [--session S]
+  claudepilot dashboard sessions [--root .]
   claudepilot validate [--skills dir]
   claudepilot plugin-validate [--plugin dir]
 `;
@@ -255,6 +270,88 @@ async function cmdStatus(args: string[]): Promise<number> {
   return 0;
 }
 
+async function cmdDashboard(args: string[]): Promise<number> {
+  const sub = args[0];
+  const rest = args.slice(1);
+  const root = getFlag(rest, "root") ?? ".";
+  const session = getFlag(rest, "session");
+  switch (sub) {
+    case "start": {
+      const settings = await loadSettings(root);
+      const foreground = rest.includes("--foreground");
+      const result = await startDashboard({
+        projectRoot: root,
+        session,
+        detached: !foreground
+      });
+      const wantOpen =
+        rest.includes("--open") || (settings.autoOpen && result.started);
+      if (wantOpen) openInBrowser(result.url);
+      console.log(
+        result.started
+          ? `claudepilot dashboard running at ${result.url}`
+          : `claudepilot dashboard already running at ${result.url}`
+      );
+      // In the foreground case startDashboard returns the live server; keep the
+      // process alive so `--foreground` actually serves.
+      if (foreground && result.server) {
+        await new Promise(() => {});
+      }
+      return 0;
+    }
+    case "emit": {
+      const kind = getFlag(rest, "kind") as EventKind | undefined;
+      const label = getFlag(rest, "label") ?? "";
+      const agent = getFlag(rest, "agent") ?? "main";
+      const bytes = getFlag(rest, "bytes");
+      if (!kind) {
+        console.error("usage: claudepilot dashboard emit --kind K --label ...");
+        return 2;
+      }
+      const data: Record<string, unknown> = {};
+      if (bytes) data["bytes"] = Number(bytes);
+      const event = await appendEvent(
+        root,
+        makeEvent({
+          session: session ?? "main",
+          agent,
+          kind,
+          label,
+          data: Object.keys(data).length ? data : undefined
+        })
+      );
+      console.log(`emitted ${event.kind} #${event.seq} to session ${event.session}`);
+      return 0;
+    }
+    case "replay": {
+      const sessions = session
+        ? [session]
+        : (await listSessions(root)).slice(0, 1);
+      const target = sessions[0];
+      if (!target) {
+        console.log("no recorded sessions to replay");
+        return 0;
+      }
+      const state = reduceEvents(await readLog(root, target));
+      console.log(`# replay of session ${target}`);
+      console.log(`agents: ${state.agents.length}, events: ${state.lastSeq + 1}`);
+      for (const a of state.agents) {
+        console.log(`  ${a.id} [${a.status}] ${a.toolCalls} tools, ~${a.approxTokens} tokens`);
+      }
+      return 0;
+    }
+    case "sessions": {
+      const sessions = await listSessions(root);
+      console.log(`${sessions.length} recorded session(s)`);
+      for (const s of sessions) console.log(`  ${s}`);
+      return 0;
+    }
+    default:
+      console.error("usage: claudepilot dashboard <start|emit|replay|sessions>");
+      return 2;
+  }
+}
+
 async function cmdValidate(args: string[]): Promise<number> {
   const skillsDir = resolveSkillsDir(getFlag(args, "skills"));
   try {
@@ -313,6 +410,8 @@ async function main(): Promise<number> {
       return cmdMindmap(rest);
     case "status":
       return cmdStatus(rest);
+    case "dashboard":
+      return cmdDashboard(rest);
     case "validate":
       return cmdValidate(rest);
     case "plugin-validate":

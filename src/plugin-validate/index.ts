@@ -84,13 +84,23 @@ export async function validatePlugin(
   } else {
     try {
       const hooks = (await readJson(hooksPath)) as { hooks?: Record<string, unknown> };
-      const wanted = ["SessionStart", "UserPromptSubmit", "PreToolUse", "Stop"];
+      const wanted = [
+        "SessionStart",
+        "UserPromptSubmit",
+        "PreToolUse",
+        "PostToolUse",
+        "SubagentStop",
+        "Stop"
+      ];
       const present = hooks.hooks ?? {};
       for (const event of wanted) {
         if (!present[event]) issues.push(`hooks.json does not wire the ${event} hook`);
       }
       if (wanted.every((e) => present[e])) {
-        checks.push("hooks.json wires SessionStart, UserPromptSubmit, PreToolUse and Stop");
+        checks.push(
+          "hooks.json wires SessionStart, UserPromptSubmit, PreToolUse, " +
+            "PostToolUse, SubagentStop and Stop"
+        );
       }
     } catch (error) {
       issues.push(`hooks.json is not valid JSON: ${(error as Error).message}`);
