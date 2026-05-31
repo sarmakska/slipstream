@@ -17,8 +17,15 @@ import {
   pruneMemory,
   regenerateIndex,
   memoryDir,
-  type MemoryType
+  selectRelevant,
+  renderRecall,
+  buildDigest,
+  digestToMemory,
+  type MemoryType,
+  type TaskSignal
 } from "../memory/index.js";
+import { runDoctor, renderDoctor } from "../doctor/index.js";
+import { formatStatusline } from "../statusline/index.js";
 import { budget, guardRead } from "../context/index.js";
 import { buildMindMap, mindMapToMermaid } from "../dashboard/model.js";
 import { renderArtifact } from "../dashboard/artifact.js";
@@ -67,6 +74,10 @@ Usage:
   claudepilot dashboard sessions [--root .]
   claudepilot validate [--skills dir]
   claudepilot plugin-validate [--plugin dir]
+  claudepilot doctor [--plugin dir] [--root .]
+  claudepilot statusline [--root .] [--bytes N] [--skill S] [--model M]
+  claudepilot recall-signal [--root .] [--branch B] [--files a,b] [--prompt "..."]
+  claudepilot digest [--root .] [--session S] [--trigger auto|manual] [--activity "a||b"] [--files a,b] [--open-task "..."]
 `;
 
 async function cmdMap(args: string[]): Promise<number> {
@@ -352,6 +363,75 @@ async function cmdDashboard(args: string[]): Promise<number> {
   }
 }
 
+async function cmdDoctor(args: string[]): Promise<number> {
+  const pluginRoot = getFlag(args, "plugin") ?? resolvePluginRoot();
+  const root = getFlag(args, "root") ?? ".";
+  const report = await runDoctor(pluginRoot, resolve(root));
+  console.log(renderDoctor(report));
+  return report.ok ? 0 : 1;
+}
+
+async function cmdStatusline(args: string[]): Promise<number> {
+  const root = getFlag(args, "root") ?? ".";
+  const bytes = Number(getFlag(args, "bytes") ?? 0);
+  const skill = getFlag(args, "skill");
+  const model = getFlag(args, "model");
+  let memoryCount = 0;
+  try {
+    memoryCount = (await listMemories(root)).length;
+  } catch {
+    memoryCount = 0;
+  }
+  console.log(
+    formatStatusline({
+      bytesRead: bytes,
+      memoryCount,
+      activeSkill: skill,
+      model
+    })
+  );
+  return 0;
+}
+
+function buildSignal(args: string[]): TaskSignal {
+  const branch = getFlag(args, "branch");
+  const filesRaw = getFlag(args, "files");
+  const prompt = getFlag(args, "prompt");
+  return {
+    branch: branch || undefined,
+    changedFiles: filesRaw ? filesRaw.split(",").map((f) => f.trim()).filter(Boolean) : undefined,
+    lastPrompt: prompt || undefined
+  };
+}
+
+async function cmdRecallSignal(args: string[]): Promise<number> {
+  const root = getFlag(args, "root") ?? ".";
+  const signal = buildSignal(args);
+  const hits = selectRelevant(await listMemories(root), signal);
+  const rendered = renderRecall(hits);
+  if (rendered) console.log(rendered);
+  return 0;
+}
+
+async function cmdDigest(args: string[]): Promise<number> {
+  const root = getFlag(args, "root") ?? ".";
+  const session = getFlag(args, "session") ?? "main";
+  const trigger = (getFlag(args, "trigger") as "auto" | "manual" | undefined) ?? "auto";
+  const activityRaw = getFlag(args, "activity");
+  const filesRaw = getFlag(args, "files");
+  const openTask = getFlag(args, "open-task");
+  const digest = buildDigest({
+    session,
+    trigger,
+    activity: activityRaw ? activityRaw.split("||").map((s) => s.trim()).filter(Boolean) : [],
+    filesTouched: filesRaw ? filesRaw.split(",").map((f) => f.trim()).filter(Boolean) : [],
+    openTaskHint: openTask
+  });
+  const m = await addMemory(root, digestToMemory(digest));
+  console.log(`wrote session digest "${m.name}" (${digest.trigger}) to ${m.sourcePath}`);
+  return 0;
+}
+
 async function cmdValidate(args: string[]): Promise<number> {
   const skillsDir = resolveSkillsDir(getFlag(args, "skills"));
   try {
@@ -416,6 +496,14 @@ async function main(): Promise<number> {
       return cmdValidate(rest);
     case "plugin-validate":
       return cmdPluginValidate(rest);
+    case "doctor":
+      return cmdDoctor(rest);
+    case "statusline":
+      return cmdStatusline(rest);
+    case "recall-signal":
+      return cmdRecallSignal(rest);
+    case "digest":
+      return cmdDigest(rest);
     case undefined:
     case "help":
     case "--help":
