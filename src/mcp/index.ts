@@ -12,9 +12,12 @@ export * from "./server.js";
 export * from "./tools.js";
 
 // Only run the transport when invoked as the entry module, not when imported.
+// Normalise path separators: on Windows process.argv[1] uses backslashes, so a
+// raw endsWith("mcp/index.js") never matches and the server would exit silently.
+const entryPath = process.argv[1]?.replace(/\\/g, "/");
 const invokedDirectly =
-  process.argv[1] !== undefined &&
-  (process.argv[1].endsWith("mcp/index.js") || process.argv[1].endsWith("mcp/index.ts"));
+  entryPath !== undefined &&
+  (entryPath.endsWith("mcp/index.js") || entryPath.endsWith("mcp/index.ts"));
 
 if (invokedDirectly) {
   runStdioServer({ defaultRoot: process.cwd() }).catch((error) => {
