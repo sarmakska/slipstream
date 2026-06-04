@@ -11,7 +11,8 @@
     "url": "https://github.com/sarmakska/slipstream.git"
   },
   "bin": {
-    "slipstream": "./dist/cli/index.js"
+    "slipstream": "./dist/cli/index.js",
+    "slipstream-setup": "./dist/cli/setup-bin.js"
   },
   "files": [
     "dist",

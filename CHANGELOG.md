@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `slipstream-setup` editor-aware bin (issue #5). One idempotent command wires
+  slipstream into Claude Code (`.claude/settings.local.json`) or any of
+  Cursor, Windsurf, Antigravity and VS Code (`<editor>/mcp.json`). Detects the
+  editor when run with `--editor=auto`, refuses to double-wire if both
+  plugin-mode hooks and a standalone `.mcp.json` slipstream entry are
+  present, and supports `--dry-run` to preview the diff before writing.
 - MCP-side compaction tools `sp_digest` and `sp_resume` (issue #3). Editors
   without a PreCompact hook can now write a session digest on demand and
   rehydrate it on the next session. The `sp_budget` tool gains a
