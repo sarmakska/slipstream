@@ -12,6 +12,9 @@
  * transport loop below is the only impure part.
  */
 
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { callTool, TOOL_DESCRIPTORS, type ToolContext } from "./tools.js";
 import { appendEvent } from "../dashboard/log.js";
 import { makeEvent } from "../dashboard/events.js";
@@ -21,7 +24,23 @@ import { listSkillPrompts, getSkillPrompt } from "./prompts.js";
 
 export const PROTOCOL_VERSION = "2024-11-05";
 export const SERVER_NAME = "slipstream";
-export const SERVER_VERSION = "0.5.1";
+
+// Single source of truth: read the version from package.json so the value the
+// MCP `initialize` handshake reports can never drift from the published package.
+// Both src/mcp/server.ts and dist/mcp/server.js sit two levels under the root.
+function readPackageVersion(): string {
+  try {
+    const here = dirname(fileURLToPath(import.meta.url));
+    const pkg = JSON.parse(
+      readFileSync(join(here, "..", "..", "package.json"), "utf8")
+    ) as { version?: unknown };
+    return typeof pkg.version === "string" ? pkg.version : "0.0.0";
+  } catch {
+    return "0.0.0";
+  }
+}
+
+export const SERVER_VERSION = readPackageVersion();
 
 export interface JsonRpcRequest {
   jsonrpc: "2.0";

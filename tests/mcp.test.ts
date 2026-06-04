@@ -3,6 +3,7 @@ import { spawn } from "node:child_process";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { readFile } from "node:fs/promises";
+import { readFileSync } from "node:fs";
 import {
   handleRequest,
   TOOL_DESCRIPTORS,
@@ -23,6 +24,12 @@ describe("mcp request handler", () => {
     expect(res?.result).toMatchObject({
       serverInfo: { name: "slipstream" }
     });
+    // The reported version must track package.json, never a hardcoded literal.
+    const pkg = JSON.parse(
+      readFileSync(join(here, "..", "package.json"), "utf8")
+    ) as { version: string };
+    const serverInfo = (res?.result as { serverInfo: { version: string } }).serverInfo;
+    expect(serverInfo.version).toBe(pkg.version);
   });
 
   it("lists every sp_ tool", async () => {
