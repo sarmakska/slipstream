@@ -16,7 +16,7 @@ await withLatencyGuard("user-prompt-submit", async () => {
 const payload = await readPayload();
 const session = sessionId(payload);
 const prompt = typeof payload.prompt === "string" ? payload.prompt : "";
-emit({
+await emit({
   session,
   kind: "user-prompt",
   label: prompt ? prompt.slice(0, 200) : "user prompt"

@@ -29,7 +29,7 @@ await withLatencyGuard("post-tool-use", async () => {
           : "";
   if (text) bytes = Buffer.byteLength(text, "utf8");
 
-  emit({
+  await emit({
     session,
     kind: "post-tool",
     label: `${toolName} ${target}`.trim() || `${toolName} done`,

@@ -15,7 +15,7 @@ await withLatencyGuard("subagent-stop", async () => {
   const agent = payload.subagent_id || payload.agent_id || "subagent";
   const failed = Boolean(payload.error || payload.failed);
 
-  emit({
+  await emit({
     session,
     agent: String(agent),
     kind: "subagent-stop",

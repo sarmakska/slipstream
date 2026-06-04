@@ -16,7 +16,7 @@ import { readFile, stat } from "node:fs/promises";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { join, dirname } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { readPayload, sessionId, emit, withLatencyGuard } from "./emit.mjs";
 
 const execFileAsync = promisify(execFile);
@@ -65,7 +65,7 @@ const session = sessionId(payload);
 // back the chosen url; if dist is not built yet (dev checkout) this is skipped.
 let dashboardLine = null;
 try {
-  const launch = await import(join(here, "..", "dist", "dashboard", "index.js"));
+  const launch = await import(pathToFileURL(join(here, "..", "dist", "dashboard", "index.js")).href);
   const settings = await launch.loadSettings(cwd);
   if (settings.enabled) {
     const result = await launch.startDashboard({
@@ -83,7 +83,7 @@ try {
   // No dashboard available in this checkout; carry on.
 }
 
-emit({ session, kind: "session-start", label: "session started" });
+await emit({ session, kind: "session-start", label: "session started" });
 
 const lines = [];
 lines.push("slipstream is active in this project.");
@@ -109,7 +109,7 @@ if (memoryIndex) {
   let recallBlock = "";
   let digestBlock = "";
   try {
-    const memory = await import(join(here, "..", "dist", "memory", "index.js"));
+    const memory = await import(pathToFileURL(join(here, "..", "dist", "memory", "index.js")).href);
     const all = await memory.listMemories(cwd);
 
     // Reload this session's most recent compaction digest first, so a resumed
