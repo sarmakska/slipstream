@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Auto-detect plugin vs MCP-only mode at runtime (issue #2). The MCP server now
+  decides on its own whether to self-emit dashboard events and auto-start the
+  dashboard based on Claude Code signals (`CLAUDE_PLUGIN_ROOT`,
+  `CLAUDE_CODE_SESSION`, `.claude/hooks` marker). `SLIPSTREAM_MCP_EMIT` and
+  `SLIPSTREAM_DASHBOARD` still override.
+
+
 ## [0.5.1]
 
 ### Changed

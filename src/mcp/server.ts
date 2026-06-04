@@ -16,6 +16,7 @@ import { callTool, TOOL_DESCRIPTORS, type ToolContext } from "./tools.js";
 import { appendEvent } from "../dashboard/log.js";
 import { makeEvent } from "../dashboard/events.js";
 import { startDashboard } from "../dashboard/launch.js";
+import { detectMode, shouldEmit, shouldStartDashboard } from "./mode-detect.js";
 
 export const PROTOCOL_VERSION = "2024-11-05";
 export const SERVER_NAME = "slipstream";
@@ -130,9 +131,10 @@ async function emitToolEvent(
   root: string,
   session: string,
   params: Record<string, unknown>,
-  result: unknown
+  result: unknown,
+  emit: boolean
 ): Promise<void> {
-  if (process.env["SLIPSTREAM_MCP_EMIT"] === "0") return;
+  if (!emit) return;
   const name = typeof params["name"] === "string" ? (params["name"] as string) : "tool";
   const args = (params["arguments"] as Record<string, unknown>) ?? {};
   const target = callTarget(args);
@@ -162,6 +164,14 @@ export async function runStdioServer(ctx: ToolContext): Promise<void> {
   let session = "mcp";
   process.stdin.setEncoding("utf8");
 
+  // Decide once at startup: are we a Claude Code plugin (passive) or a
+  // standalone MCP server for another editor (active, self-emitting)? The
+  // detected mode controls emission and dashboard auto-start; explicit env
+  // vars still override.
+  const detected = detectMode({ env: process.env, cwd: ctx.defaultRoot });
+  const emitEnabled = shouldEmit(process.env, detected.mode);
+  const dashboardEnabled = shouldStartDashboard(process.env, detected.mode);
+
   const flush = async (): Promise<void> => {
     let newline = buffer.indexOf("\n");
     while (newline !== -1) {
@@ -179,24 +189,24 @@ export async function runStdioServer(ctx: ToolContext): Promise<void> {
         if (req.method === "initialize") {
           session = sessionFromClient(req.params);
           // Record the session opening so the dashboard lists it immediately.
-          if (process.env["SLIPSTREAM_MCP_EMIT"] !== "0") {
+          if (emitEnabled) {
             appendEvent(
               ctx.defaultRoot,
-              makeEvent({ session, agent: "main", kind: "session-start", label: `mcp session: ${session}` })
+              makeEvent({ session, agent: "main", kind: "session-start", label: `mcp session: ${session} (${detected.reason})` })
             ).catch(() => {});
           }
-          // Phase 2: zero-setup dashboard. In editors without Claude Code's hooks,
-          // the MCP server brings the dashboard up itself (detached, idempotent),
-          // so opening the editor is all it takes. The plugin sets
-          // SLIPSTREAM_DASHBOARD=0 because its SessionStart hook already does this.
-          if (process.env["SLIPSTREAM_DASHBOARD"] !== "0") {
+          // Zero-setup dashboard. In editors without Claude Code's hooks the
+          // MCP server brings the dashboard up itself (detached, idempotent),
+          // so opening the editor is all it takes. In plugin mode the
+          // SessionStart hook already does this so we stay quiet.
+          if (dashboardEnabled) {
             startDashboard({ projectRoot: ctx.defaultRoot, session, detached: true }).catch(() => {});
           }
         }
         const res = await handleRequest(req, ctx);
         if (res) process.stdout.write(JSON.stringify(res) + "\n");
         if (req.method === "tools/call" && res && !res.error) {
-          emitToolEvent(ctx.defaultRoot, session, req.params ?? {}, res.result).catch(() => {});
+          emitToolEvent(ctx.defaultRoot, session, req.params ?? {}, res.result, emitEnabled).catch(() => {});
         }
       } catch (error) {
         process.stdout.write(
