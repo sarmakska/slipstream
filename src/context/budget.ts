@@ -43,6 +43,12 @@ export interface BudgetReport {
   /** "ok" below comfort, "warn" between comfort and 85 percent, "compact" above. */
   level: "ok" | "warn" | "compact";
   advice: string;
+  /**
+   * One-line nudge to call sp_digest when context is getting tight. Absent
+   * when the level is "ok"; set to a softer suggestion in "warn" and a hard
+   * one in "compact" so the agent can fold it into its reasoning.
+   */
+  recommendation?: string;
 }
 
 export function estimateTokens(bytes: number): number {
@@ -64,6 +70,8 @@ export function budget(input: BudgetInput): BudgetReport {
 
   let level: BudgetReport["level"];
   let advice: string;
+  let recommendation: string | undefined;
+  const usedPct = Math.round(usedFraction * 100);
   if (usedFraction < warnFraction) {
     level = "ok";
     advice =
@@ -73,14 +81,16 @@ export function budget(input: BudgetInput): BudgetReport {
     advice =
       "Approaching the comfortable budget. Prefer slices over whole files and " +
       "write durable findings to memory so they survive a compaction.";
+    recommendation = `budget ${usedPct}%, call sp_digest`;
   } else {
     level = "compact";
     advice =
       "Context is nearly full. Run the compaction skill: summarise the session, " +
       "offload durable facts to memory, then compact so you can continue.";
+    recommendation = `budget ${usedPct}%, call sp_digest now`;
   }
 
-  return {
+  const report: BudgetReport = {
     approxTokens,
     windowTokens,
     usedFraction: Math.min(usedFraction, 1),
@@ -88,6 +98,8 @@ export function budget(input: BudgetInput): BudgetReport {
     level,
     advice
   };
+  if (recommendation !== undefined) report.recommendation = recommendation;
+  return report;
 }
 
 /**

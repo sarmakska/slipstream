@@ -38,9 +38,8 @@ import {
   renderTimeline,
   renderObservations,
   renderLessons,
-  loadObservations,
-  buildDigest,
-  digestToMemory,
+  buildAndSaveDigest,
+  loadLatestDigest,
   OBSERVATION_KINDS,
   type ObservationKind,
   type MemoryType,
@@ -222,13 +221,44 @@ export const TOOL_DESCRIPTORS: ToolDescriptor[] = [
   {
     name: "sp_budget",
     description:
-      "Use to check the context budget. Returns ok/warn/compact level and an approximate token estimate for a given number of bytes pulled into context.",
+      "Use to check the context budget. Returns ok/warn/compact level and an approximate token estimate for a given number of bytes pulled into context. Pass actualTokens for an exact reading when the host exposes one.",
     inputSchema: {
       type: "object",
       properties: {
         bytesRead: { type: "number" },
+        actualTokens: {
+          type: "number",
+          description:
+            "Exact token count from the host transcript when available. Overrides the bytes estimate."
+        },
         windowTokens: { type: "number" }
       }
+    }
+  },
+  {
+    name: "sp_digest",
+    description:
+      "Use to write a compaction digest on demand, so the working state survives compaction in editors without Claude Code's PreCompact hook. Reuses the same builder the hook uses: gathers session events, distils the open task, decisions, files touched and next step, and saves it to the memory store.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        session: {
+          type: "string",
+          description: "Session id. Defaults to the most recent."
+        },
+        trigger: { type: "string", enum: ["auto", "manual"] },
+        openTaskHint: { type: "string" },
+        root: { type: "string" }
+      }
+    }
+  },
+  {
+    name: "sp_resume",
+    description:
+      "Use at the start of a new session to load the latest compaction digest for this project. Returns the digest body so the agent can rehydrate the open task, decisions and files touched without re-reading the transcript.",
+    inputSchema: {
+      type: "object",
+      properties: { root: { type: "string" } }
     }
   },
   {
@@ -437,6 +467,11 @@ export async function callTool(
       }
       case "sp_budget": {
         const bytesRead = Number(args["bytesRead"]) || 0;
+        const actualRaw = args["actualTokens"];
+        const actualTokens =
+          actualRaw !== undefined && Number.isFinite(Number(actualRaw))
+            ? Number(actualRaw)
+            : undefined;
         // The persisted budget config is the shared source of truth: the gauge,
         // the statusline and this tool all read the same target and thresholds.
         const config = await loadBudgetConfig(rootOf(args, ctx));
@@ -444,15 +479,43 @@ export async function callTool(
         const windowTokens = args["windowTokens"] ? Number(args["windowTokens"]) : fractions.windowTokens;
         const report = budget({
           bytesRead,
+          ...(actualTokens !== undefined ? { approxTokens: actualTokens } : {}),
           windowTokens,
           warnFraction: fractions.warnFraction,
           compactFraction: fractions.compactFraction
         });
+        const tail = report.recommendation ? `\nrecommendation: ${report.recommendation}` : "";
         return text(
           `level=${report.level} approxTokens=${report.approxTokens} ` +
             `target=${report.windowTokens} used=${(report.usedFraction * 100).toFixed(0)}% ` +
-            `(warn ${config.warnPct}%, compact ${config.compactPct}%)\n${report.advice}`
+            `(warn ${config.warnPct}%, compact ${config.compactPct}%)\n${report.advice}${tail}`
         );
+      }
+      case "sp_digest": {
+        const session = typeof args["session"] === "string" ? (args["session"] as string) : undefined;
+        const trigger = args["trigger"] === "auto" ? "auto" : "manual";
+        const openTaskHint =
+          typeof args["openTaskHint"] === "string" ? (args["openTaskHint"] as string) : undefined;
+        const opts: Parameters<typeof buildAndSaveDigest>[0] = {
+          projectRoot: rootOf(args, ctx),
+          trigger
+        };
+        if (session !== undefined) opts.session = session;
+        if (openTaskHint !== undefined) opts.openTaskHint = openTaskHint;
+        const result = await buildAndSaveDigest(opts);
+        return text(
+          JSON.stringify({
+            ok: true,
+            digestPath: result.digestPath,
+            tokensEstimate: result.tokensEstimate,
+            session: result.digest.session,
+            openTask: result.digest.openTask
+          })
+        );
+      }
+      case "sp_resume": {
+        const loaded = await loadLatestDigest(rootOf(args, ctx));
+        return text(JSON.stringify(loaded));
       }
       case "sp_mindmap": {
         const map = await generateMap(rootOf(args, ctx));

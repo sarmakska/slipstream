@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- MCP-side compaction tools `sp_digest` and `sp_resume` (issue #3). Editors
+  without a PreCompact hook can now write a session digest on demand and
+  rehydrate it on the next session. The `sp_budget` tool gains a
+  `recommendation` hint at warn and compact thresholds and accepts an
+  `actualTokens` parameter to override the bytes-based estimate when the host
+  exposes a true token count.
 - Auto-detect plugin vs MCP-only mode at runtime (issue #2). The MCP server now
   decides on its own whether to self-emit dashboard events and auto-start the
   dashboard based on Claude Code signals (`CLAUDE_PLUGIN_ROOT`,

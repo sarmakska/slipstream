@@ -15,6 +15,9 @@
  */
 
 import type { AddMemoryInput } from "./store.js";
+import { addMemory, listMemories } from "./store.js";
+import { readLog, listSessions } from "../dashboard/log.js";
+import { BYTES_PER_TOKEN } from "../context/budget.js";
 
 /** The structured state of a session at the moment of compaction. */
 export interface SessionDigest {
@@ -122,6 +125,104 @@ export function digestToMarkdown(d: SessionDigest): string {
 export function digestMemoryName(session: string): string {
   const safe = session.toLowerCase().replace(/[^a-z0-9]+/g, "-").slice(0, 40);
   return `session-digest-${safe || "main"}`;
+}
+
+/**
+ * Reduce a list of dashboard events into the activity and file-set the digest
+ * cares about. Same heuristic the PreCompact hook uses, lifted into a pure
+ * function so MCP tools can call it without re-running the hook.
+ */
+export function eventsToDigestInputs(
+  events: Array<{ kind?: string; label?: string }>
+): { activity: string[]; filesTouched: string[] } {
+  const activity = events.map((e) => e.label ?? "").filter((s) => s.length > 0);
+  const filesTouched = [
+    ...new Set(
+      events
+        .filter((e) => e.kind === "pre-tool" || e.kind === "post-tool")
+        .map((e) => {
+          const m = /([\w./-]+\.[a-z]{1,5})\b/.exec(e.label ?? "");
+          return m ? m[1] : null;
+        })
+        .filter((s): s is string => Boolean(s))
+    )
+  ];
+  return { activity, filesTouched };
+}
+
+export interface BuildAndSaveOptions {
+  projectRoot: string;
+  session?: string;
+  trigger?: "auto" | "manual";
+  openTaskHint?: string;
+}
+
+export interface BuildAndSaveResult {
+  digest: SessionDigest;
+  digestPath: string;
+  tokensEstimate: number;
+}
+
+/**
+ * Read the dashboard log for the current (or named) session, build the digest
+ * and persist it to the memory store. This is the MCP-callable equivalent of
+ * the PreCompact hook for editors that have no hook lifecycle.
+ */
+export async function buildAndSaveDigest(
+  opts: BuildAndSaveOptions
+): Promise<BuildAndSaveResult> {
+  let session = opts.session;
+  if (!session) {
+    const sessions = await listSessions(opts.projectRoot).catch(() => [] as string[]);
+    session = sessions[0] ?? "main";
+  }
+  const events = await readLog(opts.projectRoot, session).catch(() => [] as Array<{ kind?: string; label?: string }>);
+  const { activity, filesTouched } = eventsToDigestInputs(events);
+  const digest = buildDigest({
+    session,
+    trigger: opts.trigger ?? "manual",
+    activity,
+    filesTouched,
+    openTaskHint: opts.openTaskHint
+  });
+  const saved = await addMemory(opts.projectRoot, digestToMemory(digest));
+  const body = digestToMarkdown(digest);
+  const tokensEstimate = Math.round(Buffer.byteLength(body, "utf8") / BYTES_PER_TOKEN);
+  return { digest, digestPath: saved.sourcePath, tokensEstimate };
+}
+
+export interface LoadedDigest {
+  digest: string | null;
+  ts?: string;
+  tokensEstimate?: number;
+  session?: string;
+  sourcePath?: string;
+}
+
+/**
+ * Load the most recent session digest for a project, for sp_resume. Returns a
+ * null digest when nothing has been saved yet so the caller can branch.
+ */
+export async function loadLatestDigest(projectRoot: string): Promise<LoadedDigest> {
+  const memories = await listMemories(projectRoot).catch(() => []);
+  const candidates = memories.filter((m) => m.name.startsWith("session-digest-"));
+  if (candidates.length === 0) return { digest: null };
+  // Pick the one most recently updated; fall back to created or name order.
+  candidates.sort((a, b) => {
+    const at = a.updated ?? a.created ?? "";
+    const bt = b.updated ?? b.created ?? "";
+    return bt.localeCompare(at);
+  });
+  const top = candidates[0];
+  if (!top) return { digest: null };
+  const body = top.body;
+  return {
+    digest: body,
+    ts: top.updated ?? top.created,
+    tokensEstimate: Math.round(Buffer.byteLength(body, "utf8") / BYTES_PER_TOKEN),
+    session: top.name.replace(/^session-digest-/, ""),
+    sourcePath: top.sourcePath
+  };
 }
 
 /** Turn a digest into the AddMemoryInput the store persists. */
