@@ -38,6 +38,7 @@ All fifteen tools, defined in `TOOL_DESCRIPTORS` in `src/mcp/tools.ts`:
 | `sp_budget` | `bytesRead?`, `windowTokens?` | the budget level (ok/warn/compact) against the persisted `budget.json` target and thresholds. |
 | `sp_mindmap` | `root?` | the project as a themed Mermaid mind map. |
 | `sp_dashboard` | `root?` | ensures the live dashboard server is running and returns its URL (works in any editor). |
+| `sp_digest` | `session?`, `openTask?`, `trigger?`, `root?` | checkpoints the session: distils observations into a durable digest (open task, decisions, files, next steps) saved to memory. The cross-IDE stand-in for the PreCompact hook, so MCP editors get lossless compaction too. |
 
 Every tool description is a crisp "Use ..." trigger, because Claude reads the description to decide when to call the tool. `sp_symbol` reads "Use to read one declaration instead of a whole file."
 
