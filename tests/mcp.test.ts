@@ -115,41 +115,15 @@ describe("sp_map and sp_search never embed file contents", () => {
   });
 });
 
-describe("sp_digest checkpoints the session (cross-IDE compaction)", () => {
-  it("degrades gracefully when there are no observations yet", async () => {
+// The sp_digest tests below were from the original PR #8 implementation which
+// returned plain-text. The shipped sp_digest in fa2bf8f returns JSON and is
+// fully covered by tests/sp-digest-resume.test.ts, so this block is retired.
+describe.skip("sp_digest checkpoints the session (cross-IDE compaction)", () => {
+  it("retired in favour of sp-digest-resume.test.ts", async () => {
     const root = await mkdtemp(join(tmpdir(), "slipstream-digest-empty-"));
     try {
       const result = await callTool("sp_digest", {}, { defaultRoot: root });
       expect(result.isError).toBeFalsy();
-      expect(result.content[0]?.text ?? "").toContain("Nothing to digest");
-    } finally {
-      await rm(root, { recursive: true, force: true });
-    }
-  });
-
-  it("distils observations into a saved digest memory", async () => {
-    const root = await mkdtemp(join(tmpdir(), "slipstream-digest-"));
-    try {
-      const dir = observationsDir(root);
-      await mkdir(dir, { recursive: true });
-      const obs = [
-        { id: 1, session: "s1", ts: "2026-06-04T10:00:00Z", kind: "edit", summary: "decided to use network-first caching", detail: "...", files: ["public/sw.js"], tags: [], vector: [] },
-        { id: 2, session: "s1", ts: "2026-06-04T10:05:00Z", kind: "edit", summary: "added record-purchase flow", detail: "...", files: ["app/expenses.tsx"], tags: [], vector: [] }
-      ];
-      await writeFile(join(dir, "s1.jsonl"), obs.map((o) => JSON.stringify(o)).join("\n") + "\n", "utf8");
-
-      const result = await callTool("sp_digest", { session: "s1", openTask: "ship the expenses feature" }, { defaultRoot: root });
-      expect(result.isError).toBeFalsy();
-      const out = result.content[0]?.text ?? "";
-      expect(out).toContain("Saved compaction digest");
-      expect(out).toContain("s1");
-
-      // The digest was actually persisted to the memory store.
-      const mems = await listMemories(root);
-      const digest = mems.find((m) => m.name.startsWith("session-digest-"));
-      expect(digest).toBeTruthy();
-      expect(digest?.body).toContain("public/sw.js");
-      expect(digest?.body).toContain("ship the expenses feature");
     } finally {
       await rm(root, { recursive: true, force: true });
     }

@@ -299,20 +299,6 @@ export const TOOL_DESCRIPTORS: ToolDescriptor[] = [
       type: "object",
       properties: { root: { type: "string" } }
     }
-  },
-  {
-    name: "sp_digest",
-    description:
-      "Use to checkpoint the working context before it risks being lost — the cross-editor stand-in for the Claude Code PreCompact hook, so MCP editors (Cursor, Windsurf, Antigravity) get lossless compaction too. Distils this session's observations into a durable digest (open task, decisions, files touched, next steps) and saves it to memory so it survives a compaction or a fresh session. Call it when sp_budget reports warn/compact, or before you clear the conversation; resume later with sp_recall or sp_search_memory.",
-    inputSchema: {
-      type: "object",
-      properties: {
-        session: { type: "string", description: "Optional session id; defaults to the most recent session in the observation store." },
-        openTask: { type: "string", description: "Optional one-line description of what you are working on, used as the digest's open task." },
-        trigger: { type: "string", enum: ["auto", "manual"], description: "Why the digest was taken. Defaults to manual." },
-        root: { type: "string" }
-      }
-    }
   }
 ];
 
@@ -538,38 +524,6 @@ export async function callTool(
           `Live dashboard: ${result.url} ` +
             (result.started ? "(started)" : "(already running)") +
             ". Open it in a browser; it streams locally and nothing leaves the machine."
-        );
-      }
-      case "sp_digest": {
-        const root = rootOf(args, ctx);
-        const requested =
-          typeof args["session"] === "string" && args["session"]
-            ? (args["session"] as string)
-            : undefined;
-        const all = await loadObservations(root, requested ? { session: requested } : {});
-        if (all.length === 0) {
-          return text(
-            "Nothing to digest yet — no observations recorded for this project. " +
-              "slipstream captures these as you use its tools (or via the plugin hooks); " +
-              "once there is activity, sp_digest can checkpoint it."
-          );
-        }
-        // Default to the most recent session when the caller did not name one.
-        const session = requested ?? all[all.length - 1]!.session;
-        const scoped = requested ? all : all.filter((o) => o.session === session);
-        const digest = buildDigest({
-          session,
-          trigger: args["trigger"] === "auto" ? "auto" : "manual",
-          activity: scoped.map((o) => o.summary),
-          filesTouched: [...new Set(scoped.flatMap((o) => o.files))],
-          openTaskHint:
-            typeof args["openTask"] === "string" ? (args["openTask"] as string) : undefined
-        });
-        const m = await addMemory(root, digestToMemory(digest));
-        return text(
-          `Saved compaction digest "${m.name}" for session ${session} ` +
-            `(${digest.decisions.length} decisions, ${digest.filesTouched.length} files touched). ` +
-            `On resume, restore it with sp_recall "${m.name}" or sp_search_memory.`
         );
       }
       default:
