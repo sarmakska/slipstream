@@ -22,7 +22,7 @@ import {
   buildDigest,
   digestToMemory,
   captureObservations,
-  loadObservations,
+  countObservations,
   getObservations,
   searchObservations,
   timeline,
@@ -499,7 +499,7 @@ async function cmdStatusline(args: string[]): Promise<number> {
   }
   let observationCount = 0;
   try {
-    observationCount = (await loadObservations(root)).length;
+    observationCount = await countObservations(root);
   } catch {
     observationCount = 0;
   }
@@ -519,7 +519,11 @@ async function cmdStatusline(args: string[]): Promise<number> {
     const usage = await readContextUsage(transcript);
     if (usage) {
       actualTokens = usage.contextTokens;
-      await saveBudgetConfig(root, { actualTokens }).catch(() => {});
+      // Persist only when it actually changed, so a frequent statusline render
+      // does not rewrite budget.json on every tick.
+      if (config?.actualTokens !== actualTokens) {
+        await saveBudgetConfig(root, { actualTokens }).catch(() => {});
+      }
     }
   }
 

@@ -70,7 +70,7 @@ flowchart TD
 | [Performance and benchmarks](Performance-and-Benchmarks) | Real numbers from this machine |
 | [Design decisions](Design-Decisions) | Choices made and alternatives rejected |
 | [Security model](Security-Model) | Local-only, redaction, what to trust |
-| [Testing strategy](Testing-Strategy) | What the 119 tests cover and why |
+| [Testing strategy](Testing-Strategy) | What the 120 tests cover and why |
 | [Examples and recipes](Examples-and-Recipes) | Copy-paste flows |
 | [Comparisons](Comparisons) | Versus the obvious alternatives |
 | [Integrations](Integrations) | Cloudflare, Supabase, Vercel, Resend |

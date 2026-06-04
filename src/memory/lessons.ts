@@ -14,6 +14,7 @@
  * test pins it exactly; a thin wrapper loads the store and calls it.
  */
 
+import { conceptStems } from "../util/text.js";
 import { loadObservations, type Observation, type ObservationKind } from "./observe.js";
 
 /** A recurring pattern distilled from the observation store. */
@@ -32,24 +33,6 @@ export interface Lesson {
   summary: string;
   /** The observation ids behind the lesson, for citation and drill-down. */
   observationIds: number[];
-}
-
-/** File/concept stems from a path: lib/actions/approvals.ts -> [actions, approvals]. */
-function stemsOf(paths: string[]): string[] {
-  const out = new Set<string>();
-  for (const p of paths) {
-    for (const seg of p.split(/[\\/]/)) {
-      const stem = seg.replace(/\.[a-z0-9]+$/i, "");
-      for (const part of stem.split(/[^a-z0-9]+/i)) {
-        const t = part.toLowerCase();
-        // Skip noise segments that name structure, not concepts.
-        if (t.length > 2 && !["src", "lib", "app", "index", "test", "tests", "spec"].includes(t)) {
-          out.add(t);
-        }
-      }
-    }
-  }
-  return [...out];
 }
 
 export interface DistillOptions {
@@ -75,7 +58,7 @@ export function distillLessons(
 
   const buckets = new Map<string, Observation[]>();
   for (const o of observations) {
-    for (const stem of stemsOf(o.files)) {
+    for (const stem of conceptStems(o.files)) {
       const bucket = buckets.get(stem) ?? [];
       bucket.push(o);
       buckets.set(stem, bucket);

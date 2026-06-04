@@ -24,6 +24,7 @@ import { open, mkdir, readFile, readdir, writeFile, rm, stat } from "node:fs/pro
 import { join, resolve } from "node:path";
 import type { DashboardEvent, EventDraft } from "./events.js";
 import { parseEvent } from "./events.js";
+import { withFileLock } from "../util/lock.js";
 
 export const DASHBOARD_SUBDIR = join(".claude", "slipstream", "dashboard");
 
@@ -33,51 +34,6 @@ export function dashboardDir(projectRoot: string): string {
 
 export function logPath(projectRoot: string, session: string): string {
   return join(dashboardDir(projectRoot), `${session}.jsonl`);
-}
-
-function lockPath(file: string): string {
-  return `${file}.lock`;
-}
-
-const sleep = (ms: number): Promise<void> =>
-  new Promise((r) => setTimeout(r, ms));
-
-/**
- * Acquire a crude advisory lock by exclusively creating a marker file. Returns a
- * release function. If the lock cannot be taken within the timeout we resolve
- * with a no-op release and let the caller proceed: never block a hook.
- */
-async function withLock<T>(
-  file: string,
-  fn: () => Promise<T>,
-  timeoutMs = 1500
-): Promise<T> {
-  const lock = lockPath(file);
-  const deadline = Date.now() + timeoutMs;
-  let held = false;
-  while (Date.now() < deadline) {
-    try {
-      const handle = await open(lock, "wx");
-      await handle.close();
-      held = true;
-      break;
-    } catch {
-      // A stale lock from a crashed process should not wedge us forever.
-      const age = await stat(lock)
-        .then((s) => Date.now() - s.mtimeMs)
-        .catch(() => Infinity);
-      if (age > 5000) {
-        await rm(lock).catch(() => {});
-        continue;
-      }
-      await sleep(15);
-    }
-  }
-  try {
-    return await fn();
-  } finally {
-    if (held) await rm(lock).catch(() => {});
-  }
 }
 
 /** The next sequence number for a session, read from the log on disk. */
@@ -102,7 +58,7 @@ export async function appendEvent(
   await mkdir(dir, { recursive: true });
   const file = logPath(projectRoot, draft.session);
 
-  return withLock(file, async () => {
+  return withFileLock(file, async () => {
     const seq = await nextSeq(projectRoot, draft.session);
     const event: DashboardEvent = {
       ...draft,

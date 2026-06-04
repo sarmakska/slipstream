@@ -10,7 +10,7 @@ import {
 } from "../src/context/budget-config.js";
 import { sessionFromClient } from "../src/mcp/server.js";
 import { contextUsageFromTranscript } from "../src/context/transcript.js";
-import { summarizeSavings } from "../src/context/savings.js";
+import { summarizeSavings, recordSaving, loadSavings } from "../src/context/savings.js";
 import { distillLessons } from "../src/memory/lessons.js";
 import { embed } from "../src/memory/embed.js";
 import type { Observation } from "../src/memory/observe.js";
@@ -110,6 +110,22 @@ describe("optimization savings", () => {
     const s = summarizeSavings({ scopedReads: 0, servedBytes: 0, fullBytes: 0 });
     expect(s.pct).toBe(0);
     expect(s.savedTokens).toBe(0);
+  });
+
+  it("folds records into a bounded aggregate that round-trips", async () => {
+    const root = await mkdtemp(join(tmpdir(), "slipstream-savings-"));
+    try {
+      await recordSaving(root, { tool: "sp_symbol", file: "a.ts", servedBytes: 100, fullBytes: 500 });
+      await recordSaving(root, { tool: "sp_lines", file: "b.ts", servedBytes: 50, fullBytes: 300 });
+      // A read with no real baseline is ignored, not counted.
+      await recordSaving(root, { tool: "sp_symbol", file: "c.ts", servedBytes: 10, fullBytes: 0 });
+      const tally = await loadSavings(root);
+      expect(tally.scopedReads).toBe(2);
+      expect(tally.servedBytes).toBe(150);
+      expect(tally.fullBytes).toBe(800);
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
   });
 });
 

@@ -82,7 +82,7 @@ slipstream writes only under `.claude/slipstream/` in your project:
   memory/                       # one .md per fact + MEMORY.md index
   observations/<session>.jsonl  # auto-captured observation memory (+ .cursor, .counter)
   budget.json                   # editable token-budget target + thresholds
-  savings.jsonl                 # optimization ledger: scoped reads vs whole-file baseline
+  savings.json                  # optimization tally: scoped reads vs whole-file baseline
   dashboard/<session>.jsonl     # append-only event log per session
   dashboard/server.json         # the running server's pid/port/url
   dashboard.json                # optional settings

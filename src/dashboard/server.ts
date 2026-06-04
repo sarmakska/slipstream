@@ -23,7 +23,7 @@ import {
   getObservations,
   type ObservationKind
 } from "../memory/index.js";
-import { budget } from "../context/budget.js";
+import { budget, BYTES_PER_TOKEN } from "../context/budget.js";
 import {
   loadBudgetConfig,
   saveBudgetConfig,
@@ -107,10 +107,20 @@ export class DashboardServer {
     this.server = null;
   }
 
-  /** Read and JSON-parse a request body, returning {} on anything malformed. */
+  /**
+   * Read and JSON-parse a request body, returning {} on anything malformed. Caps
+   * the body at 64 KB: the only POST is a tiny budget patch, so a larger payload
+   * is a mistake or abuse, and we refuse to buffer it unbounded.
+   */
   private async readJsonBody(req: IncomingMessage): Promise<Record<string, unknown>> {
+    const MAX_BODY = 64 * 1024;
     const chunks: Buffer[] = [];
-    for await (const chunk of req) chunks.push(chunk as Buffer);
+    let size = 0;
+    for await (const chunk of req) {
+      size += (chunk as Buffer).length;
+      if (size > MAX_BODY) return {};
+      chunks.push(chunk as Buffer);
+    }
     try {
       const raw = Buffer.concat(chunks).toString("utf8");
       return raw ? (JSON.parse(raw) as Record<string, unknown>) : {};
@@ -192,7 +202,7 @@ export class DashboardServer {
       const hasActual = typeof config.actualTokens === "number" && config.actualTokens > 0;
       const served = hasActual ? (config.actualTokens as number) : estimated;
       const report = budget({
-        bytesRead: served * 3.6,
+        bytesRead: served * BYTES_PER_TOKEN,
         approxTokens: hasActual ? (config.actualTokens as number) : undefined,
         windowTokens: fr.windowTokens,
         warnFraction: fr.warnFraction,

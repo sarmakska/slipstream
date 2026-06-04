@@ -117,15 +117,15 @@ One JSON record per line, append-only (`Observation` in `src/memory/observe.ts`)
 
 `kind` is the dominant activity of the turn. `vector` is a unit-length 256-float hashed term-frequency embedding (`src/memory/embed.ts`), rounded to five decimals so the file stays compact without changing cosine ranking. A sibling `<session>.cursor` file records the last event seq folded into observations, so capture is incremental; a project-wide `.counter` file holds the next id. See [Observation memory and semantic search](Observation-Memory).
 
-## The optimization ledger (`savings.jsonl`)
+## The optimization ledger (`savings.json`)
 
-One append-only line per scoped read (`SavingRecord` in `src/context/savings.ts`), recording what slipstream served against the whole-file baseline it replaced:
+A single bounded aggregate (`SavingsTally` in `src/context/savings.ts`): each scoped read folds its served bytes and whole-file baseline into the running totals, so the file never grows with usage and stays cheap to read on the statusline and dashboard hot paths.
 
 ```jsonc
-{"ts":"2026-06-04T10:00:00.000Z","tool":"sp_symbol","file":"src/greet.ts","servedBytes":300,"fullBytes":556}
+{ "scopedReads": 42, "servedBytes": 18400, "fullBytes": 96100 }
 ```
 
-`loadSavings` totals the lines and `summarizeSavings` turns the tally into saved tokens and the percentage trimmed, surfaced by `sp_savings`, `slipstream savings`, the `opt %` statusline segment and the dashboard. Exact in any editor, since it derives only from slipstream's own calls.
+`recordSaving` updates it under the shared advisory lock; `summarizeSavings` turns the tally into saved tokens and the percentage trimmed, surfaced by `sp_savings`, `slipstream savings`, the `opt %` statusline segment and the dashboard. Exact in any editor, since it derives only from slipstream's own calls.
 
 ## budget.json
 

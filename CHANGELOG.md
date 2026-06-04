@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.1]
+
+### Changed
+
+- Code-review hardening (no behaviour change for users):
+  - **Performance on the statusline hot path.** The observation count is now a
+    cheap line tally (`countObservations`) instead of fully parsing every
+    observation and its 256-float vector; the transcript reader reads only the
+    tail (128 KB) instead of the whole file; `budget.json` is written only when
+    the true token count actually changes.
+  - **Bounded optimization store.** The savings ledger is now a small aggregate
+    `savings.json` updated in place, instead of an append-only `savings.jsonl`
+    re-parsed in full on every read — bounded size, cheap reads.
+  - **De-duplication.** Extracted the advisory lock to `src/util/lock.ts`
+    (`withFileLock`, shared by the event log, observation counter and savings) and
+    the path→concept-stem helper to `src/util/text.ts` (`conceptStems`, shared by
+    observation tagging and lesson distillation); the dashboard budget gauge now
+    uses `BYTES_PER_TOKEN` instead of a literal `3.6`.
+  - **Robustness.** The dashboard's JSON body reader caps requests at 64 KB.
+- CI status, version, tests and node badges added to the README. 1 new test
+  (120 total).
+
 ## [0.5.0]
 
 ### Added
@@ -146,7 +168,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Continuous integration running install, lint, build, plugin validation and
   tests on push to main and on every pull request.
 
-[Unreleased]: https://github.com/sarmakska/slipstream/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/sarmakska/slipstream/compare/v0.5.1...HEAD
+[0.5.1]: https://github.com/sarmakska/slipstream/releases/tag/v0.5.1
 [0.5.0]: https://github.com/sarmakska/slipstream/releases/tag/v0.5.0
 [0.4.0]: https://github.com/sarmakska/slipstream/releases/tag/v0.4.0
 [0.3.0]: https://github.com/sarmakska/slipstream/releases/tag/v0.3.0

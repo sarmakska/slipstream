@@ -7,25 +7,26 @@
  * the host. It is computed entirely from slipstream's own tool calls, so it works
  * the same in Claude Code, Cursor, Windsurf, Antigravity or any MCP editor.
  *
- * The ledger is an append-only JSONL under the project, one line per scoped read,
- * matching slipstream's other stores. Reading it sums to a tally; summarising the
- * tally gives saved tokens and the percentage trimmed. Append is the only write,
- * so there is no lock and no read-modify-write to race.
+ * Storage is a single small aggregate, `savings.json` ({scopedReads, servedBytes,
+ * fullBytes}), updated in place. That keeps it bounded — it never grows with usage
+ * — and cheap to read, which matters because the statusline and the dashboard read
+ * it on hot paths. The update is a read-modify-write under the shared advisory
+ * lock so two scoped reads cannot clobber each other's increment.
  */
 
-import { mkdir, open, readFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { estimateTokens } from "./budget.js";
+import { withFileLock } from "../util/lock.js";
 
-export const SAVINGS_FILE = join(".claude", "slipstream", "savings.jsonl");
+export const SAVINGS_FILE = join(".claude", "slipstream", "savings.json");
 
 export function savingsPath(projectRoot: string): string {
   return join(resolve(projectRoot), SAVINGS_FILE);
 }
 
-/** One scoped-read record: what slipstream served versus the whole-file baseline. */
+/** One scoped-read measurement: what slipstream served versus the whole file. */
 export interface SavingRecord {
-  ts: string;
   tool: string;
   file: string;
   /** Bytes slipstream actually returned. */
@@ -49,51 +50,45 @@ export interface SavingsSummary extends SavingsTally {
   pct: number;
 }
 
-/**
- * Append one scoped-read record. Fire-and-forget from the tool layer: a failure to
- * record savings must never break the tool call, so callers swallow errors. Only
- * records where the full baseline genuinely exceeds what was served, so a slice of
- * a tiny file never shows as a "saving" of nothing.
- */
-export async function recordSaving(
-  projectRoot: string,
-  rec: Omit<SavingRecord, "ts">
-): Promise<void> {
-  if (!(rec.fullBytes > 0) || rec.servedBytes < 0) return;
-  await mkdir(join(resolve(projectRoot), ".claude", "slipstream"), { recursive: true });
-  const line =
-    JSON.stringify({ ts: new Date().toISOString(), ...rec }) + "\n";
-  const handle = await open(savingsPath(projectRoot), "a");
+const EMPTY: SavingsTally = { scopedReads: 0, servedBytes: 0, fullBytes: 0 };
+
+/** Read the aggregate tally. A missing or malformed file is an empty tally. */
+export async function loadSavings(projectRoot: string): Promise<SavingsTally> {
   try {
-    await handle.write(line);
-  } finally {
-    await handle.close();
+    const raw = await readFile(savingsPath(projectRoot), "utf8");
+    const t = JSON.parse(raw) as Partial<SavingsTally>;
+    return {
+      scopedReads: Number(t.scopedReads) || 0,
+      servedBytes: Number(t.servedBytes) || 0,
+      fullBytes: Number(t.fullBytes) || 0
+    };
+  } catch {
+    return { ...EMPTY };
   }
 }
 
-/** Read the ledger and total it. A missing file is an empty tally, not an error. */
-export async function loadSavings(projectRoot: string): Promise<SavingsTally> {
-  let raw: string;
-  try {
-    raw = await readFile(savingsPath(projectRoot), "utf8");
-  } catch {
-    return { scopedReads: 0, servedBytes: 0, fullBytes: 0 };
-  }
-  const tally: SavingsTally = { scopedReads: 0, servedBytes: 0, fullBytes: 0 };
-  for (const line of raw.split("\n")) {
-    const t = line.trim();
-    if (!t) continue;
-    try {
-      const r = JSON.parse(t) as SavingRecord;
-      if (typeof r.fullBytes !== "number" || typeof r.servedBytes !== "number") continue;
-      tally.scopedReads += 1;
-      tally.servedBytes += r.servedBytes;
-      tally.fullBytes += r.fullBytes;
-    } catch {
-      // skip a malformed line
-    }
-  }
-  return tally;
+/**
+ * Record one scoped read by folding it into the aggregate. Fire-and-forget from
+ * the tool layer: a failure to record savings must never break the tool call, so
+ * callers swallow errors. Only counts a read where the full baseline genuinely
+ * exceeds what was served, so slicing a tiny file never shows as a saving.
+ */
+export async function recordSaving(
+  projectRoot: string,
+  rec: SavingRecord
+): Promise<void> {
+  if (!(rec.fullBytes > 0) || rec.servedBytes < 0) return;
+  await mkdir(join(resolve(projectRoot), ".claude", "slipstream"), { recursive: true });
+  const path = savingsPath(projectRoot);
+  await withFileLock(path, async () => {
+    const current = await loadSavings(projectRoot);
+    const next: SavingsTally = {
+      scopedReads: current.scopedReads + 1,
+      servedBytes: current.servedBytes + rec.servedBytes,
+      fullBytes: current.fullBytes + rec.fullBytes
+    };
+    await writeFile(path, JSON.stringify(next), "utf8");
+  });
 }
 
 /** Turn a tally into saved tokens and the percentage trimmed. Pure. */

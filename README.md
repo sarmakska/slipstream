@@ -5,6 +5,10 @@
 <p align="center"><em>slipstream is not affiliated with or endorsed by Anthropic. Claude and Claude Code are trademarks of Anthropic, referenced here only to describe compatibility.</em></p>
 
 <p align="center">
+<a href="https://github.com/sarmakska/slipstream/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/sarmakska/slipstream/actions/workflows/ci.yml/badge.svg"></a>
+<a href="https://github.com/sarmakska/slipstream/releases"><img alt="Version" src="https://img.shields.io/github/package-json/v/sarmakska/slipstream"></a>
+<img alt="Tests" src="https://img.shields.io/badge/tests-120%20passing-brightgreen">
+<img alt="Node" src="https://img.shields.io/badge/node-%3E%3D20-brightgreen">
 <a href="./LICENSE"><img alt="License: MIT" src="https://img.shields.io/github/license/sarmakska/slipstream"></a>
 <a href="https://github.com/sarmakska/slipstream"><img alt="Language" src="https://img.shields.io/github/languages/top/sarmakska/slipstream"></a>
 <a href="https://github.com/sarmakska/slipstream/commits/main"><img alt="Last commit" src="https://img.shields.io/github/last-commit/sarmakska/slipstream"></a>
@@ -76,7 +80,7 @@ $ node dist/cli/index.js slice . src/map/retrieve.ts retrieveSymbol | wc -c
 
 That gap widens with file size. Orienting in the whole `src/` tree by reading every file is about 40,597 tokens (146,150 bytes); reading the `sp_map` index instead is about 2,173 tokens (7,821 bytes), **5.4% of reading everything**. The dashboard's token-budget bar makes this visible while it happens: with the tools on, the bar crawls; with whole-file reads, it lurches.
 
-slipstream keeps a running tally of exactly this. Every scoped read records the bytes it served against the whole-file baseline to `.claude/slipstream/savings.jsonl`, so `sp_savings` (and the `opt %` statusline segment, and the dashboard's Session-work panel) can tell you "saved ~N tokens, Y% less than whole-file reads". Because it is computed from slipstream's own calls, that number is exact in **every** editor — Cursor, Windsurf, Antigravity, VS Code — even where the true context count is not readable.
+slipstream keeps a running tally of exactly this. Every scoped read folds the bytes it served against the whole-file baseline into a small `.claude/slipstream/savings.json`, so `sp_savings` (and the `opt %` statusline segment, and the dashboard's Session-work panel) can tell you "saved ~N tokens, Y% less than whole-file reads". Because it is computed from slipstream's own calls, that number is exact in **every** editor — Cursor, Windsurf, Antigravity, VS Code — even where the true context count is not readable.
 
 ## The MCP tools
 
@@ -281,7 +285,7 @@ pnpm validate
 pnpm plugin-validate
 ```
 
-The suite is 119 tests across 13 files; `pnpm test` runs them in about 1.6s. Beyond the dashboard tests (event validity, the concurrency-safe append-only writer under 25 parallel writers, a real SSE server end to end, idempotent start, replay), the suite spawns the real MCP server over stdio and asserts `tools/list` and a `sp_symbol` call return correct, minimal output; checks the PreCompact digest builds and reloads; checks signal-ranked recall returns only the relevant subset within budget; exercises the local embedding, the turn-folding observation capture and the three-layer semantic search; pins the statusline string; and runs doctor against both the real tree and a deliberately broken one.
+The suite is 120 tests across 13 files; `pnpm test` runs them in about 1.6s. Beyond the dashboard tests (event validity, the concurrency-safe append-only writer under 25 parallel writers, a real SSE server end to end, idempotent start, replay), the suite spawns the real MCP server over stdio and asserts `tools/list` and a `sp_symbol` call return correct, minimal output; checks the PreCompact digest builds and reloads; checks signal-ranked recall returns only the relevant subset within budget; exercises the local embedding, the turn-folding observation capture and the three-layer semantic search; pins the statusline string; and runs doctor against both the real tree and a deliberately broken one.
 
 The wiki has the full write-up: [Home](https://github.com/sarmakska/slipstream/wiki) . [Architecture](https://github.com/sarmakska/slipstream/wiki/Architecture) . [MCP-Tools](https://github.com/sarmakska/slipstream/wiki/MCP-Tools) . [Lossless-Compaction](https://github.com/sarmakska/slipstream/wiki/Lossless-Compaction) . [Memory-Recall](https://github.com/sarmakska/slipstream/wiki/Memory-Recall) . [Subagents](https://github.com/sarmakska/slipstream/wiki/Subagents) . [Statusline](https://github.com/sarmakska/slipstream/wiki/Statusline) . [Output-Style](https://github.com/sarmakska/slipstream/wiki/Output-Style) . [Live-Agent-Dashboard](https://github.com/sarmakska/slipstream/wiki/Live-Agent-Dashboard) . [Token-Efficiency](https://github.com/sarmakska/slipstream/wiki/Token-Efficiency) . [Skill-Engine](https://github.com/sarmakska/slipstream/wiki/Skill-Engine) . [Skill-Catalogue](https://github.com/sarmakska/slipstream/wiki/Skill-Catalogue) . [Writing-a-Skill](https://github.com/sarmakska/slipstream/wiki/Writing-a-Skill) . [Hooks](https://github.com/sarmakska/slipstream/wiki/Hooks) . [Install-in-VS-Code](https://github.com/sarmakska/slipstream/wiki/Install-in-VS-Code) . [FAQ](https://github.com/sarmakska/slipstream/wiki/FAQ) . [Troubleshooting](https://github.com/sarmakska/slipstream/wiki/Troubleshooting) . [Roadmap-and-Limitations](https://github.com/sarmakska/slipstream/wiki/Roadmap-and-Limitations)
 

@@ -19,10 +19,12 @@
  * (captureObservations) does the reading, id assignment and appending under a lock.
  */
 
-import { open, mkdir, readFile, readdir, rm, stat, writeFile } from "node:fs/promises";
+import { open, mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { readLog } from "../dashboard/log.js";
 import type { DashboardEvent } from "../dashboard/events.js";
+import { withFileLock } from "../util/lock.js";
+import { conceptStems } from "../util/text.js";
 import { embed } from "./embed.js";
 
 export const OBSERVATIONS_SUBDIR = join(".claude", "slipstream", "observations");
@@ -104,16 +106,6 @@ function bucketOf(tool: string): ObservationKind {
   return "note";
 }
 
-/** Path stems (no dir, no extension) for tags, the part that names a concept. */
-function stemsOf(paths: string[]): string[] {
-  const out = new Set<string>();
-  for (const p of paths) {
-    const base = (p.split(/[\\/]/).pop() ?? p).replace(/\.[a-z0-9]+$/i, "");
-    if (base.length > 1) out.add(base.toLowerCase());
-  }
-  return [...out];
-}
-
 /** A turn under construction while folding the event stream. */
 interface Turn {
   prompt?: string;
@@ -178,7 +170,7 @@ function materialise(t: Turn, session: string, id: number): Observation {
 
   const tags = [
     kind,
-    ...stemsOf(files),
+    ...conceptStems(files),
     ...[...t.tools.keys()].map((tool) => tool.toLowerCase())
   ].slice(0, 16);
 
@@ -274,35 +266,6 @@ export function foldObservations(
   return { observations, consumedThroughSeq: consumed };
 }
 
-const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
-
-/** A small advisory lock so two captures cannot assign the same id. */
-async function withLock<T>(file: string, fn: () => Promise<T>, timeoutMs = 1500): Promise<T> {
-  const lock = `${file}.lock`;
-  const deadline = Date.now() + timeoutMs;
-  let held = false;
-  while (Date.now() < deadline) {
-    try {
-      const handle = await open(lock, "wx");
-      await handle.close();
-      held = true;
-      break;
-    } catch {
-      const age = await stat(lock).then((s) => Date.now() - s.mtimeMs).catch(() => Infinity);
-      if (age > 5000) {
-        await rm(lock).catch(() => {});
-        continue;
-      }
-      await sleep(15);
-    }
-  }
-  try {
-    return await fn();
-  } finally {
-    if (held) await rm(lock).catch(() => {});
-  }
-}
-
 async function readCursor(projectRoot: string, session: string): Promise<number> {
   const raw = await readFile(cursorPath(projectRoot, session), "utf8").catch(() => "");
   const n = Number.parseInt(raw.trim(), 10);
@@ -343,7 +306,7 @@ export async function captureObservations(
   await mkdir(dir, { recursive: true });
   const file = obsLogPath(projectRoot, session);
 
-  return withLock(counterPath(projectRoot), async () => {
+  return withFileLock(counterPath(projectRoot), async () => {
     const cursor = await readCursor(projectRoot, session);
     const events = (await readLog(projectRoot, session)).filter((e) => e.seq > cursor);
     if (events.length === 0) return [];
@@ -418,6 +381,28 @@ export async function loadObservations(
     }
   }
   return out.sort((a, b) => a.id - b.id);
+}
+
+/**
+ * Count observations cheaply, without parsing JSON or loading the 256-float
+ * vectors. The statusline calls this on every render, so it must stay light: it
+ * tallies non-empty lines across the session logs instead of building records.
+ */
+export async function countObservations(projectRoot: string): Promise<number> {
+  const dir = observationsDir(projectRoot);
+  let entries;
+  try {
+    entries = await readdir(dir, { withFileTypes: true });
+  } catch {
+    return 0;
+  }
+  let count = 0;
+  for (const entry of entries) {
+    if (!entry.isFile() || !entry.name.endsWith(".jsonl")) continue;
+    const raw = await readFile(join(dir, entry.name), "utf8").catch(() => "");
+    for (const line of raw.split("\n")) if (line.trim()) count += 1;
+  }
+  return count;
 }
 
 /** Fetch full observations by id, in the order requested, skipping unknown ids. */

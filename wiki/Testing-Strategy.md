@@ -1,6 +1,6 @@
 # Testing strategy
 
-The suite is 119 tests across 13 files, run with `pnpm test` (Vitest). It runs in about 1.6 s. The strategy is to test the pure cores directly and to spawn the real processes where a process boundary is the thing that could break.
+The suite is 120 tests across 13 files, run with `pnpm test` (Vitest). It runs in about 1.6 s. The strategy is to test the pure cores directly and to spawn the real processes where a process boundary is the thing that could break.
 
 ## What each file covers
 

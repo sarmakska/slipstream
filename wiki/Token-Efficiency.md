@@ -24,7 +24,7 @@ The gap widens with file size. Orienting in the whole `src/` tree by reading eve
 
 ## The optimization ledger
 
-slipstream does not just claim this saving, it measures it. Every scoped read (`sp_symbol`, `sp_lines`) appends a line to `.claude/slipstream/savings.jsonl` recording the bytes it served and the whole-file baseline it replaced (`src/context/savings.ts`). `sp_savings` and `slipstream savings` total it — "saved ~N tokens, Y% less than whole-file reads" — the statusline carries an `opt Y%` segment, and the dashboard's Session-work panel shows it live. Because it is derived from slipstream's own calls and known file sizes, the figure is **exact in any editor**, including the ones where the true context count cannot be read. It is the honest counterpart to the budget gauge: the gauge estimates what is in context, the ledger proves what slipstream kept out of it.
+slipstream does not just claim this saving, it measures it. Every scoped read (`sp_symbol`, `sp_lines`) folds the bytes it served and the whole-file baseline it replaced into a small bounded `.claude/slipstream/savings.json` tally (`src/context/savings.ts`). `sp_savings` and `slipstream savings` total it — "saved ~N tokens, Y% less than whole-file reads" — the statusline carries an `opt Y%` segment, and the dashboard's Session-work panel shows it live. Because it is derived from slipstream's own calls and known file sizes, the figure is **exact in any editor**, including the ones where the true context count cannot be read. It is the honest counterpart to the budget gauge: the gauge estimates what is in context, the ledger proves what slipstream kept out of it.
 
 ## The MCP tools are the front door
 

@@ -14,7 +14,14 @@
  * than throwing, because this feeds a budget hint and must never break a render.
  */
 
-import { readFile } from "node:fs/promises";
+import { open } from "node:fs/promises";
+
+/**
+ * How much of the transcript tail to read. The latest usage block is the last
+ * assistant message, near the end of the file, so a tail is enough and keeps this
+ * cheap on the statusline's per-render hot path even for multi-megabyte sessions.
+ */
+const TAIL_BYTES = 128 * 1024;
 
 export interface ContextUsage {
   /** Real context-window occupancy: input + cache + output of the latest turn. */
@@ -73,13 +80,29 @@ export function contextUsageFromTranscript(lines: string[]): ContextUsage | null
   return null;
 }
 
-/** Read a transcript file and compute its true context usage, or null on any failure. */
+/**
+ * Read the tail of a transcript file and compute its true context usage, or null
+ * on any failure. Only the last TAIL_BYTES are read (the whole file if smaller),
+ * and a possibly-truncated first line is dropped, so this stays cheap no matter
+ * how long the session has run.
+ */
 export async function readContextUsage(transcriptPath: string): Promise<ContextUsage | null> {
   if (!transcriptPath) return null;
+  let handle;
   try {
-    const raw = await readFile(transcriptPath, "utf8");
-    return contextUsageFromTranscript(raw.split("\n"));
+    handle = await open(transcriptPath, "r");
+    const { size } = await handle.stat();
+    const length = Math.min(size, TAIL_BYTES);
+    const start = size - length;
+    const buf = Buffer.alloc(length);
+    await handle.read(buf, 0, length, start);
+    const lines = buf.toString("utf8").split("\n");
+    // If we started mid-file, the first line is likely partial; drop it.
+    if (start > 0 && lines.length > 1) lines.shift();
+    return contextUsageFromTranscript(lines);
   } catch {
     return null;
+  } finally {
+    await handle?.close().catch(() => {});
   }
 }
