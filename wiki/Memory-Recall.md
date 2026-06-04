@@ -73,6 +73,7 @@ There are two ways to recall, for two situations:
 
 ## See also
 
+- [Observation memory and semantic search](Observation-Memory) for the self-building counterpart: memory captured automatically each turn and searched by meaning.
 - [Lossless compaction](Lossless-Compaction) for the digest that is reloaded first.
 - [Memory system](Memory-System) for the store layout and the index.
 - [Configuration and tuning](Configuration-and-Tuning) for the recall budget.

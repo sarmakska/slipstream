@@ -32,7 +32,8 @@ flowchart LR
 
 - It never sends your code, prompts or memories anywhere. If it phoned home it would not be slipstream.
 - It never executes a skill's verification command for you; the agent runs gates, and you see them.
-- The `PreCompact` digest and the memory store are written under your project only. Add `.claude/slipstream/` to `.gitignore` to keep them off the remote, or commit `memory/` deliberately if you want to share durable facts with your team.
+- Everything is written under your project only, all under `.claude/slipstream/`: the `PreCompact` digest and the memory store, the auto-captured **observations**, the **budget.json** control and the **savings.json** optimization tally. Add `.claude/slipstream/` to `.gitignore` to keep them off the remote (slipstream's own `.gitignore` already does, anywhere in the tree), or commit `memory/` deliberately if you want to share durable facts with your team.
+- Observations are derived from the dashboard event log, which is already redacted, so the same masking covers the [observation memory](Observation-Memory) — a secret never reaches an observation either. The optimization tally records only byte counts, never content.
 
 ## sp-reviewer's secret scan
 

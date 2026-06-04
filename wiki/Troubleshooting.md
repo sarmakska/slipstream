@@ -45,7 +45,7 @@ Recall ranks lexically against the branch, changed files and tags. Add a tag tha
 Read the failing line. A missing `dist/` means the plugin was not built (`pnpm build`); a missing PreCompact line means the hooks file is stale; a missing subagent means `agents/` did not ship. Fix the named item and run it again.
 
 ### The statusline shows only "cp | ctx 0% ok"
-The script degraded because `dist/` is missing or the budget payload had no token data. Build the plugin; the budget is an estimate either way. See [Statusline](Statusline).
+The script degraded because `dist/` is missing or the budget payload had no token data. Build the plugin. Inside Claude Code the `ctx` reads the true count from the transcript and is marked with a `*` (`ctx 47%*`); without it, the budget is an estimate. See [Statusline](Statusline).
 
 ## Token efficiency
 
@@ -85,6 +85,28 @@ The server binds port 0, so the OS picks a free port and clashes should not happ
 
 ### A second start spawned nothing
 That is correct. Start is idempotent: a live server is reused, and the helper prints `already running at ...`.
+
+## Observation memory and optimization
+
+### memory search returns nothing
+Observations are captured on `Stop` (Claude Code) — a fresh project has none yet. Do some work, then try `sp_search_memory` or `npx slipstream memory search "..."`. To force a capture: `npx slipstream observe --session main`.
+
+### the "optimised" / opt% number stays at 0
+It only counts scoped reads (`sp_symbol`, `sp_lines`). If Claude is reading whole files, there is nothing to optimise yet — make sure a map exists (`/slipstream:map`) so it reaches for slices. Check the tally with `npx slipstream savings`.
+
+### lessons are empty
+`sp_lessons` needs a topic to recur (default 3+ observations across the store). Lower the bar with `--min 2`, or keep working.
+
+## Cross-IDE (Cursor, Windsurf, Antigravity, VS Code)
+
+### the dashboard does not appear in another editor
+The MCP server auto-starts it on connect. Ask the agent to call `sp_dashboard` for the URL. If nothing starts, confirm the server is registered (it answers `sp_map`) and that `SLIPSTREAM_DASHBOARD` is not set to `0` in that editor's MCP env.
+
+### the dashboard is empty in another editor
+Activity is emitted by the MCP server after each tool call there (no hooks). It fills as the agent uses the `sp_*` tools; if it stays empty, confirm `SLIPSTREAM_MCP_EMIT` is not `0` in the editor's MCP config. See [Cross-IDE support](Cross-IDE-Support).
+
+### the budget gauge says "estimated", not "actual"
+Only Claude Code exposes a readable transcript, so only there is the count true. In other editors paste your editor's real token number into `.claude/slipstream/budget.json` as `actualTokens` to calibrate.
 
 ## Validation
 

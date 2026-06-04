@@ -10,7 +10,19 @@ Reads. Instead of opening a whole file, Claude calls `sp_symbol` for one declara
 
 ## Is the token budget real?
 
-It is an honest estimate, not Claude Code's internal counter (which a plugin cannot read). It counts bytes pulled through the helper at a cautious 3.6 bytes per token and is tuned to warn early. Treat the percentage as a strong hint, not gospel. See [Configuration and tuning](Configuration-and-Tuning).
+Inside Claude Code, yes: slipstream reads the session transcript's latest usage block for the true context-window occupancy and shows it marked exact (`ctx 47%*`). In an editor that exposes no readable transcript over MCP it falls back to a cautious estimate (bytes pulled at 3.6 bytes/token), which you can calibrate by pasting the editor's real number into `budget.json`'s `actualTokens`. Either way the gauge, the `sp_budget` tool and the statusline read the same `budget.json`. See [Cross-IDE support](Cross-IDE-Support) and [Configuration and tuning](Configuration-and-Tuning).
+
+## How much has slipstream actually saved me?
+
+Run `sp_savings` or `slipstream savings`, or read the "optimised" line in the dashboard's Session-work panel and the `opt %` statusline segment. Every scoped read records the bytes it served versus the whole-file baseline, so the figure ("saved ~N tokens, Y% less than whole-file reads") is exact — and works in every editor, not just Claude Code, because it is computed from slipstream's own calls. See [Token efficiency](Token-Efficiency).
+
+## Does it remember what I did automatically?
+
+Yes. Beyond the facts you save with `/slipstream:remember`, every turn is folded into a compact, semantically searchable observation. Query it with `sp_search_memory` → `sp_timeline` → `sp_observations`, and ask `sp_lessons` for the topics you keep returning to. See [Observation memory and semantic search](Observation-Memory).
+
+## Does it work in Cursor, Windsurf, Antigravity or plain VS Code?
+
+The MCP layer does: the `sp_*` tools, memory search, the live dashboard, the budget gauge and the optimization metric all work via the MCP server, which feeds and auto-starts the dashboard with no hooks. Skills, slash commands and the statusline are Claude Code plugin features. The true token count needs Claude Code's transcript; elsewhere the budget is an estimate. See [Cross-IDE support](Cross-IDE-Support).
 
 ## Does my code or my memory leave the machine?
 

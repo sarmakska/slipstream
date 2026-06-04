@@ -10,8 +10,8 @@ You need Node 20 or newer and pnpm.
 pnpm install --frozen-lockfile
 pnpm build           # tsc to dist/
 pnpm lint            # eslint
-pnpm test            # vitest, 88 tests
-pnpm validate        # the 59 skills load cleanly
+pnpm test            # vitest, 120 tests
+pnpm validate        # the 63 skills load cleanly
 pnpm plugin-validate # the whole plugin is well formed
 ```
 

@@ -22,7 +22,7 @@ flowchart TD
   subgraph CC[Claude Code in VS Code]
     Hooks[Hooks incl. PreCompact]
     Cmds[Slash commands]
-    Skills[59 agent skills]
+    Skills[63 agent skills]
     Agents[Subagents]
     SL[Statusline]
   end
@@ -62,7 +62,7 @@ flowchart TD
 | [Architecture](Architecture) | Repo shape, modules, the data path |
 | [Memory system](Memory-System) | The file-based store and the index |
 | [Skill engine](Skill-Engine) | The skill contract and loader |
-| [Skill catalogue](Skill-Catalogue) | The 59 skills by category |
+| [Skill catalogue](Skill-Catalogue) | The 63 skills by category |
 | [Writing a skill](Writing-a-Skill) | Author a skill that passes validation |
 | [Hooks](Hooks) | Every wired hook and what it emits |
 | [Configuration and tuning](Configuration-and-Tuning) | Every knob and env var |

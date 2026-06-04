@@ -46,13 +46,17 @@ Output shape:
 
 `hooks/subagent-stop.mjs` fires when a Task subagent finishes. It records a `subagent-stop` event against the subagent's own id, so its activity groups separately in the dashboard and its status flips to done (or failed). There is no `SubagentStart` event today, so the dashboard infers a subagent from the first event that names it.
 
-## Stop: persist durable facts
+## Stop: persist durable facts and capture the turn
 
-`hooks/stop.mjs` fires when Claude finishes responding. Roughly one stop in three, it injects a reminder to save any durable decision, convention or gotcha with `/slipstream:remember`. It is intentionally light and probabilistic so it does not loop or become noise; the agent decides whether anything is worth keeping.
+`hooks/stop.mjs` fires when Claude finishes responding. It does two things. First, roughly one stop in three, it injects a reminder to save any durable decision, convention or gotcha with `/slipstream:remember` — intentionally light and probabilistic so it does not loop or become noise; the agent decides whether anything is worth keeping. Second, it fires `slipstream observe` (detached, swallowed) to fold the just-closed turn out of the dashboard event log into the [observation memory](Observation-Memory). The `stop` event closes the turn, so capture is safe to run here; it is incremental and idempotent via a per-session cursor.
 
 ## PreCompact: lossless compaction
 
 `hooks/pre-compact.mjs` fires just before Claude Code compacts the conversation. It reconstructs the session from the dashboard event log, builds a structured digest (open task, decisions, files touched, next step), writes it to the memory store as a durable fact, and emits a dashboard event. On the next session start the digest is reloaded first. The hook never throws, so it cannot interfere with compaction. Claude Code passes a `trigger` field (`manual` for `/compact`, `auto` when the window fills) and optional `custom_instructions`, which become the open-task hint. See [Lossless compaction](Lossless-Compaction) for the full walkthrough.
+
+## Outside Claude Code: no hooks, but still fed
+
+Editors other than Claude Code (Cursor, Windsurf, Antigravity) do not run these hooks. There the bundled MCP server feeds the dashboard itself — it appends a `post-tool` event after each tool call and auto-starts the dashboard on connect — so the live view still fills with no hooks. See [Cross-IDE support](Cross-IDE-Support). Inside Claude Code that path is gated off (`SLIPSTREAM_MCP_EMIT=0`, `SLIPSTREAM_DASHBOARD=0` in the plugin manifest) because these hooks already do it.
 
 ## Testing a hook by hand
 

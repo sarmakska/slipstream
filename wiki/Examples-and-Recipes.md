@@ -68,6 +68,54 @@ node dist/cli/index.js recall-signal --branch fix/stripe-webhook \
 
 Prints only the matching memories, with the match reasons.
 
+## Search what you did weeks ago
+
+Memory builds itself from every turn. To find past work, in chat just ask ("when did we touch the Stripe webhook?") and Claude runs the three-layer search. By hand:
+
+```
+node dist/cli/index.js memory search "stripe webhook signature"   # cheap ranked index
+node dist/cli/index.js memory timeline 12 --window 2              # context around a hit
+node dist/cli/index.js memory observations 12 13                  # full detail for the ids
+```
+
+## See what this project keeps making you do
+
+```
+node dist/cli/index.js memory lessons --min 3
+# - Recurring work on "webhook": 6 observations across 3 sessions, mostly edit; files: src/payments/webhook.ts.
+```
+
+In chat this is `sp_lessons`. Promote a recurring lesson to a durable fact with `/slipstream:remember`.
+
+## Check how much slipstream optimised
+
+```
+node dist/cli/index.js savings
+# slipstream optimization: 18 scoped reads served ~3,100 tokens instead of ~21,800 — saved ~18,700 tokens (86% less than whole-file reads).
+```
+
+In chat this is `sp_savings`; it also shows as the `opt %` statusline segment and in the dashboard's Session-work panel. Exact in any editor.
+
+## Set a token budget
+
+Open the dashboard, use the "set budget" panel (target + warn/compact thresholds), or:
+
+```
+node dist/cli/index.js budget --bytes 0   # shows the current level against budget.json
+```
+
+Inside Claude Code the gauge reads the true context size from the transcript; elsewhere paste your editor's real number into `.claude/slipstream/budget.json` as `actualTokens` to calibrate.
+
+## Use slipstream in Cursor / Windsurf / Antigravity
+
+Register the built server in the editor's MCP config, then ask the agent to call `sp_dashboard` for the live URL:
+
+```json
+{ "mcpServers": { "slipstream": { "command": "node", "args": ["/abs/path/to/slipstream/dist/mcp/index.js"] } } }
+```
+
+The dashboard fills with no hooks, the budget gauge and optimization total work, and memory search is in the panel. See [Cross-IDE support](Cross-IDE-Support).
+
 ## Delegate a pre-push review
 
 In chat: "use sp-reviewer to check this before I push." It runs lint, build, tests and a secret scan, reviews the diff, and ends with `PASS` or `FAIL`. See [Subagents](Subagents).

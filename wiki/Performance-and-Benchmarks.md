@@ -37,7 +37,7 @@ The point of slipstream is fewer tokens, not faster milliseconds. The measured t
 
 ## Test suite
 
-`pnpm test` runs **88 tests across 11 files in about 2.1 s**. The slowest files are the dashboard suite (a real SSE server end to end, 25 parallel log writers) and plugin-validate (it loads all 59 skills). The MCP stdio test spawns the real server and waits for three responses; it completes in well under a second.
+`pnpm test` runs **120 tests across 13 files in about 1.6 s**. The slowest files are the dashboard suite (a real SSE server end to end, 25 parallel log writers) and plugin-validate (it loads all 63 skills). The MCP stdio test spawns the real server and waits for three responses; it completes in well under a second.
 
 ## How to reproduce
 
