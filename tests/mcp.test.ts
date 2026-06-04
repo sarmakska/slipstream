@@ -2,8 +2,8 @@ import { describe, expect, it } from "vitest";
 import { spawn } from "node:child_process";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { readFile, mkdtemp, rm } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { readFile } from "node:fs/promises";
+import { readFileSync } from "node:fs";
 import {
   handleRequest,
   TOOL_DESCRIPTORS,
@@ -24,6 +24,12 @@ describe("mcp request handler", () => {
     expect(res?.result).toMatchObject({
       serverInfo: { name: "slipstream" }
     });
+    // The reported version must track package.json, never a hardcoded literal.
+    const pkg = JSON.parse(
+      readFileSync(join(here, "..", "package.json"), "utf8")
+    ) as { version: string };
+    const serverInfo = (res?.result as { serverInfo: { version: string } }).serverInfo;
+    expect(serverInfo.version).toBe(pkg.version);
   });
 
   it("lists every sp_ tool", async () => {
@@ -111,21 +117,6 @@ describe("sp_map and sp_search never embed file contents", () => {
     const out = result.content[0]?.text ?? "";
     expect(out).toContain("src/greet.ts");
     expect(out).not.toContain("return `hello");
-  });
-});
-
-// The sp_digest tests below were from the original PR #8 implementation which
-// returned plain-text. The shipped sp_digest in fa2bf8f returns JSON and is
-// fully covered by tests/sp-digest-resume.test.ts, so this block is retired.
-describe.skip("sp_digest checkpoints the session (cross-IDE compaction)", () => {
-  it("retired in favour of sp-digest-resume.test.ts", async () => {
-    const root = await mkdtemp(join(tmpdir(), "slipstream-digest-empty-"));
-    try {
-      const result = await callTool("sp_digest", {}, { defaultRoot: root });
-      expect(result.isError).toBeFalsy();
-    } finally {
-      await rm(root, { recursive: true, force: true });
-    }
   });
 });
 
