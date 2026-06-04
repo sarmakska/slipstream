@@ -38,7 +38,16 @@ import {
 } from "../memory/index.js";
 import { runDoctor, renderDoctor } from "../doctor/index.js";
 import { formatStatusline } from "../statusline/index.js";
-import { budget, guardRead } from "../context/index.js";
+import {
+  budget,
+  guardRead,
+  readContextUsage,
+  loadBudgetConfig,
+  saveBudgetConfig,
+  loadSavings,
+  summarizeSavings,
+  renderSavings
+} from "../context/index.js";
 import { buildMindMap, mindMapToMermaid } from "../dashboard/model.js";
 import { renderArtifact } from "../dashboard/artifact.js";
 import {
@@ -83,6 +92,7 @@ Usage:
   slipstream memory observations <id> [id...] [--root .]
   slipstream memory lessons [--min N] [--limit N] [--root .]
   slipstream observe [--root .] [--session S]
+  slipstream savings [--root .]
   slipstream mindmap [root] [--mermaid] [--html out.html]
   slipstream status [root] [--bytes N]
   slipstream dashboard start [--root .] [--session S] [--open] [--foreground]
@@ -92,7 +102,7 @@ Usage:
   slipstream validate [--skills dir]
   slipstream plugin-validate [--plugin dir]
   slipstream doctor [--plugin dir] [--root .]
-  slipstream statusline [--root .] [--bytes N] [--skill S] [--model M]
+  slipstream statusline [--root .] [--bytes N] [--skill S] [--model M] [--transcript path]
   slipstream recall-signal [--root .] [--branch B] [--files a,b] [--prompt "..."]
   slipstream digest [--root .] [--session S] [--trigger auto|manual] [--activity "a||b"] [--files a,b] [--open-task "..."]
 `;
@@ -324,6 +334,13 @@ async function cmdMemory(args: string[]): Promise<number> {
  * incremental and idempotent thanks to the per-session cursor, so running it twice
  * adds nothing the second time.
  */
+/** Report how much slipstream has optimised: scoped reads versus whole-file reads. */
+async function cmdSavings(args: string[]): Promise<number> {
+  const root = getFlag(args, "root") ?? ".";
+  console.log(renderSavings(summarizeSavings(await loadSavings(root))));
+  return 0;
+}
+
 async function cmdObserve(args: string[]): Promise<number> {
   const root = getFlag(args, "root") ?? ".";
   const session = getFlag(args, "session") ?? "main";
@@ -473,6 +490,7 @@ async function cmdStatusline(args: string[]): Promise<number> {
   const bytes = Number(getFlag(args, "bytes") ?? 0);
   const skill = getFlag(args, "skill");
   const model = getFlag(args, "model");
+  const transcript = getFlag(args, "transcript");
   let memoryCount = 0;
   try {
     memoryCount = (await listMemories(root)).length;
@@ -485,11 +503,34 @@ async function cmdStatusline(args: string[]): Promise<number> {
   } catch {
     observationCount = 0;
   }
+  let optimizationPct = 0;
+  try {
+    optimizationPct = summarizeSavings(await loadSavings(root)).pct;
+  } catch {
+    optimizationPct = 0;
+  }
+
+  // Prefer the true context size from the host transcript when one is supplied,
+  // so the gauge reflects the whole window, not just bytes slipstream served.
+  // Persist it to budget.json so the dashboard gauge reads the same real number.
+  const config = await loadBudgetConfig(root).catch(() => null);
+  let actualTokens: number | undefined;
+  if (transcript) {
+    const usage = await readContextUsage(transcript);
+    if (usage) {
+      actualTokens = usage.contextTokens;
+      await saveBudgetConfig(root, { actualTokens }).catch(() => {});
+    }
+  }
+
   console.log(
     formatStatusline({
       bytesRead: bytes,
+      actualTokens,
+      windowTokens: config?.targetTokens,
       memoryCount,
       observationCount,
+      optimizationPct,
       activeSkill: skill,
       model
     })
@@ -592,6 +633,8 @@ async function main(): Promise<number> {
       return cmdMemory(rest);
     case "observe":
       return cmdObserve(rest);
+    case "savings":
+      return cmdSavings(rest);
     case "mindmap":
       return cmdMindmap(rest);
     case "status":

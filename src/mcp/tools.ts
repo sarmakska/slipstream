@@ -11,6 +11,8 @@
  * cannot be bypassed.
  */
 
+import { stat } from "node:fs/promises";
+import { join, resolve } from "node:path";
 import {
   generateMap,
   mapToMarkdown,
@@ -22,6 +24,7 @@ import { buildMindMap, mindMapToMermaid } from "../dashboard/model.js";
 import { startDashboard } from "../dashboard/launch.js";
 import { budget } from "../context/budget.js";
 import { loadBudgetConfig, configToFractions } from "../context/budget-config.js";
+import { recordSaving, loadSavings, summarizeSavings, renderSavings } from "../context/savings.js";
 import {
   addMemory,
   listMemories,
@@ -247,9 +250,18 @@ export const TOOL_DESCRIPTORS: ToolDescriptor[] = [
     }
   },
   {
+    name: "sp_savings",
+    description:
+      "Use to report how much slipstream has optimised: total tokens served by scoped reads (sp_symbol/sp_lines) versus what the whole files would have cost, and the percentage trimmed. Computed from slipstream's own tool calls, so it works in any editor.",
+    inputSchema: {
+      type: "object",
+      properties: { root: { type: "string" } }
+    }
+  },
+  {
     name: "sp_dashboard",
     description:
-      "Use to open the live work dashboard: ensures the local dashboard server is running and returns its URL, so you can watch activity, the token-budget gauge and memory search in a browser tab. Works in any editor, not only Claude Code.",
+      "Use to open the live work dashboard: ensures the local dashboard server is running and returns its URL, so you can watch activity, the token-budget gauge, the optimization total and memory search in a browser tab. Works in any editor, not only Claude Code.",
     inputSchema: {
       type: "object",
       properties: { root: { type: "string" } }
@@ -286,9 +298,18 @@ export async function callTool(
         const file = String(args["file"] ?? "");
         const symbol = String(args["symbol"] ?? "");
         if (!file || !symbol) return err("sp_symbol needs file and symbol");
-        const map = await generateMap(rootOf(args, ctx));
+        const root = rootOf(args, ctx);
+        const map = await generateMap(root);
         const slice = await retrieveSymbol(map, file, symbol);
         if (!slice) return err(`no symbol "${symbol}" in ${file}`);
+        // Record the saving: a scoped slice instead of the whole file.
+        const fullBytes = map.files.find((f) => f.path === slice.path)?.bytes ?? 0;
+        recordSaving(root, {
+          tool: "sp_symbol",
+          file: slice.path,
+          servedBytes: Buffer.byteLength(slice.code, "utf8"),
+          fullBytes
+        }).catch(() => {});
         return text(
           `// ${slice.path}:${slice.startLine}-${slice.endLine} (${slice.kind})\n${slice.code}`
         );
@@ -300,8 +321,18 @@ export async function callTool(
         if (!file || !Number.isFinite(start) || !Number.isFinite(end)) {
           return err("sp_lines needs file, start and end");
         }
-        const slice = await retrieveLines(rootOf(args, ctx), file, start, end);
+        const root = rootOf(args, ctx);
+        const slice = await retrieveLines(root, file, start, end);
         if (!slice) return err(`could not read ${file}`);
+        const fullBytes = await stat(join(resolve(root), file))
+          .then((s) => s.size)
+          .catch(() => 0);
+        recordSaving(root, {
+          tool: "sp_lines",
+          file: slice.path,
+          servedBytes: Buffer.byteLength(slice.code, "utf8"),
+          fullBytes
+        }).catch(() => {});
         return text(`// ${slice.path}:${slice.startLine}-${slice.endLine}\n${slice.code}`);
       }
       case "sp_search": {
@@ -416,6 +447,10 @@ export async function callTool(
           limit: Number(args["limit"]) || 10
         });
         return text(renderLessons(lessons));
+      }
+      case "sp_savings": {
+        const summary = summarizeSavings(await loadSavings(rootOf(args, ctx)));
+        return text(renderSavings(summary));
       }
       case "sp_dashboard": {
         const result = await startDashboard({ projectRoot: rootOf(args, ctx), detached: true });

@@ -19,6 +19,11 @@ export const COMFORT_FRACTION = 0.6;
 export interface BudgetInput {
   /** Bytes pulled into context so far. */
   bytesRead: number;
+  /**
+   * A known true token count (e.g. read from the host transcript). When set it is
+   * used directly instead of estimating from bytes, so the report is exact.
+   */
+  approxTokens?: number;
   /** Optional override for the model window. */
   windowTokens?: number;
   /** Fraction at which the level becomes "warn". Defaults to COMFORT_FRACTION. */
@@ -53,7 +58,7 @@ export function budget(input: BudgetInput): BudgetReport {
   const windowTokens = input.windowTokens ?? DEFAULT_WINDOW_TOKENS;
   const warnFraction = input.warnFraction ?? COMFORT_FRACTION;
   const compactFraction = input.compactFraction ?? COMPACT_FRACTION;
-  const approxTokens = estimateTokens(input.bytesRead);
+  const approxTokens = input.approxTokens ?? estimateTokens(input.bytesRead);
   const usedFraction = approxTokens / windowTokens;
   const comfortTokens = Math.round(windowTokens * warnFraction);
 

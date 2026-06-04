@@ -37,9 +37,13 @@ One project-local store is the source of truth: the MCP server writes, the dashb
 
 **Phase 2 — zero setup.** On connect the server starts the dashboard itself (detached, idempotent), gated by `SLIPSTREAM_DASHBOARD` (the plugin sets it to `0` because its SessionStart hook already does this). Ask the agent to "open the dashboard" and the `sp_dashboard` tool returns the URL in any editor.
 
-**Phase 3 — budget control.** A single `.claude/slipstream/budget.json` (`targetTokens`, `warnPct`, `compactPct`, optional `actualTokens`) is read by the dashboard gauge, the `sp_budget` tool and the statusline alike, so they always agree. The dashboard gauge climbs as tools pull context, turning amber then red at your thresholds, and a panel lets you set them. The gauge measures *context slipstream pulled in* — an estimate, not the model's true token count, which no MCP server can see. Paste your editor's real number into `actualTokens` to calibrate.
+**Phase 3 — budget control.** A single `.claude/slipstream/budget.json` (`targetTokens`, `warnPct`, `compactPct`, optional `actualTokens`) is read by the dashboard gauge, the `sp_budget` tool and the statusline alike, so they always agree. The dashboard gauge climbs as tools pull context, turning amber then red at your thresholds, and a panel lets you set them.
 
-**Phase 4 — the work view.** The dashboard shows a rolled-up "Session work" panel — files touched, a tool-use breakdown and cumulative tokens — alongside the activity stream, plan, mind map and memory search, with a multi-session switcher and live SSE refresh.
+**Inside Claude Code the gauge shows the true number.** Claude Code's statusline payload includes `transcript_path`, and slipstream reads the latest `usage` block in that transcript — input + cache read + cache creation + output — to get the real context-window occupancy, then writes it to `budget.json` `actualTokens`. The gauge labels its source `actual` versus `estimated`, and the statusline marks an exact reading with a trailing `*` (`ctx 47%*`). In editors that expose no readable transcript over MCP, the gauge falls back to *context slipstream pulled in* (an estimate); paste your editor's real number into `actualTokens` to calibrate.
+
+**Phase 4 — the work view.** The dashboard shows a rolled-up "Session work" panel — files touched, a tool-use breakdown, cumulative tokens, and how much slipstream **optimised** (saved tokens and the percentage trimmed versus whole-file reads) — alongside the activity stream, plan, mind map and memory search, with a multi-session switcher and live SSE refresh.
+
+**The optimization metric works everywhere.** Unlike the context gauge, "how much slipstream saved you" needs nothing from the host: every scoped read records the bytes it served versus the whole-file baseline, so `sp_savings`, the `opt %` statusline segment and the dashboard report an exact figure in Cursor, Windsurf, Antigravity and VS Code just as in Claude Code. See [Token efficiency](Token-Efficiency).
 
 ## Setting it up in another editor
 
@@ -72,7 +76,7 @@ Open the editor, ask the agent to orient with `sp_map` and to call `sp_dashboard
 
 ## Honest limitations
 
-- The budget gauge is **estimated context pulled by slipstream**, not the model's true token count — no MCP server can read that. It is still useful (slipstream's job is shrinking what gets pulled in), and `actualTokens` lets you calibrate.
+- The budget gauge is **true inside Claude Code** (read from the session transcript) but only an **estimate** in editors that expose no readable transcript over MCP — there, no server can read the real token count. The estimate is still useful (slipstream's job is shrinking what gets pulled in), and `actualTokens` lets you calibrate it by hand.
 - Skills, slash commands and the statusline are Claude Code plugin features. Outside it they are partially replaced by MCP tools and the dashboard, not reproduced one-to-one.
 - A true in-editor panel (versus a browser tab) would need a dedicated editor extension; the browser dashboard is the portable surface.
 

@@ -22,6 +22,10 @@ $ node dist/cli/index.js slice . src/map/retrieve.ts retrieveSymbol | wc -c
 
 The gap widens with file size. Orienting in the whole `src/` tree by reading every file is about 40,597 tokens (146,150 bytes). Reading the `sp_map` index instead is about 2,173 tokens (7,821 bytes), **5.4% of reading everything**. So the first move of every session, orienting in the codebase, costs roughly one twentieth of what reading the files would.
 
+## The optimization ledger
+
+slipstream does not just claim this saving, it measures it. Every scoped read (`sp_symbol`, `sp_lines`) appends a line to `.claude/slipstream/savings.jsonl` recording the bytes it served and the whole-file baseline it replaced (`src/context/savings.ts`). `sp_savings` and `slipstream savings` total it — "saved ~N tokens, Y% less than whole-file reads" — the statusline carries an `opt Y%` segment, and the dashboard's Session-work panel shows it live. Because it is derived from slipstream's own calls and known file sizes, the figure is **exact in any editor**, including the ones where the true context count cannot be read. It is the honest counterpart to the budget gauge: the gauge estimates what is in context, the ledger proves what slipstream kept out of it.
+
 ## The MCP tools are the front door
 
 The bundled MCP server (`src/mcp`) exposes the map and scoped retrieval as tools Claude calls directly: `sp_map`, `sp_symbol`, `sp_lines`, `sp_search`. A single `sp_symbol` call replaces a whole-file `Read`. See [MCP tools](MCP-Tools) for the full surface and the discipline that keeps each result minimal.

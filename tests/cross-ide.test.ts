@@ -9,6 +9,8 @@ import {
   DEFAULT_BUDGET_CONFIG
 } from "../src/context/budget-config.js";
 import { sessionFromClient } from "../src/mcp/server.js";
+import { contextUsageFromTranscript } from "../src/context/transcript.js";
+import { summarizeSavings } from "../src/context/savings.js";
 import { distillLessons } from "../src/memory/lessons.js";
 import { embed } from "../src/memory/embed.js";
 import type { Observation } from "../src/memory/observe.js";
@@ -56,6 +58,58 @@ describe("MCP session id from client", () => {
 
   it("falls back to mcp when no client name is given", () => {
     expect(sessionFromClient(undefined).startsWith("mcp-")).toBe(true);
+  });
+});
+
+describe("true context from transcript", () => {
+  it("sums the latest usage block into the real context size", () => {
+    const lines = [
+      JSON.stringify({ type: "user", message: { role: "user" } }),
+      JSON.stringify({
+        type: "assistant",
+        message: {
+          usage: {
+            input_tokens: 1000,
+            cache_read_input_tokens: 8000,
+            cache_creation_input_tokens: 500,
+            output_tokens: 200
+          }
+        }
+      })
+    ];
+    const usage = contextUsageFromTranscript(lines)!;
+    expect(usage.contextTokens).toBe(9700);
+    expect(usage.inputTokens).toBe(1000);
+  });
+
+  it("uses the most recent usage, not an earlier one", () => {
+    const lines = [
+      JSON.stringify({ message: { usage: { input_tokens: 100, output_tokens: 10 } } }),
+      JSON.stringify({ message: { usage: { input_tokens: 5000, output_tokens: 300 } } })
+    ];
+    expect(contextUsageFromTranscript(lines)!.contextTokens).toBe(5300);
+  });
+
+  it("returns null when no line carries usage", () => {
+    const lines = [JSON.stringify({ type: "user" }), "not json", ""];
+    expect(contextUsageFromTranscript(lines)).toBeNull();
+  });
+});
+
+describe("optimization savings", () => {
+  it("computes saved tokens and the percentage trimmed", () => {
+    // 100k full bytes, 20k served -> 80k saved, 80% trimmed.
+    const s = summarizeSavings({ scopedReads: 5, servedBytes: 20_000, fullBytes: 100_000 });
+    expect(s.savedBytes).toBe(80_000);
+    expect(s.pct).toBe(80);
+    expect(s.savedTokens).toBe(s.fullTokens - s.servedTokens);
+    expect(s.savedTokens).toBeGreaterThan(0);
+  });
+
+  it("is zero and safe on an empty tally", () => {
+    const s = summarizeSavings({ scopedReads: 0, servedBytes: 0, fullBytes: 0 });
+    expect(s.pct).toBe(0);
+    expect(s.savedTokens).toBe(0);
   });
 });
 

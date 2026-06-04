@@ -22,7 +22,7 @@ Five things change the moment slipstream is installed and a project is open.
 2. **Memory builds itself, and you can search it.** Every turn of work is folded into a compact observation (summary, files touched, tags, a stable id, a local semantic vector) without anyone calling `remember`. You query it back through a three-layer search — `sp_search_memory` for a cheap ranked index, `sp_timeline` for context, `sp_observations` for full detail — so "what did we do about the auth bug three weeks ago" is answerable.
 3. **Context survives compaction.** A `PreCompact` hook (`hooks/pre-compact.mjs`) writes a structured digest of the session (open task, decisions, files touched, next steps) to the memory store the instant before Claude Code compacts. The next session reloads that digest, so the thread is not lost when the window is trimmed.
 4. **You watch the agents in a local dashboard.** Session start boots a `127.0.0.1` server and prints the URL into the chat. You glance at a tab and see which agent is on which step, and a Memory search panel queries your project's observations.
-5. **You see the budget in the statusline.** The status bar shows `cp | ctx 12% ok | mem 4 | obs 37 | skill scoped-read`, so the context budget, the memory counts and the active skill are always in view.
+5. **You see the budget — and the savings — in the statusline.** The status bar shows `cp | ctx 12% ok | mem 4 | obs 37 | opt 71% | skill scoped-read`. Inside Claude Code the `ctx` percentage is the **real** context-window occupancy read from the session transcript (shown as `ctx 12%*`, the `*` marking it exact rather than estimated); elsewhere it is a conservative estimate. `opt 71%` is how much slipstream's scoped reads trimmed versus whole-file reads — an exact figure in **any** editor.
 
 ## Why I built this
 
@@ -76,6 +76,8 @@ $ node dist/cli/index.js slice . src/map/retrieve.ts retrieveSymbol | wc -c
 
 That gap widens with file size. Orienting in the whole `src/` tree by reading every file is about 40,597 tokens (146,150 bytes); reading the `sp_map` index instead is about 2,173 tokens (7,821 bytes), **5.4% of reading everything**. The dashboard's token-budget bar makes this visible while it happens: with the tools on, the bar crawls; with whole-file reads, it lurches.
 
+slipstream keeps a running tally of exactly this. Every scoped read records the bytes it served against the whole-file baseline to `.claude/slipstream/savings.jsonl`, so `sp_savings` (and the `opt %` statusline segment, and the dashboard's Session-work panel) can tell you "saved ~N tokens, Y% less than whole-file reads". Because it is computed from slipstream's own calls, that number is exact in **every** editor — Cursor, Windsurf, Antigravity, VS Code — even where the true context count is not readable.
+
 ## The MCP tools
 
 The bundled MCP server (declared in `.claude-plugin/plugin.json` under `mcpServers`, served over stdio by `dist/mcp/index.js`) is the biggest single token win. Claude Code loads it automatically. The tools:
@@ -91,6 +93,7 @@ The bundled MCP server (declared in `.claude-plugin/plugin.json` under `mcpServe
 | `sp_timeline(around)` | layer 2: chronological context around an observation id or the best match for a query. |
 | `sp_observations(ids)` | layer 3: full detail for only the observation ids you filtered down to. |
 | `sp_lessons()` | recurring topics distilled from the observation store — what this project keeps making you work on — with citations. |
+| `sp_savings()` | how much slipstream optimised: tokens served by scoped reads versus whole-file reads, and the percentage trimmed. Exact in any editor. |
 | `sp_budget()` | the context-budget level (ok/warn/compact) against the shared `budget.json` target and thresholds. |
 | `sp_mindmap()` | the project as a themed Mermaid mind map. |
 | `sp_dashboard()` | ensures the live dashboard is running and returns its URL, in any editor. |
@@ -278,7 +281,7 @@ pnpm validate
 pnpm plugin-validate
 ```
 
-The suite is 114 tests across 13 files; `pnpm test` runs them in about 1.6s. Beyond the dashboard tests (event validity, the concurrency-safe append-only writer under 25 parallel writers, a real SSE server end to end, idempotent start, replay), the suite spawns the real MCP server over stdio and asserts `tools/list` and a `sp_symbol` call return correct, minimal output; checks the PreCompact digest builds and reloads; checks signal-ranked recall returns only the relevant subset within budget; exercises the local embedding, the turn-folding observation capture and the three-layer semantic search; pins the statusline string; and runs doctor against both the real tree and a deliberately broken one.
+The suite is 119 tests across 13 files; `pnpm test` runs them in about 1.6s. Beyond the dashboard tests (event validity, the concurrency-safe append-only writer under 25 parallel writers, a real SSE server end to end, idempotent start, replay), the suite spawns the real MCP server over stdio and asserts `tools/list` and a `sp_symbol` call return correct, minimal output; checks the PreCompact digest builds and reloads; checks signal-ranked recall returns only the relevant subset within budget; exercises the local embedding, the turn-folding observation capture and the three-layer semantic search; pins the statusline string; and runs doctor against both the real tree and a deliberately broken one.
 
 The wiki has the full write-up: [Home](https://github.com/sarmakska/slipstream/wiki) . [Architecture](https://github.com/sarmakska/slipstream/wiki/Architecture) . [MCP-Tools](https://github.com/sarmakska/slipstream/wiki/MCP-Tools) . [Lossless-Compaction](https://github.com/sarmakska/slipstream/wiki/Lossless-Compaction) . [Memory-Recall](https://github.com/sarmakska/slipstream/wiki/Memory-Recall) . [Subagents](https://github.com/sarmakska/slipstream/wiki/Subagents) . [Statusline](https://github.com/sarmakska/slipstream/wiki/Statusline) . [Output-Style](https://github.com/sarmakska/slipstream/wiki/Output-Style) . [Live-Agent-Dashboard](https://github.com/sarmakska/slipstream/wiki/Live-Agent-Dashboard) . [Token-Efficiency](https://github.com/sarmakska/slipstream/wiki/Token-Efficiency) . [Skill-Engine](https://github.com/sarmakska/slipstream/wiki/Skill-Engine) . [Skill-Catalogue](https://github.com/sarmakska/slipstream/wiki/Skill-Catalogue) . [Writing-a-Skill](https://github.com/sarmakska/slipstream/wiki/Writing-a-Skill) . [Hooks](https://github.com/sarmakska/slipstream/wiki/Hooks) . [Install-in-VS-Code](https://github.com/sarmakska/slipstream/wiki/Install-in-VS-Code) . [FAQ](https://github.com/sarmakska/slipstream/wiki/FAQ) . [Troubleshooting](https://github.com/sarmakska/slipstream/wiki/Troubleshooting) . [Roadmap-and-Limitations](https://github.com/sarmakska/slipstream/wiki/Roadmap-and-Limitations)
 

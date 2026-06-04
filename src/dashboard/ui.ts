@@ -116,7 +116,7 @@ export function renderDashboardHtml(session: string): string {
         <label>actual tokens <input id="bactual" type="number" min="0" placeholder="paste from editor" /></label>
         <button id="bsave" type="button">save</button>
       </details>
-      <div class="note">Estimated context slipstream pulled in, not the model's true tokens.</div>
+      <div class="note">Shows the true context from the transcript when available (marked "actual"), otherwise an estimate of what slipstream pulled in.</div>
     </div>
   </section>
   <section>
@@ -212,7 +212,7 @@ export function renderDashboardHtml(session: string): string {
     bar.style.width = pct + "%";
     bar.className = r.level === "compact" ? "compact" : r.level === "warn" ? "warn" : "";
     $("bnum").textContent = r.served + " of " + r.config.targetTokens +
-      " tokens (" + pct + "%, " + r.level + ")";
+      " tokens (" + pct + "%, " + r.level + ", " + (r.source || "estimated") + ")";
     // Populate the editor only when the user is not mid-edit.
     if (document.activeElement && document.activeElement.tagName === "INPUT") return;
     if ($("btarget")) $("btarget").value = r.config.targetTokens;
@@ -284,8 +284,18 @@ export function renderDashboardHtml(session: string): string {
       '<div class="row"><span class="k">tokens pulled</span><span class="v">'+tokens+'</span></div>' +
       '<div class="row"><span class="k">tool calls</span><span class="v">'+toolCalls+'</span></div>' +
       '<div class="row"><span class="k">files touched</span><span class="v">'+files.size+'</span></div>' +
+      '<div class="row"><span class="k">optimised</span><span class="v" id="optv">…</span></div>' +
       (chips ? '<div>'+chips+'</div>' : '') +
       (fileList ? '<div class="files">'+fileList+'</div>' : '');
+    loadSavings();
+  }
+  async function loadSavings() {
+    const s = await fetch("/api/savings").then((x) => x.json()).catch(() => null);
+    const el = $("optv");
+    if (!el) return;
+    el.textContent = s && s.scopedReads
+      ? "saved ~" + s.savedTokens + " tok (" + s.pct + "% vs whole-file, " + s.scopedReads + " reads)"
+      : "—";
   }
 
   function render() { renderAgents(); renderStream(); renderBudget(); renderPlan(); renderMap(); renderWork(); }

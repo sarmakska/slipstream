@@ -37,11 +37,16 @@ const bytes =
 
 const model = payload.model?.display_name || payload.model?.id || "";
 const skill = payload.active_skill || process.env.SLIPSTREAM_ACTIVE_SKILL || "";
+// Claude Code passes the path to the session transcript, whose latest message
+// carries a real token-usage block. Handing it to the helper lets the budget
+// reflect the true context window, not just the bytes slipstream served.
+const transcript = payload.transcript_path || "";
 
 const args = ["statusline", "--root", cwd];
 if (bytes) args.push("--bytes", String(Math.round(bytes)));
 if (skill) args.push("--skill", String(skill));
 if (model) args.push("--model", String(model));
+if (transcript) args.push("--transcript", String(transcript));
 
 const res = spawnSync(process.execPath, [cli, ...args], { encoding: "utf8" });
 if (res.status === 0 && res.stdout.trim()) {

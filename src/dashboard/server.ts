@@ -30,6 +30,7 @@ import {
   configToFractions,
   type BudgetConfig
 } from "../context/budget-config.js";
+import { loadSavings, summarizeSavings } from "../context/savings.js";
 
 export interface DashboardServerOptions {
   projectRoot: string;
@@ -184,16 +185,41 @@ export class DashboardServer {
       const config = await loadBudgetConfig(this.opts.projectRoot);
       const session = await this.resolveSession(url.searchParams.get("session") ?? undefined);
       const state = reduceEvents(await readLog(this.opts.projectRoot, session));
-      const served = totalApproxTokens(state);
+      const estimated = totalApproxTokens(state);
       const fr = configToFractions(config);
+      // The true context size (from the host transcript, written by the statusline)
+      // wins when present; otherwise fall back to the bytes slipstream served.
+      const hasActual = typeof config.actualTokens === "number" && config.actualTokens > 0;
+      const served = hasActual ? (config.actualTokens as number) : estimated;
       const report = budget({
         bytesRead: served * 3.6,
+        approxTokens: hasActual ? (config.actualTokens as number) : undefined,
         windowTokens: fr.windowTokens,
         warnFraction: fr.warnFraction,
         compactFraction: fr.compactFraction
       });
+      res.writeHead(200, {
+        "content-type": "application/json"
+      });
+      res.end(
+        JSON.stringify({
+          config,
+          served,
+          estimated,
+          source: hasActual ? "actual" : "estimated",
+          level: report.level,
+          fraction: report.usedFraction
+        })
+      );
+      return;
+    }
+    // The optimization total: tokens slipstream's scoped reads saved versus
+    // whole-file reads. Computed from slipstream's own calls, so it is exact in
+    // any editor.
+    if (url.pathname === "/api/savings") {
+      const summary = summarizeSavings(await loadSavings(this.opts.projectRoot));
       res.writeHead(200, { "content-type": "application/json" });
-      res.end(JSON.stringify({ config, served, level: report.level, fraction: report.usedFraction }));
+      res.end(JSON.stringify(summary));
       return;
     }
     // Full detail for one observation, by id, for the viewer and for citations.

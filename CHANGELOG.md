@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0]
+
+### Added
+
+- True context size from the host transcript. Inside Claude Code the statusline
+  payload includes `transcript_path`; slipstream now reads the latest `usage`
+  block (input + cache read + cache creation + output) to get the real
+  context-window occupancy, instead of only estimating from served bytes
+  (`src/context/transcript.ts`). The statusline shows it as an exact reading
+  (`ctx 47%*`, the `*` marking real vs estimated), and writes it to
+  `budget.json` `actualTokens` so the dashboard gauge reads the same true number
+  and labels its source `actual` or `estimated`. Editors without a readable
+  transcript keep the estimate plus manual `actualTokens` calibration. This works
+  for Claude Code anywhere it runs — the CLI, and the Claude Code VS Code
+  extension inside Antigravity or VS Code.
+- Optimization metric — how much slipstream actually saved you. Every scoped read
+  (`sp_symbol`, `sp_lines`) records the bytes it served versus the whole-file
+  baseline to an append-only `.claude/slipstream/savings.jsonl`
+  (`src/context/savings.ts`). Surfaced as the new `sp_savings` tool and
+  `slipstream savings` ("saved ~N tokens, Y% less than whole-file reads"), an
+  `opt Y%` statusline segment, and an "optimised" line in the dashboard's Session
+  work panel with an `/api/savings` route. Because it is computed from
+  slipstream's own tool calls, it is exact in **any** editor — Cursor, Windsurf,
+  Antigravity, VS Code — not just Claude Code.
+- `slipstream statusline --transcript <path>`; the bundled statusline script
+  passes the transcript path automatically. New `sp_savings` MCP tool (15 total).
+  5 new tests (119 total).
+
 ## [0.4.0]
 
 ### Added
@@ -118,7 +146,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Continuous integration running install, lint, build, plugin validation and
   tests on push to main and on every pull request.
 
-[Unreleased]: https://github.com/sarmakska/slipstream/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/sarmakska/slipstream/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/sarmakska/slipstream/releases/tag/v0.5.0
 [0.4.0]: https://github.com/sarmakska/slipstream/releases/tag/v0.4.0
 [0.3.0]: https://github.com/sarmakska/slipstream/releases/tag/v0.3.0
 [0.2.0]: https://github.com/sarmakska/slipstream/commits/main

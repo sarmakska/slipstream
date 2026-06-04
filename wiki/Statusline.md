@@ -5,12 +5,13 @@ slipstream ships a statusline command that keeps the three things a token-discip
 ## What it shows
 
 ```
-cp | ctx 12% ok | mem 4 | obs 37 | skill scoped-read | Opus 4.8
+cp | ctx 12% ok | mem 4 | obs 37 | opt 71% | skill scoped-read | Opus 4.8
 ```
 
-- `ctx 12% ok` the context budget: the percentage of the window used and the level (`ok`, `warn`, `COMPACT`).
+- `ctx 12% ok` the context budget: the percentage of the window used and the level (`ok`, `warn`, `COMPACT`). Inside Claude Code this is the **true** occupancy read from the session transcript and is marked with a trailing `*` (`ctx 12%* ok`); without a readable transcript it is a conservative estimate from bytes served.
 - `mem 4` the count of durable, hand-authored memories in the project store.
 - `obs 37` the count of auto-captured observations (dropped when the store is empty). See [Observation memory](Observation-Memory).
+- `opt 71%` how much slipstream's scoped reads trimmed versus whole-file reads (dropped when no scoped reads recorded). Exact in any editor. See [Token efficiency](Token-Efficiency).
 - `skill scoped-read` the active skill or output style, if any.
 - `Opus 4.8` the model display name.
 
@@ -27,7 +28,7 @@ The plugin declares a `statusLine` command in `.claude-plugin/plugin.json`:
 }
 ```
 
-Claude Code invokes that script on each render and pipes a small JSON payload on stdin (workspace, model, cost). The script (`statusline/slipstream-statusline.mjs`) reads the payload, counts the project's memories, and calls the helper CLI's `statusline` subcommand, which formats the line through `formatStatusline` in `src/statusline/index.ts`. If `dist/` is missing it degrades to `cp | ctx 0% ok` rather than erroring, because a statusline must never crash the editor.
+Claude Code invokes that script on each render and pipes a small JSON payload on stdin (workspace, model, cost, and `transcript_path`). The script (`statusline/slipstream-statusline.mjs`) reads the payload, counts the project's memories, and calls the helper CLI's `statusline` subcommand with the transcript path, which formats the line through `formatStatusline` in `src/statusline/index.ts`. The CLI reads the transcript's latest `usage` block for the true context size (`src/context/transcript.ts`), uses it for the `ctx` segment, and writes it to `budget.json` `actualTokens` so the dashboard gauge matches. If `dist/` is missing it degrades to `cp | ctx 0% ok` rather than erroring, because a statusline must never crash the editor.
 
 ```mermaid
 %%{init: {'theme':'base','themeVariables':{'primaryColor':'#0d1117','primaryTextColor':'#f5f7fa','primaryBorderColor':'#38bdf8','lineColor':'#22d3ee','fontFamily':'monospace'}}}%%

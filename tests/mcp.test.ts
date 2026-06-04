@@ -43,6 +43,7 @@ describe("mcp request handler", () => {
       "sp_observations",
       "sp_recall",
       "sp_remember",
+      "sp_savings",
       "sp_search",
       "sp_search_memory",
       "sp_symbol",

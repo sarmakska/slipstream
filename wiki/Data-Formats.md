@@ -117,6 +117,16 @@ One JSON record per line, append-only (`Observation` in `src/memory/observe.ts`)
 
 `kind` is the dominant activity of the turn. `vector` is a unit-length 256-float hashed term-frequency embedding (`src/memory/embed.ts`), rounded to five decimals so the file stays compact without changing cosine ranking. A sibling `<session>.cursor` file records the last event seq folded into observations, so capture is incremental; a project-wide `.counter` file holds the next id. See [Observation memory and semantic search](Observation-Memory).
 
+## The optimization ledger (`savings.jsonl`)
+
+One append-only line per scoped read (`SavingRecord` in `src/context/savings.ts`), recording what slipstream served against the whole-file baseline it replaced:
+
+```jsonc
+{"ts":"2026-06-04T10:00:00.000Z","tool":"sp_symbol","file":"src/greet.ts","servedBytes":300,"fullBytes":556}
+```
+
+`loadSavings` totals the lines and `summarizeSavings` turns the tally into saved tokens and the percentage trimmed, surfaced by `sp_savings`, `slipstream savings`, the `opt %` statusline segment and the dashboard. Exact in any editor, since it derives only from slipstream's own calls.
+
 ## budget.json
 
 The editable token-budget control (`BudgetConfig` in `src/context/budget-config.ts`), read by the dashboard gauge, `sp_budget` and the statusline so they agree:
