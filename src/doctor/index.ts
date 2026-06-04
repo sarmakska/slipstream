@@ -39,7 +39,15 @@ export const DOCTOR_FIXES: Record<string, string> = {
   "dashboard-port":
     "Free the dashboard port: lsof -nP -iTCP:LISTEN | grep slipstream then kill the PID",
   "dashboard-socket":
-    "Reset permissions on the dashboard socket: rm -f .claude/slipstream/dashboard.sock"
+    "Reset permissions on the dashboard socket: rm -f .claude/slipstream/dashboard.sock",
+  "duplicate-registration":
+    "Remove one: either delete slipstream from .mcp.json (keep the plugin) or unset the plugin (keep .mcp.json)",
+  "double-emit":
+    "Unset SLIPSTREAM_MCP_EMIT in your editor MCP config; the plugin hooks are already emitting",
+  "stale-dashboard":
+    "Run sp_dashboard to restart, or kill the process bound to 127.0.0.1 on the recorded port",
+  "mcp-build":
+    "Build the bundle: pnpm install && pnpm build"
 };
 
 export interface DoctorReport {
@@ -173,7 +181,107 @@ export async function runDoctor(
   const sockFile = join(projectRoot, ".claude", "slipstream", "dashboard.sock");
   add("dashboard-socket", await isReadablePathOrAbsent(sockFile), sockFile);
 
+  // 10. Duplicate registration: slipstream wired via the plugin AND a project
+  // .mcp.json. Each emits events, so the observation store double-counts.
+  const pluginEntry = await pluginRegistersSlipstream(pluginRoot);
+  const projectEntry = await mcpJsonRegistersSlipstream(projectRoot);
+  const dup = pluginEntry && projectEntry;
+  add(
+    "duplicate-registration",
+    !dup,
+    dup ? "slipstream registered in both plugin.json and .mcp.json" : "single registration"
+  );
+
+  // 11. Double-emit: hooks active AND SLIPSTREAM_MCP_EMIT explicitly enabled.
+  // The hooks already emit; the MCP server emitting too counts events twice.
+  const hooksActive = allHooks;
+  const mcpEmit = process.env["SLIPSTREAM_MCP_EMIT"] === "1";
+  const doubleEmit = hooksActive && mcpEmit;
+  add(
+    "double-emit",
+    !doubleEmit,
+    doubleEmit
+      ? "hooks active AND SLIPSTREAM_MCP_EMIT=1 (events counted twice)"
+      : "single emit path"
+  );
+
+  // 12. Stale dashboard: the recorded server responds but advertises an older
+  // version. The new UI never shows because the old process holds the port.
+  const stale = await isStaleDashboard(projectRoot, pluginRoot);
+  add(
+    "stale-dashboard",
+    !stale.stale,
+    stale.stale
+      ? `dashboard at ${stale.url} is on ${stale.running}, build is ${stale.installed}`
+      : stale.detail
+  );
+
   return { ok: checks.every((c) => c.pass), checks };
+}
+
+async function pluginRegistersSlipstream(pluginRoot: string): Promise<boolean> {
+  try {
+    const m = (await readJson(join(pluginRoot, ".claude-plugin", "plugin.json"))) as {
+      mcpServers?: Record<string, unknown>;
+    };
+    return Boolean(m.mcpServers && m.mcpServers["slipstream"]);
+  } catch {
+    return false;
+  }
+}
+
+async function mcpJsonRegistersSlipstream(projectRoot: string): Promise<boolean> {
+  for (const rel of [".mcp.json", join(".claude", "mcp.json")]) {
+    try {
+      const m = (await readJson(join(projectRoot, rel))) as {
+        mcpServers?: Record<string, unknown>;
+      };
+      if (m.mcpServers && m.mcpServers["slipstream"]) return true;
+    } catch {
+      /* try next */
+    }
+  }
+  return false;
+}
+
+async function isStaleDashboard(
+  projectRoot: string,
+  pluginRoot: string
+): Promise<{ stale: boolean; detail: string; url?: string; running?: string; installed?: string }> {
+  try {
+    const portRaw = await readFile(join(projectRoot, ".claude", "slipstream", "dashboard.port"), "utf8");
+    const port = Number(portRaw.trim());
+    if (!Number.isFinite(port) || port <= 0) return { stale: false, detail: "no recorded port" };
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 400);
+    const res = await fetch(`http://127.0.0.1:${port}/api/health`, { signal: ctrl.signal });
+    clearTimeout(t);
+    if (!res.ok) return { stale: false, detail: "no live dashboard on recorded port" };
+    const health = (await res.json()) as { version?: string };
+    const installed = await installedVersion(pluginRoot);
+    const running = health.version ?? "unknown";
+    if (!installed || installed === running) {
+      return { stale: false, detail: `dashboard v${running} matches build`, url: `http://127.0.0.1:${port}` };
+    }
+    return {
+      stale: true,
+      detail: "version mismatch",
+      url: `http://127.0.0.1:${port}`,
+      running,
+      installed
+    };
+  } catch {
+    return { stale: false, detail: "no live dashboard" };
+  }
+}
+
+async function installedVersion(pluginRoot: string): Promise<string | null> {
+  try {
+    const pkg = (await readJson(join(pluginRoot, "package.json"))) as { version?: string };
+    return pkg.version ?? null;
+  } catch {
+    return null;
+  }
 }
 
 async function isStalePortFile(path: string): Promise<boolean> {

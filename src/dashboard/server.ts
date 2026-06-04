@@ -14,7 +14,9 @@
  */
 
 import { createServer, type Server, type IncomingMessage, type ServerResponse } from "node:http";
-import { URL } from "node:url";
+import { URL, fileURLToPath } from "node:url";
+import { readFileSync } from "node:fs";
+import { dirname, join as pathJoin } from "node:path";
 import {
   reduceEvents,
   totalApproxTokens,
@@ -39,6 +41,24 @@ import {
   type BudgetConfig
 } from "../context/budget-config.js";
 import { loadSavings, summarizeSavings } from "../context/savings.js";
+
+/**
+ * Resolved at module load. Read from the bundled package.json so /api/health
+ * can advertise the dashboard's version and a newer client can decide whether
+ * to restart a stale server.
+ */
+export const SERVER_VERSION: string = (() => {
+  try {
+    const here = dirname(fileURLToPath(import.meta.url));
+    // src/dashboard/server.ts ships as dist/dashboard/server.js; either way the
+    // package.json is two levels up.
+    const raw = readFileSync(pathJoin(here, "..", "..", "package.json"), "utf8");
+    return (JSON.parse(raw) as { version?: string }).version ?? "0.0.0";
+  } catch {
+    return "0.0.0";
+  }
+})();
+const SERVER_STARTED_AT = new Date().toISOString();
 
 export interface DashboardServerOptions {
   projectRoot: string;
@@ -153,6 +173,17 @@ export class DashboardServer {
       const session = await this.resolveSession();
       res.writeHead(200, { "content-type": "text/html; charset=utf-8" });
       res.end(renderDashboardHtml(session));
+      return;
+    }
+    // /api/health: version-aware probe so a newer client can detect a stale
+    // dashboard left behind by a previous build and restart it.
+    if (url.pathname === "/api/health") {
+      res.writeHead(200, { "content-type": "application/json" });
+      res.end(JSON.stringify({
+        version: SERVER_VERSION,
+        pid: process.pid,
+        startedAt: SERVER_STARTED_AT
+      }));
       return;
     }
     if (url.pathname === "/api/sessions") {

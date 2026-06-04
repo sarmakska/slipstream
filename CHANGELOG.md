@@ -5,6 +5,18 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.1] - 2026-06-04
+
+### Added
+- Dashboard `/api/health` endpoint with version, pid and startedAt (#6).
+- Version-aware restart in `startDashboard`: a stale dashboard from a previous build is killed and replaced when the recorded version no longer matches the installed package (#6).
+- Stable URL file at `<project>/.claude/slipstream/dashboard.url` after every dashboard start, so callers can locate the live URL (#6).
+- Doctor checks: `duplicate-registration` flags slipstream wired via both the plugin and `.mcp.json`; `double-emit` flags `SLIPSTREAM_MCP_EMIT=1` set on top of active hooks; `stale-dashboard` flags a running dashboard whose version is behind the installed package (#4).
+- Doctor fix lines for `mcp-build`, `duplicate-registration`, `double-emit`, `stale-dashboard` (#4).
+
+### Fixed
+- Lint failure left over from the sp_digest rebase: unused imports in `tests/mcp.test.ts`.
+
 ## [0.6.0] - 2026-06-04
 
 ### Added

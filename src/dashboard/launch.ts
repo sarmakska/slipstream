@@ -14,7 +14,8 @@ import { spawn } from "node:child_process";
 import { createConnection } from "node:net";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
-import { DashboardServer } from "./server.js";
+import { mkdir, writeFile } from "node:fs/promises";
+import { DashboardServer, SERVER_VERSION } from "./server.js";
 import {
   readServerInfo,
   writeServerInfo,
@@ -50,15 +51,48 @@ function portListening(port: number, timeoutMs = 300): Promise<boolean> {
   });
 }
 
-/** Confirm the recorded server is genuinely running, else clear the record. */
+/** Fetch the recorded server's /api/health, return null if unreachable. */
+async function fetchHealth(port: number, timeoutMs = 500): Promise<{ version: string; pid: number } | null> {
+  try {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), timeoutMs);
+    const res = await fetch(`http://127.0.0.1:${port}/api/health`, { signal: ctrl.signal });
+    clearTimeout(t);
+    if (!res.ok) return null;
+    return (await res.json()) as { version: string; pid: number };
+  } catch {
+    return null;
+  }
+}
+
+/** Confirm the recorded server is genuinely running, else clear the record.
+ * Also restarts when the running server's version is stale versus this build. */
 export async function liveServer(
   projectRoot: string
 ): Promise<ServerInfo | null> {
   const info = await readServerInfo(projectRoot);
   if (!info) return null;
-  if (pidAlive(info.pid) && (await portListening(info.port))) return info;
-  await clearServerInfo(projectRoot);
-  return null;
+  if (!pidAlive(info.pid) || !(await portListening(info.port))) {
+    await clearServerInfo(projectRoot);
+    return null;
+  }
+  // Version probe: a stale server from a previous build serves an old UI.
+  const health = await fetchHealth(info.port);
+  if (health && health.version !== SERVER_VERSION) {
+    try { process.kill(info.pid); } catch { /* may already be gone */ }
+    await clearServerInfo(projectRoot);
+    return null;
+  }
+  return info;
+}
+
+/** Write the resolved dashboard URL to a stable file so callers can find it. */
+async function writeUrlFile(projectRoot: string, url: string): Promise<void> {
+  try {
+    const dir = join(projectRoot, ".claude", "slipstream");
+    await mkdir(dir, { recursive: true });
+    await writeFile(join(dir, "dashboard.url"), url + "\n", "utf8");
+  } catch { /* best effort */ }
 }
 
 export interface StartResult {
@@ -80,11 +114,14 @@ export async function startDashboard(options: {
 }): Promise<StartResult & { server?: DashboardServer }> {
   const existing = await liveServer(options.projectRoot);
   if (existing) {
+    await writeUrlFile(options.projectRoot, existing.url);
     return { url: existing.url, port: existing.port, started: false };
   }
 
   if (options.detached) {
-    return spawnDetached(options.projectRoot, options.session);
+    const result = await spawnDetached(options.projectRoot, options.session);
+    await writeUrlFile(options.projectRoot, result.url);
+    return result;
   }
 
   const server = new DashboardServer({
@@ -98,6 +135,7 @@ export async function startDashboard(options: {
     url: server.url(),
     startedAt: new Date().toISOString()
   });
+  await writeUrlFile(options.projectRoot, server.url());
   return { url: server.url(), port, started: true, server };
 }
 

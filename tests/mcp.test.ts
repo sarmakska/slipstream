@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { spawn } from "node:child_process";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { readFile, mkdtemp, mkdir, writeFile, rm } from "node:fs/promises";
+import { readFile, mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import {
   handleRequest,
@@ -10,7 +10,6 @@ import {
   callTool,
   type JsonRpcRequest
 } from "../src/mcp/index.js";
-import { observationsDir, listMemories } from "../src/memory/index.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const sample = join(here, "..", "fixtures", "sample-project");

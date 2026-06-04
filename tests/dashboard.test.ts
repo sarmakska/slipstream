@@ -207,6 +207,36 @@ describe("server", () => {
     }
   }, 10000);
 
+  it("serves /api/health with a version, pid and startedAt", async () => {
+    const server = new DashboardServer({ projectRoot: root });
+    const port = await server.listen();
+    try {
+      const health = await fetch(`http://127.0.0.1:${port}/api/health`).then((r) => r.json()) as {
+        version: string;
+        pid: number;
+        startedAt: string;
+      };
+      expect(typeof health.version).toBe("string");
+      expect(health.version.length).toBeGreaterThan(0);
+      expect(health.pid).toBe(process.pid);
+      expect(typeof health.startedAt).toBe("string");
+    } finally {
+      await server.close();
+    }
+  });
+
+  it("writes the resolved url to .claude/slipstream/dashboard.url after start", async () => {
+    const { readFile } = await import("node:fs/promises");
+    const { join } = await import("node:path");
+    const result = await startDashboard({ projectRoot: root, detached: false });
+    try {
+      const url = (await readFile(join(root, ".claude", "slipstream", "dashboard.url"), "utf8")).trim();
+      expect(url).toBe(result.url);
+    } finally {
+      await result.server?.close();
+    }
+  });
+
   it("closes without leaving the port bound", async () => {
     const server = new DashboardServer({ projectRoot: root });
     const port = await server.listen();
