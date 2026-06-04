@@ -5,6 +5,17 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.0] - 2026-06-04
+
+### Added
+- Dashboard tabbed navigation: Live, Project, Journal, Sessions and Memory.
+- **Project tab**: six project-wide KPIs (sessions, observations, unique files, opt %, memories, drift), a 365-day GitHub-style activity heatmap with click-to-day navigation, a file leaderboard with violet-gradient bars, an inline SVG donut chart for observations-by-kind, and a distilled lessons grid.
+- **Journal tab**: per-day digest with six tiles (observations, sessions, files, drift, tools, skills), top files for the day, tools used as colour-coded pills, sessions list, plus prev/today/next date navigation.
+- **Sessions tab**: project-wide sessions table with open and delete actions; destructive delete is gated behind a confirmation modal.
+- **Memory tab**: full-project search expanded with kind filter chips (edit, plan, decision, search, map, error, run) and colour-coded result badges.
+- New API endpoints: `/api/project/summary`, `/api/project/heatmap`, `/api/project/files`, `/api/project/lessons`, `/api/project/day`, `DELETE /api/sessions/:id`.
+- Header gains a Refresh button that re-pulls the active tab's data; toast notifications confirm actions.
+
 ## [0.6.1] - 2026-06-04
 
 ### Added

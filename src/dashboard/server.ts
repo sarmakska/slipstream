@@ -30,7 +30,10 @@ import {
   searchObservations,
   getObservations,
   loadObservations,
+  countObservations,
   aggregateBySkill,
+  distillProjectLessons,
+  listMemories,
   type ObservationKind
 } from "../memory/index.js";
 import { budget, BYTES_PER_TOKEN } from "../context/budget.js";
@@ -289,6 +292,153 @@ export class DashboardServer {
       const obs = await loadObservations(this.opts.projectRoot);
       res.writeHead(200, { "content-type": "application/json" });
       res.end(JSON.stringify({ stats: aggregateBySkill(obs) }));
+      return;
+    }
+    // Project-wide summary: totals across every session, for the Project tab.
+    if (url.pathname === "/api/project/summary") {
+      const root = this.opts.projectRoot;
+      const [obs, sessions, savings, memories] = await Promise.all([
+        loadObservations(root).catch(() => [] as Awaited<ReturnType<typeof loadObservations>>),
+        listSessions(root).catch(() => [] as string[]),
+        loadSavings(root).then(summarizeSavings).catch(() => ({ scopedReads: 0, savedTokens: 0, pct: 0 })),
+        listMemories(root).catch(() => [])
+      ]);
+      const obsCount = obs.length || (await countObservations(root).catch(() => 0));
+      const kinds: Record<string, number> = {};
+      const files = new Map<string, number>();
+      let lastObsTs = "";
+      for (const o of obs) {
+        kinds[o.kind] = (kinds[o.kind] || 0) + 1;
+        for (const f of o.files || []) files.set(f, (files.get(f) || 0) + 1);
+        if (o.ts > lastObsTs) lastObsTs = o.ts;
+      }
+      const driftCount = obs.filter((o) => (o as { drift?: unknown }).drift).length;
+      res.writeHead(200, { "content-type": "application/json" });
+      res.end(JSON.stringify({
+        version: SERVER_VERSION,
+        sessions: sessions.length,
+        observations: obsCount,
+        memories: memories.length,
+        savedTokens: savings.savedTokens,
+        scopedReads: savings.scopedReads,
+        optPct: savings.pct,
+        uniqueFiles: files.size,
+        driftCount,
+        kinds,
+        lastActivity: lastObsTs || null
+      }));
+      return;
+    }
+    // Daily activity heatmap (GitHub-style). Returns one bucket per day for the
+    // requested window so the client can render a calendar tile per day.
+    if (url.pathname === "/api/project/heatmap") {
+      const days = Math.min(365, Math.max(7, Number(url.searchParams.get("days")) || 90));
+      const obs = await loadObservations(this.opts.projectRoot).catch(() => []);
+      const today = new Date();
+      today.setUTCHours(0, 0, 0, 0);
+      const buckets = new Map<string, number>();
+      for (let i = 0; i < days; i += 1) {
+        const d = new Date(today.getTime() - i * 86400000);
+        buckets.set(d.toISOString().slice(0, 10), 0);
+      }
+      for (const o of obs) {
+        const key = (o.ts || "").slice(0, 10);
+        if (buckets.has(key)) buckets.set(key, (buckets.get(key) || 0) + 1);
+      }
+      const entries = [...buckets.entries()].sort(([a], [b]) => (a < b ? -1 : 1));
+      res.writeHead(200, { "content-type": "application/json" });
+      res.end(JSON.stringify({ days, entries: entries.map(([date, count]) => ({ date, count })) }));
+      return;
+    }
+    // Top files touched across the project, with a session count and a last-touched
+    // timestamp. Powers the file leaderboard in the Project tab.
+    if (url.pathname === "/api/project/files") {
+      const limit = Math.min(100, Math.max(1, Number(url.searchParams.get("limit")) || 20));
+      const obs = await loadObservations(this.opts.projectRoot).catch(() => []);
+      const agg = new Map<string, { touches: number; sessions: Set<string>; last: string }>();
+      for (const o of obs) {
+        for (const f of o.files || []) {
+          if (!f) continue;
+          const cur = agg.get(f) ?? { touches: 0, sessions: new Set<string>(), last: "" };
+          cur.touches += 1;
+          cur.sessions.add(o.session);
+          if (o.ts > cur.last) cur.last = o.ts;
+          agg.set(f, cur);
+        }
+      }
+      const rows = [...agg.entries()]
+        .map(([path, v]) => ({ path, touches: v.touches, sessions: v.sessions.size, last: v.last }))
+        .sort((a, b) => b.touches - a.touches)
+        .slice(0, limit);
+      res.writeHead(200, { "content-type": "application/json" });
+      res.end(JSON.stringify({ files: rows }));
+      return;
+    }
+    // Per-day digest. Returns everything that happened on the requested date:
+    // sessions involved, observations, files touched, tools used, drift flags,
+    // and the top kinds. Powers the Daily Journal view.
+    if (url.pathname === "/api/project/day") {
+      const date = url.searchParams.get("date") ?? new Date().toISOString().slice(0, 10);
+      const all = await loadObservations(this.opts.projectRoot).catch(() => []);
+      const obs = all.filter((o) => (o.ts || "").slice(0, 10) === date);
+      const sessions = new Set<string>();
+      const files = new Map<string, number>();
+      const kinds: Record<string, number> = {};
+      const tools: Record<string, number> = {};
+      const skills: Record<string, number> = {};
+      let driftCount = 0;
+      for (const o of obs) {
+        sessions.add(o.session);
+        kinds[o.kind] = (kinds[o.kind] || 0) + 1;
+        for (const f of o.files || []) files.set(f, (files.get(f) || 0) + 1);
+        if ((o as { drift?: unknown }).drift) driftCount += 1;
+        const skill = (o as { skill?: string }).skill;
+        if (skill) skills[skill] = (skills[skill] || 0) + 1;
+        // Best-effort tool name from the summary's first token.
+        const tok = (o.summary || "").split(/\s+/)[0];
+        if (tok && /^[A-Za-z_][A-Za-z0-9_]*$/.test(tok)) tools[tok] = (tools[tok] || 0) + 1;
+      }
+      const topFiles = [...files.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10)
+        .map(([path, count]) => ({ path, count }));
+      res.writeHead(200, { "content-type": "application/json" });
+      res.end(JSON.stringify({
+        date,
+        sessions: [...sessions],
+        observations: obs.length,
+        driftCount,
+        topFiles,
+        kinds,
+        tools,
+        skills,
+        first: obs[0]?.ts ?? null,
+        last: obs[obs.length - 1]?.ts ?? null
+      }));
+      return;
+    }
+    // Delete a session's event log and observation file. Destructive; returns 204.
+    if (url.pathname.startsWith("/api/sessions/") && req.method === "DELETE") {
+      const session = url.pathname.slice("/api/sessions/".length);
+      if (session && /^[A-Za-z0-9._-]+$/.test(session)) {
+        const { unlink } = await import("node:fs/promises");
+        const { join: pJoin } = await import("node:path");
+        const root = this.opts.projectRoot;
+        await unlink(pJoin(root, ".claude", "slipstream", "dashboard", `${session}.jsonl`)).catch(() => {});
+        await unlink(pJoin(root, ".claude", "slipstream", "observations", `${session}.jsonl`)).catch(() => {});
+        res.writeHead(204);
+        res.end();
+        return;
+      }
+      res.writeHead(400, { "content-type": "application/json" });
+      res.end(JSON.stringify({ error: "invalid session id" }));
+      return;
+    }
+    // Distilled lessons across the whole project history.
+    if (url.pathname === "/api/project/lessons") {
+      const minCount = Math.max(2, Number(url.searchParams.get("minCount")) || 3);
+      const limit = Math.min(50, Math.max(1, Number(url.searchParams.get("limit")) || 12));
+      const lessons = await distillProjectLessons(this.opts.projectRoot, { minCount, limit }).catch(() => []);
+      res.writeHead(200, { "content-type": "application/json" });
+      res.end(JSON.stringify({ lessons }));
       return;
     }
     // Full detail for one observation, by id, for the viewer and for citations.
