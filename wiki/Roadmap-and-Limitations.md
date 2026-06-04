@@ -9,6 +9,7 @@ Real projects say what they are not. This page is the honest version.
 - **Subagent visibility depends on what Claude Code exposes.** There is a reliable `SubagentStop`, so the dashboard infers a subagent from the first event that names it and flips its status on stop. There is no `SubagentStart` event today; if Claude Code adds one, it gets wired.
 - **The map is heuristic.** A line scan, not a parser. A slice can occasionally return the wrong span; fall back to a line range (`npx slipstream lines . <file> <start> <end>`).
 - **Secret redaction is blunt.** Pattern-based, biased to over-mask. It will hide things that are not secrets before it lets a real one through. Do not treat it as a vault.
+- **Semantic search is lexical-semantic, not a learned model.** The observation embedding (`src/memory/embed.ts`) is a deterministic hashed term-frequency vector, chosen to keep slipstream zero-dependency (no SQLite, no Python, no vector-database process). It is excellent at "find the turn that mentioned X" and good at near-synonyms; it does not reason about meaning the way a large embedding model would. See [Observation memory and semantic search](Observation-Memory).
 - **The skill library targets the stack I ship on:** Cloudflare, Supabase, Vercel, Resend. It is not a universal scaffolder for every framework.
 
 ## Non-goals
@@ -19,7 +20,8 @@ Real projects say what they are not. This page is the honest version.
 
 ## Shipped since the first release
 
-- The bundled MCP server (`sp_map`, `sp_symbol`, `sp_lines`, `sp_search`, `sp_remember`/`sp_recall`/`sp_forget`, `sp_budget`, `sp_mindmap`), so Claude works through precise tools. See [MCP tools](MCP-Tools).
+- The bundled MCP server (`sp_map`, `sp_symbol`, `sp_lines`, `sp_search`, `sp_remember`/`sp_recall`/`sp_forget`, `sp_search_memory`/`sp_timeline`/`sp_observations`, `sp_budget`, `sp_mindmap`), so Claude works through precise tools. See [MCP tools](MCP-Tools).
+- Self-building observation memory with a local semantic embedding and three-layer search, captured automatically each turn. See [Observation memory and semantic search](Observation-Memory).
 - Lossless compaction via a `PreCompact` digest reloaded at session start. See [Lossless compaction](Lossless-Compaction).
 - Signal-ranked memory recall, not load-everything. See [Memory recall](Memory-Recall).
 - Three shipped subagents (sp-shipper, sp-schema, sp-reviewer). See [Subagents](Subagents).

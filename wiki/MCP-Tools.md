@@ -19,7 +19,7 @@ The bundled MCP server is the biggest single token win in slipstream. It lets Cl
 
 ## The tools
 
-All nine tools, defined in `TOOL_DESCRIPTORS` in `src/mcp/tools.ts`:
+All twelve tools, defined in `TOOL_DESCRIPTORS` in `src/mcp/tools.ts`:
 
 | Tool | Arguments | Returns |
 |---|---|---|
@@ -30,10 +30,23 @@ All nine tools, defined in `TOOL_DESCRIPTORS` in `src/mcp/tools.ts`:
 | `sp_remember` | `fact`, `description?`, `type?`, `tags?`, `root?` | persists a durable memory. |
 | `sp_recall` | `query`, `limit?`, `root?` | the matching memory bodies, ranked by frontmatter. |
 | `sp_forget` | `name`, `root?` | deletes a memory and refreshes the index. |
+| `sp_search_memory` | `query`, `kind?`, `session?`, `since?`, `limit?`, `root?` | layer 1: a compact ranked index of auto-captured observations (id, time, kind, summary). |
+| `sp_timeline` | `around` (id or query), `window?`, `session?`, `root?` | layer 2: the chronological neighbours of an observation or the best match for a query. |
+| `sp_observations` | `ids`, `root?` | layer 3: the full detail of the observation ids you filtered down to. |
 | `sp_budget` | `bytesRead?`, `windowTokens?` | the budget level (ok/warn/compact) and a token estimate. |
 | `sp_mindmap` | `root?` | the project as a themed Mermaid mind map. |
 
 Every tool description is a crisp "Use ..." trigger, because Claude reads the description to decide when to call the tool. `sp_symbol` reads "Use to read one declaration instead of a whole file."
+
+## The three-layer memory search
+
+`sp_search_memory`, `sp_timeline` and `sp_observations` are designed to be used in order, cheapest first, so recall never dumps full bodies into context to find the one record that matters:
+
+1. **`sp_search_memory`** returns a compact index (~one line per hit: id, time, kind, summary). Scan it and pick the ids worth more.
+2. **`sp_timeline`** shows what was happening around an interesting hit, still as one-liners.
+3. **`sp_observations`** fetches full detail only for the ids you kept — the only call that returns bodies.
+
+Each observation id is a stable citation handle. Ranking is hybrid: a local semantic vector blended with exact-term overlap. See [Observation memory and semantic search](Observation-Memory) for how capture and ranking work.
 
 ## The request path
 
@@ -86,6 +99,7 @@ returns the eleven-line `greet` function with its doc comment, and nothing else 
 ## See also
 
 - [Token efficiency](Token-Efficiency) for the before/after numbers.
+- [Observation memory and semantic search](Observation-Memory) for the three-layer search and how observations are captured.
 - [Memory recall](Memory-Recall) for how `sp_recall` ranks.
 - [Design decisions](Design-Decisions) for why the SDK was not used.
 

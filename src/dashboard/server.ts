@@ -18,6 +18,11 @@ import { URL } from "node:url";
 import { reduceEvents, type DashboardState } from "./state.js";
 import { readLog, listSessions } from "./log.js";
 import { renderDashboardHtml } from "./ui.js";
+import {
+  searchObservations,
+  getObservations,
+  type ObservationKind
+} from "../memory/index.js";
 
 export interface DashboardServerOptions {
   projectRoot: string;
@@ -129,6 +134,30 @@ export class DashboardServer {
     }
     if (url.pathname === "/api/stream") {
       await this.stream(url, res);
+      return;
+    }
+    if (url.pathname === "/api/search") {
+      const query = url.searchParams.get("q") ?? "";
+      const kindParam = url.searchParams.get("kind") ?? undefined;
+      const hits = query
+        ? await searchObservations(this.opts.projectRoot, {
+            query,
+            kind: kindParam as ObservationKind | undefined,
+            session: url.searchParams.get("session") ?? undefined,
+            limit: Number(url.searchParams.get("limit")) || 20
+          })
+        : [];
+      res.writeHead(200, { "content-type": "application/json" });
+      res.end(JSON.stringify({ hits }));
+      return;
+    }
+    // Full detail for one observation, by id, for the viewer and for citations.
+    const obsMatch = url.pathname.match(/^\/api\/observation\/(\d+)$/);
+    if (obsMatch) {
+      const id = Number(obsMatch[1]);
+      const [obs] = await getObservations(this.opts.projectRoot, [id]);
+      res.writeHead(obs ? 200 : 404, { "content-type": "application/json" });
+      res.end(JSON.stringify(obs ?? { error: `no observation #${id}` }));
       return;
     }
     res.writeHead(404, { "content-type": "text/plain" });

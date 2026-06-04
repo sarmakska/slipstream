@@ -13,6 +13,22 @@ describe("formatStatusline", () => {
     expect(line).toBe("cp | ctx 7% ok | mem 4 | skill scoped-read | Opus 4.8");
   });
 
+  it("includes the observation count when there are observations", () => {
+    const line = formatStatusline({
+      bytesRead: 50_000,
+      memoryCount: 4,
+      observationCount: 37,
+      activeSkill: "scoped-read",
+      model: "Opus 4.8"
+    });
+    expect(line).toBe("cp | ctx 7% ok | mem 4 | obs 37 | skill scoped-read | Opus 4.8");
+  });
+
+  it("drops the observation segment when the store is empty", () => {
+    const line = formatStatusline({ bytesRead: 0, observationCount: 0 });
+    expect(line).toBe("cp | ctx 0% ok");
+  });
+
   it("drops segments with no data", () => {
     const line = formatStatusline({ bytesRead: 0 });
     expect(line).toBe("cp | ctx 0% ok");

@@ -8,6 +8,7 @@
 
 **Headline features**
 - [MCP tools](MCP-Tools)
+- [Observation memory & search](Observation-Memory)
 - [Lossless compaction](Lossless-Compaction)
 - [Memory recall](Memory-Recall)
 - [Live agent dashboard](Live-Agent-Dashboard)

@@ -9,9 +9,10 @@ It is not a CLI you run as a product. There is a small helper binary the plugin 
 ## What you feel on day one
 
 1. **Claude works through precise tools.** A bundled MCP server exposes `sp_map`, `sp_symbol`, `sp_lines` and `sp_search`, so Claude pulls one declaration instead of opening the whole file. See [MCP tools](MCP-Tools) and [Token efficiency](Token-Efficiency).
-2. **Context survives compaction.** A `PreCompact` hook writes a structured digest before Claude Code trims the conversation; the next session reloads it. See [Lossless compaction](Lossless-Compaction).
-3. **You watch the agents in a dashboard.** Session start boots a `127.0.0.1` server and prints the URL into chat. See [Live agent dashboard](Live-Agent-Dashboard).
-4. **You see the budget in the statusline.** `cp | ctx 12% ok | mem 4 | skill scoped-read`. See [Statusline](Statusline).
+2. **Memory builds itself, and you can search it.** Every turn is captured as a compact observation and made semantically searchable through a three-layer search (`sp_search_memory` → `sp_timeline` → `sp_observations`), so past work is recoverable without anyone writing it down. See [Observation memory and semantic search](Observation-Memory).
+3. **Context survives compaction.** A `PreCompact` hook writes a structured digest before Claude Code trims the conversation; the next session reloads it. See [Lossless compaction](Lossless-Compaction).
+4. **You watch the agents in a dashboard.** Session start boots a `127.0.0.1` server and prints the URL into chat; a Memory search panel queries your project's observations. See [Live agent dashboard](Live-Agent-Dashboard).
+5. **You see the budget in the statusline.** `cp | ctx 12% ok | mem 4 | obs 37 | skill scoped-read`. See [Statusline](Statusline).
 
 ## System diagram
 
@@ -49,6 +50,7 @@ flowchart TD
 |---|---|
 | [Install in VS Code](Install-in-VS-Code) | Marketplace add, install, first run, doctor |
 | [MCP tools](MCP-Tools) | The bundled server and every `sp_` tool |
+| [Observation memory and semantic search](Observation-Memory) | Self-building memory, the local embedding, three-layer search |
 | [Lossless compaction](Lossless-Compaction) | The PreCompact digest and the reload |
 | [Memory recall](Memory-Recall) | Signal-ranked relevant recall, not load-everything |
 | [Live agent dashboard](Live-Agent-Dashboard) | Hooks, event log, server, UI, replay |
@@ -67,7 +69,7 @@ flowchart TD
 | [Performance and benchmarks](Performance-and-Benchmarks) | Real numbers from this machine |
 | [Design decisions](Design-Decisions) | Choices made and alternatives rejected |
 | [Security model](Security-Model) | Local-only, redaction, what to trust |
-| [Testing strategy](Testing-Strategy) | What the 88 tests cover and why |
+| [Testing strategy](Testing-Strategy) | What the 105 tests cover and why |
 | [Examples and recipes](Examples-and-Recipes) | Copy-paste flows |
 | [Comparisons](Comparisons) | Versus the obvious alternatives |
 | [Integrations](Integrations) | Cloudflare, Supabase, Vercel, Resend |

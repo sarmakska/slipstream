@@ -7,11 +7,31 @@
 // in the transcript via additionalContext, and it only fires occasionally so it
 // is not noisy. The agent decides what, if anything, is worth a memory.
 
+import { spawn } from "node:child_process";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { readPayload, sessionId, emit } from "./emit.mjs";
+
+const here = dirname(fileURLToPath(import.meta.url));
+const cli = join(here, "..", "dist", "cli", "index.js");
 
 const payload = await readPayload();
 const session = sessionId(payload);
 emit({ session, kind: "stop", label: "turn finished" });
+
+// Fold this turn into the observation store so memory builds itself. The stop
+// event above closes the turn, so by the time capture runs the turn is complete.
+// Detached and swallowed: capturing memory must never block or break the session.
+try {
+  const child = spawn(
+    process.execPath,
+    [cli, "observe", "--root", process.cwd(), "--session", String(session)],
+    { cwd: process.cwd(), stdio: "ignore", detached: true }
+  );
+  child.unref();
+} catch {
+  // Never let observation capture break the session.
+}
 
 const output = {
   hookSpecificOutput: {

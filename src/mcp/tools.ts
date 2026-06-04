@@ -25,6 +25,14 @@ import {
   listMemories,
   recallMemories,
   pruneMemory,
+  searchObservations,
+  timeline,
+  getObservations,
+  renderHits,
+  renderTimeline,
+  renderObservations,
+  OBSERVATION_KINDS,
+  type ObservationKind,
   type MemoryType,
   MEMORY_TYPES
 } from "../memory/index.js";
@@ -153,6 +161,55 @@ export const TOOL_DESCRIPTORS: ToolDescriptor[] = [
     }
   },
   {
+    name: "sp_search_memory",
+    description:
+      "Use FIRST to find past work without dumping bodies into context (layer 1 of memory search): returns a compact ranked index of observations (id, time, kind, one-line summary) matched by meaning and keyword. Then narrow with sp_timeline and fetch only the ids you want with sp_observations.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        query: { type: "string", description: "What to look for, in natural language." },
+        kind: {
+          type: "string",
+          enum: [...OBSERVATION_KINDS],
+          description: "Optional filter: edit, read, command, search, prompt, note."
+        },
+        session: { type: "string", description: "Optional: restrict to one session id." },
+        since: { type: "string", description: "Optional ISO date; only observations at or after it." },
+        limit: { type: "number", description: "Max rows (default 10)." },
+        root: { type: "string" }
+      },
+      required: ["query"]
+    }
+  },
+  {
+    name: "sp_timeline",
+    description:
+      "Use to see what happened around an interesting result (layer 2 of memory search): returns the chronological neighbours of an observation (by id) or of the best match for a query, in time order, still as compact one-liners.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        around: { type: "string", description: "An observation id (number) or a query to centre on." },
+        window: { type: "number", description: "Neighbours on each side (default 3)." },
+        session: { type: "string" },
+        root: { type: "string" }
+      },
+      required: ["around"]
+    }
+  },
+  {
+    name: "sp_observations",
+    description:
+      "Use LAST to fetch full detail only for the ids you filtered down to (layer 3 of memory search). Always batch multiple ids in one call. This is the only call that returns full bodies, so the index and timeline keep the token cost down until here.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        ids: { type: "array", items: { type: "number" }, description: "Observation ids to fetch." },
+        root: { type: "string" }
+      },
+      required: ["ids"]
+    }
+  },
+  {
     name: "sp_budget",
     description:
       "Use to check the context budget. Returns ok/warn/compact level and an approximate token estimate for a given number of bytes pulled into context.",
@@ -265,6 +322,44 @@ export async function callTool(
         if (!memName) return err("sp_forget needs a name");
         const ok = await pruneMemory(rootOf(args, ctx), memName);
         return text(ok ? `forgot "${memName}"` : `no memory named "${memName}"`);
+      }
+      case "sp_search_memory": {
+        const query = String(args["query"] ?? "");
+        if (!query) return err("sp_search_memory needs a query");
+        const kindArg = args["kind"];
+        const kind =
+          typeof kindArg === "string" && OBSERVATION_KINDS.includes(kindArg as ObservationKind)
+            ? (kindArg as ObservationKind)
+            : undefined;
+        const hits = await searchObservations(rootOf(args, ctx), {
+          query,
+          kind,
+          session: typeof args["session"] === "string" ? (args["session"] as string) : undefined,
+          since: typeof args["since"] === "string" ? (args["since"] as string) : undefined,
+          limit: Number(args["limit"]) || 10
+        });
+        return text(renderHits(hits));
+      }
+      case "sp_timeline": {
+        const raw = String(args["around"] ?? "");
+        if (!raw) return err("sp_timeline needs an id or query in 'around'");
+        const asNum = Number(raw);
+        const around = raw.trim() !== "" && Number.isFinite(asNum) ? asNum : raw;
+        const entries = await timeline(rootOf(args, ctx), {
+          around,
+          window: Number(args["window"]) || 3,
+          session: typeof args["session"] === "string" ? (args["session"] as string) : undefined
+        });
+        return text(renderTimeline(entries));
+      }
+      case "sp_observations": {
+        const idsRaw = args["ids"];
+        const ids = Array.isArray(idsRaw)
+          ? idsRaw.map((n) => Number(n)).filter((n) => Number.isFinite(n))
+          : [];
+        if (ids.length === 0) return err("sp_observations needs an array of numeric ids");
+        const obs = await getObservations(rootOf(args, ctx), ids);
+        return text(renderObservations(obs));
       }
       case "sp_budget": {
         const bytesRead = Number(args["bytesRead"]) || 0;

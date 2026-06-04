@@ -62,5 +62,9 @@ npx slipstream memory index --root .
 
 Two features sit on top of this store. [Memory recall](Memory-Recall) (`src/memory/recall.ts`) ranks memories against a task signal and reloads only the relevant subset at session start, never the whole store. [Lossless compaction](Lossless-Compaction) (`src/memory/digest.ts`) writes a structured session digest to the store before Claude Code compacts, and the next session reloads it first.
 
+## The other half: memory that builds itself
+
+The store above holds the facts you *choose* to keep. Alongside it, slipstream keeps **observation memory** under `.claude/slipstream/observations/`: a compact, semantically searchable record of every turn of work, captured automatically with no `/slipstream:remember` call. It is queried through the three-layer search tools (`sp_search_memory` → `sp_timeline` → `sp_observations`) and a local vector embedding, so "what did we do about the auth bug three weeks ago" is answerable without anyone having written it down. See [Observation memory and semantic search](Observation-Memory) for the full design.
+
 ---
 SarmaLinux . sarmalinux.com . [Repository](https://github.com/sarmakska/slipstream)

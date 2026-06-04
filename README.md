@@ -16,12 +16,13 @@ You install it into Claude Code in VS Code. It is not a CLI you run as a product
 
 ## What you feel on day one
 
-Four things change the moment slipstream is installed and a project is open.
+Five things change the moment slipstream is installed and a project is open.
 
 1. **Claude works through precise tools, not whole-file reads.** A bundled MCP server (`src/mcp`) exposes `sp_map`, `sp_symbol`, `sp_lines` and `sp_search`. Claude orients with the map and pulls one symbol or one line range, so a single `sp_symbol` call replaces opening the whole file. The worked numbers are below.
-2. **Context survives compaction.** A `PreCompact` hook (`hooks/pre-compact.mjs`) writes a structured digest of the session (open task, decisions, files touched, next steps) to the memory store the instant before Claude Code compacts. The next session reloads that digest, so the thread is not lost when the window is trimmed.
-3. **You watch the agents in a local dashboard.** Session start boots a `127.0.0.1` server and prints the URL into the chat. You glance at a tab and see which agent is on which step.
-4. **You see the budget in the statusline.** The status bar shows `cp | ctx 12% ok | mem 4 | skill scoped-read`, so the context budget, the memory count and the active skill are always in view.
+2. **Memory builds itself, and you can search it.** Every turn of work is folded into a compact observation (summary, files touched, tags, a stable id, a local semantic vector) without anyone calling `remember`. You query it back through a three-layer search — `sp_search_memory` for a cheap ranked index, `sp_timeline` for context, `sp_observations` for full detail — so "what did we do about the auth bug three weeks ago" is answerable.
+3. **Context survives compaction.** A `PreCompact` hook (`hooks/pre-compact.mjs`) writes a structured digest of the session (open task, decisions, files touched, next steps) to the memory store the instant before Claude Code compacts. The next session reloads that digest, so the thread is not lost when the window is trimmed.
+4. **You watch the agents in a local dashboard.** Session start boots a `127.0.0.1` server and prints the URL into the chat. You glance at a tab and see which agent is on which step, and a Memory search panel queries your project's observations.
+5. **You see the budget in the statusline.** The status bar shows `cp | ctx 12% ok | mem 4 | obs 37 | skill scoped-read`, so the context budget, the memory counts and the active skill are always in view.
 
 ## Why I built this
 
@@ -85,11 +86,26 @@ The bundled MCP server (declared in `.claude-plugin/plugin.json` under `mcpServe
 | `sp_symbol(file, symbol)` | just that symbol's source slice, with its doc comment. |
 | `sp_lines(file, start, end)` | exactly that line range. |
 | `sp_search(query)` | ranked file locations for a query. Locations, not contents. |
-| `sp_remember` / `sp_recall` / `sp_forget` | the memory store as tools. |
+| `sp_remember` / `sp_recall` / `sp_forget` | the hand-authored memory store as tools. |
+| `sp_search_memory(query)` | layer 1 of memory search: a compact ranked index of auto-captured observations (id, time, kind, summary). |
+| `sp_timeline(around)` | layer 2: chronological context around an observation id or the best match for a query. |
+| `sp_observations(ids)` | layer 3: full detail for only the observation ids you filtered down to. |
 | `sp_budget()` | the context-budget level (ok/warn/compact) and a token estimate. |
 | `sp_mindmap()` | the project as a themed Mermaid mind map. |
 
-Every tool returns the smallest correct thing; `sp_symbol` never returns the whole file. That discipline lives in `src/mcp/tools.ts` where it cannot be bypassed.
+Every tool returns the smallest correct thing; `sp_symbol` never returns the whole file, and the three memory-search tools are layered cheapest-first so recall never dumps full bodies into context to find one record. That discipline lives in `src/mcp/tools.ts` where it cannot be bypassed.
+
+## Memory that builds itself, and semantic search
+
+`sp_remember` is the memory you choose to keep. The other half of the store is memory slipstream keeps for you. After every turn, the `Stop` hook folds that turn out of the dashboard's own event log into a compact **observation** under `.claude/slipstream/observations/<session>.jsonl`: a one-line summary, the files touched, tags, a stable project-wide id, and a local semantic vector. Capture is incremental and idempotent (a per-session cursor means re-running adds nothing) and runs detached, so it never blocks or breaks the session. Nobody has to decide a turn was worth remembering; the trace is there either way.
+
+You search it back through three tools, used cheapest-first so recall never pays for bodies it does not need:
+
+1. `sp_search_memory(query)` returns a compact ranked index — id, time, kind, one-line summary — matched by both meaning and keyword.
+2. `sp_timeline(around)` shows the chronological neighbours of an interesting hit, still as one-liners.
+3. `sp_observations(ids)` fetches full detail only for the ids you kept.
+
+Ranking is hybrid: a local semantic embedding (`src/memory/embed.ts`, a deterministic hashed term-frequency vector with cosine similarity) blended with exact-term overlap, so a result that literally contains the words is never beaten by one that is merely similar. It is honestly lexical-semantic, not a learned model — the trade that keeps it zero-dependency, with no SQLite, no Python and no vector-database process. Each observation id doubles as a citation handle, browsable while the dashboard runs at `http://127.0.0.1:<port>/api/observation/<id>`, and the dashboard's Memory search panel queries the same store. The full design is in the wiki: [Observation memory and semantic search](https://github.com/sarmakska/slipstream/wiki/Observation-Memory).
 
 ## Lossless compaction and smart recall
 
@@ -169,7 +185,7 @@ Where that config lives, by editor:
 - Windsurf: edit `~/.codeium/windsurf/mcp_config.json`, or add it under Settings, then Cascade MCP.
 - Any other MCP client: wherever that client reads an `mcpServers` block.
 
-Once it loads, the agent gains `sp_map`, `sp_symbol`, `sp_lines`, `sp_search`, `sp_remember`, `sp_recall`, `sp_forget`, `sp_budget` and `sp_mindmap`. Ask it to orient with `sp_map` and to read single declarations with `sp_symbol` rather than whole files, which is where the token saving comes from. The full plugin layer still needs Claude Code, so for skills, hooks and the dashboard, open the same project there.
+Once it loads, the agent gains `sp_map`, `sp_symbol`, `sp_lines`, `sp_search`, `sp_remember`, `sp_recall`, `sp_forget`, `sp_search_memory`, `sp_timeline`, `sp_observations`, `sp_budget` and `sp_mindmap`. Ask it to orient with `sp_map` and to read single declarations with `sp_symbol` rather than whole files, which is where the token saving comes from. The memory-search tools work here too, though auto-capture is driven by the `Stop` hook and so fills in fully only under Claude Code; outside it, you can still record observations with `slipstream observe` and search them. The full plugin layer still needs Claude Code, so for skills, hooks and the dashboard, open the same project there.
 
 ## Architecture
 
@@ -183,7 +199,7 @@ flowchart TD
     Agents[Subagents: sp-shipper, sp-schema, sp-reviewer]
   end
 
-  CC --> MCP[Bundled MCP server: sp_map, sp_symbol, sp_lines, sp_search, sp_remember/recall/forget, sp_budget, sp_mindmap]
+  CC --> MCP[Bundled MCP server: sp_map, sp_symbol, sp_lines, sp_search, sp_remember/recall/forget, sp_search_memory/timeline/observations, sp_budget, sp_mindmap]
   Hooks --> Helper[slipstream helper]
   Cmds --> Helper
   Agents --> MCP
@@ -195,8 +211,12 @@ flowchart TD
   MCP --> Budget[Context budget estimate]
   Hooks -->|PreCompact| Digest[Session digest -> memory]
   Hooks --> Log[(Append-only event log)]
+  Hooks -->|Stop folds each turn| Obs[(Observation store + local vectors)]
+  Log --> Obs
+  MCP --> Obs
+  Obs -->|3-layer semantic search| Recall2[Searchable self-built memory]
   Log --> Server[Local SSE server, 127.0.0.1]
-  Server --> UI[Live dashboard: agents, activity, budget, plan, mind map]
+  Server --> UI[Live dashboard: agents, activity, budget, plan, mind map, memory search]
 
   Map -->|read index, pull one slice| Tokens[Fewer tokens per read]
   Digest -->|reloaded at session start| Survive[Context survives compaction]
@@ -208,7 +228,7 @@ flowchart TD
 ## The five pillars
 
 1. **Token efficiency.** A compact, regenerable map of files, exported symbols and purpose (`src/map`), exposed through the bundled MCP server (`src/mcp`) as `sp_map`, `sp_symbol`, `sp_lines` and `sp_search`. Claude reads the map and one slice, not whole files. The `PreToolUse` hook warns before a large whole-file read; `UserPromptSubmit` reminds it to use the map and recall memory. A budget estimate (`src/context/budget.ts`) tracks approximate usage and says when to compact.
-2. **Persistent memory, with lossless compaction.** A file-based store under `.claude/slipstream/memory/`: one fact per file with frontmatter, plus a regenerated `MEMORY.md` index (`src/memory`). The `PreCompact` hook writes a session digest before compaction; `SessionStart` reloads that digest plus a signal-ranked relevant subset (branch, changed files, last prompt), never the whole store. `Stop` nudges Claude to write durable facts.
+2. **Persistent memory, with lossless compaction and self-building observations.** A file-based store under `.claude/slipstream/memory/`: one fact per file with frontmatter, plus a regenerated `MEMORY.md` index (`src/memory`). The `PreCompact` hook writes a session digest before compaction; `SessionStart` reloads that digest plus a signal-ranked relevant subset (branch, changed files, last prompt), never the whole store. `Stop` nudges Claude to write durable facts — and also auto-captures the turn as a searchable observation. Alongside the hand-authored store, `.claude/slipstream/observations/` holds a compact, semantically searchable record of every turn, queried through the three-layer `sp_search_memory` / `sp_timeline` / `sp_observations` tools and a local vector embedding (`src/memory/embed.ts`, `observe.ts`, `search.ts`).
 3. **Guardrailed skill library.** 59 skills across frontend, backend, Supabase, Cloudflare, Vercel, Resend, auth, payments, SEO, analytics, git/release, plus memory and context discipline. Each is a real agent skill with a `SKILL.md`; each shipping skill carries a verification gate, a check the agent runs to prove the step worked. `slipstream plugin-validate` fails loudly on anything malformed.
 4. **Mind map and status in the chat.** `/slipstream:mindmap` renders the project as a themed Mermaid diagram in chat or a self-contained HTML artifact (`src/dashboard/artifact.ts`). `/slipstream:status` shows the plan, the budget with a recommendation, the memory count and the map.
 5. **Live agent dashboard.** The auto-launching local observability dashboard described above (`src/dashboard`). Hooks to event log to local server to live UI, with replay.
@@ -254,7 +274,7 @@ pnpm validate
 pnpm plugin-validate
 ```
 
-The suite is 88 tests across 11 files; on Apple Silicon (Node 25) `pnpm test` runs them in about 2.1s. Beyond the dashboard tests (event validity, the concurrency-safe append-only writer under 25 parallel writers, a real SSE server end to end, idempotent start, replay), the suite spawns the real MCP server over stdio and asserts `tools/list` and a `sp_symbol` call return correct, minimal output; checks the PreCompact digest builds and reloads; checks signal-ranked recall returns only the relevant subset within budget; pins the statusline string; and runs doctor against both the real tree and a deliberately broken one.
+The suite is 105 tests across 12 files; `pnpm test` runs them in about 1.6s. Beyond the dashboard tests (event validity, the concurrency-safe append-only writer under 25 parallel writers, a real SSE server end to end, idempotent start, replay), the suite spawns the real MCP server over stdio and asserts `tools/list` and a `sp_symbol` call return correct, minimal output; checks the PreCompact digest builds and reloads; checks signal-ranked recall returns only the relevant subset within budget; exercises the local embedding, the turn-folding observation capture and the three-layer semantic search; pins the statusline string; and runs doctor against both the real tree and a deliberately broken one.
 
 The wiki has the full write-up: [Home](https://github.com/sarmakska/slipstream/wiki) . [Architecture](https://github.com/sarmakska/slipstream/wiki/Architecture) . [MCP-Tools](https://github.com/sarmakska/slipstream/wiki/MCP-Tools) . [Lossless-Compaction](https://github.com/sarmakska/slipstream/wiki/Lossless-Compaction) . [Memory-Recall](https://github.com/sarmakska/slipstream/wiki/Memory-Recall) . [Subagents](https://github.com/sarmakska/slipstream/wiki/Subagents) . [Statusline](https://github.com/sarmakska/slipstream/wiki/Statusline) . [Output-Style](https://github.com/sarmakska/slipstream/wiki/Output-Style) . [Live-Agent-Dashboard](https://github.com/sarmakska/slipstream/wiki/Live-Agent-Dashboard) . [Token-Efficiency](https://github.com/sarmakska/slipstream/wiki/Token-Efficiency) . [Skill-Engine](https://github.com/sarmakska/slipstream/wiki/Skill-Engine) . [Skill-Catalogue](https://github.com/sarmakska/slipstream/wiki/Skill-Catalogue) . [Writing-a-Skill](https://github.com/sarmakska/slipstream/wiki/Writing-a-Skill) . [Hooks](https://github.com/sarmakska/slipstream/wiki/Hooks) . [Install-in-VS-Code](https://github.com/sarmakska/slipstream/wiki/Install-in-VS-Code) . [FAQ](https://github.com/sarmakska/slipstream/wiki/FAQ) . [Troubleshooting](https://github.com/sarmakska/slipstream/wiki/Troubleshooting) . [Roadmap-and-Limitations](https://github.com/sarmakska/slipstream/wiki/Roadmap-and-Limitations)
 

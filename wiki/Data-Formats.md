@@ -97,6 +97,26 @@ One JSON event per line, append-only (`DashboardEvent` in `src/dashboard/events.
 
 `kind` is one of `session-start`, `user-prompt`, `pre-tool`, `post-tool`, `subagent-start`, `subagent-stop`, `stop`. `seq` is assigned by the writer under a small advisory lock so two racing hooks never collide. Labels and payloads are redacted before they reach disk (see [Security model](Security-Model)). Dashboard state is a pure fold over these lines, which is what makes replay free.
 
+## An observation (`observations/<session>.jsonl`)
+
+One JSON record per line, append-only (`Observation` in `src/memory/observe.ts`), folded from the event log by `captureObservations`:
+
+```jsonc
+{
+  "id": 1,                         // project-wide monotonic; the citation handle
+  "session": "main",
+  "ts": "2026-06-04T10:02:00.000Z",
+  "kind": "edit",                  // edit | read | command | search | prompt | note
+  "summary": "fix the stripe webhook signature verification — Read, Edit (1 file)",
+  "detail": "Request: ...\nTools: Read, Edit\nFiles:\n  - src/payments/webhook.ts",
+  "files": ["src/payments/webhook.ts"],
+  "tags": ["edit", "webhook", "read"],
+  "vector": [0.0, 0.13241, -0.08812, /* … 256 floats, the local embedding */]
+}
+```
+
+`kind` is the dominant activity of the turn. `vector` is a unit-length 256-float hashed term-frequency embedding (`src/memory/embed.ts`), rounded to five decimals so the file stays compact without changing cosine ranking. A sibling `<session>.cursor` file records the last event seq folded into observations, so capture is incremental; a project-wide `.counter` file holds the next id. See [Observation memory and semantic search](Observation-Memory).
+
 ## server.json
 
 ```jsonc

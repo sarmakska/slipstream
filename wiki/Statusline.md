@@ -5,11 +5,12 @@ slipstream ships a statusline command that keeps the three things a token-discip
 ## What it shows
 
 ```
-cp | ctx 12% ok | mem 4 | skill scoped-read | Opus 4.8
+cp | ctx 12% ok | mem 4 | obs 37 | skill scoped-read | Opus 4.8
 ```
 
 - `ctx 12% ok` the context budget: the percentage of the window used and the level (`ok`, `warn`, `COMPACT`).
-- `mem 4` the count of durable memories in the project store.
+- `mem 4` the count of durable, hand-authored memories in the project store.
+- `obs 37` the count of auto-captured observations (dropped when the store is empty). See [Observation memory](Observation-Memory).
 - `skill scoped-read` the active skill or output style, if any.
 - `Opus 4.8` the model display name.
 
@@ -52,7 +53,7 @@ If you install the plugin from the marketplace, the statusline is declared in th
 
 ## The formatting contract
 
-`formatStatusline` is pure, so the test pins the exact string. With `bytesRead: 50000`, `memoryCount: 4`, `activeSkill: "scoped-read"`, `model: "Opus 4.8"` it returns exactly `cp | ctx 7% ok | mem 4 | skill scoped-read | Opus 4.8`. The budget level mirrors `src/context/budget.ts`: below 60% is `ok`, 60 to 85% is `warn`, above 85% is `COMPACT`.
+`formatStatusline` is pure, so the test pins the exact string. With `bytesRead: 50000`, `memoryCount: 4`, `observationCount: 37`, `activeSkill: "scoped-read"`, `model: "Opus 4.8"` it returns exactly `cp | ctx 7% ok | mem 4 | obs 37 | skill scoped-read | Opus 4.8`. The budget level mirrors `src/context/budget.ts`: below 60% is `ok`, 60 to 85% is `warn`, above 85% is `COMPACT`.
 
 ## Failure modes
 

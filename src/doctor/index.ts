@@ -95,6 +95,13 @@ export async function runDoctor(
     memCheck.detail = `no memory yet at ${memDir}; will be created on first /slipstream:remember`;
   }
 
+  // 4b. The observation store (auto-captured memory). Like the memory dir this
+  // is created on first capture, so its absence on a fresh project is not a fail.
+  const obsDir = join(projectRoot, ".claude", "slipstream", "observations");
+  add("observations-dir", true, (await exists(obsDir))
+    ? obsDir
+    : `no observations yet at ${obsDir}; created automatically as you work`);
+
   // 5. The map can be refreshed (the helper CLI is built).
   const cliEntry = join(pluginRoot, "dist", "cli", "index.js");
   add("cli-build", await exists(cliEntry), cliEntry);

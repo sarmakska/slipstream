@@ -64,6 +64,17 @@ export function renderDashboardHtml(session: string): string {
     border-top:1px solid var(--line)}
   a{color:var(--sky)} .note{color:var(--muted);font-size:11px;margin-top:8px}
   .empty{color:var(--muted);padding:8px 0}
+  #msearch{width:100%;background:var(--surface);color:var(--fg);
+    border:1px solid var(--line);border-radius:6px;padding:6px 9px;font:inherit;margin-bottom:8px}
+  #msearch:focus{outline:none;border-color:var(--sky)}
+  .hit{border:1px solid var(--line);border-radius:8px;padding:7px 9px;margin-bottom:6px;
+    background:var(--surface);cursor:pointer}
+  .hit:hover{border-color:var(--sky)}
+  .hit .meta{color:var(--muted);font-size:10px;margin-bottom:2px}
+  .hit .kind{color:var(--cyan)} .hit .id{color:var(--emerald)}
+  .hit .sum{color:var(--fg);font-size:12px}
+  .hit .detail{color:var(--muted);font-size:11px;margin-top:6px;white-space:pre-wrap;
+    border-top:1px solid var(--line);padding-top:6px}
 </style>
 </head>
 <body>
@@ -93,6 +104,9 @@ export function renderDashboardHtml(session: string): string {
     <h2 style="margin-top:18px">Mind map</h2>
     <pre class="mermaid" id="map">flowchart LR
   n0(["session"]) --> n1["waiting"]</pre>
+    <h2 style="margin-top:18px">Memory search</h2>
+    <input id="msearch" type="search" placeholder="search past observations…" autocomplete="off" />
+    <div id="mhits"><div class="empty">type to search this project's memory</div></div>
     <div class="note">Everything here stays on this machine. No telemetry, local bind only.</div>
   </section>
 </main>
@@ -208,6 +222,41 @@ export function renderDashboardHtml(session: string): string {
     es.addEventListener("state", (ev) => { state = JSON.parse(ev.data); render(); });
     es.onerror = () => { $("conn").innerHTML = '<span class="replay">reconnecting</span>'; };
   }
+
+  // Memory search: query the observation store and let a hit expand to its full
+  // detail, fetched lazily so the index stays cheap until you ask for a body.
+  let searchTimer = null;
+  async function runSearch(q) {
+    const box = $("mhits");
+    if (!q || !q.trim()) { box.innerHTML = '<div class="empty">type to search this project\\'s memory</div>'; return; }
+    const r = await fetch("/api/search?q=" + encodeURIComponent(q) +
+      "&session=" + encodeURIComponent(current))
+      .then((x) => x.json()).catch(() => ({ hits: [] }));
+    if (!r.hits || r.hits.length === 0) { box.innerHTML = '<div class="empty">no matching observations</div>'; return; }
+    box.innerHTML = "";
+    for (const h of r.hits) {
+      const d = document.createElement("div");
+      d.className = "hit";
+      d.innerHTML = '<div class="meta"><span class="id">#' + h.id + '</span> ' +
+        '<span class="kind">' + escape(h.kind) + '</span> ' + escape((h.ts||"").slice(0,16).replace("T"," ")) +
+        ' · score ' + h.score + '</div><div class="sum">' + escape(h.summary) + '</div>';
+      d.onclick = async () => {
+        const open = d.querySelector(".detail");
+        if (open) { open.remove(); return; }
+        const o = await fetch("/api/observation/" + h.id).then((x) => x.json()).catch(() => null);
+        const det = document.createElement("div");
+        det.className = "detail";
+        det.textContent = o && o.detail ? o.detail : "(no detail)";
+        d.appendChild(det);
+      };
+      box.appendChild(d);
+    }
+  }
+  const ms = $("msearch");
+  if (ms) ms.addEventListener("input", () => {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => runSearch(ms.value), 250);
+  });
 
   loadSessions().then(connect);
 </script>

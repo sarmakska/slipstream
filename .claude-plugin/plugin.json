@@ -1,7 +1,7 @@
 {
   "name": "slipstream",
-  "version": "0.2.0",
-  "description": "Turn Claude Code into a disciplined, token-efficient builder: a bundled MCP server for scoped retrieval, lossless compaction, smart memory recall, shipped subagents, a context-budget statusline and a live local agent dashboard for shipping production sites on Cloudflare, Supabase, Vercel and Resend.",
+  "version": "0.3.0",
+  "description": "Turn Claude Code into a disciplined, token-efficient builder: a bundled MCP server for scoped retrieval, auto-captured observation memory with semantic search, lossless compaction, smart memory recall, shipped subagents, a context-budget statusline and a live local agent dashboard for shipping production sites on Cloudflare, Supabase, Vercel and Resend.",
   "author": {
     "name": "Sarma",
     "url": "https://sarmalinux.com"
@@ -12,6 +12,7 @@
   "keywords": [
     "claude-code",
     "memory",
+    "semantic-search",
     "token-efficiency",
     "skills",
     "dashboard",

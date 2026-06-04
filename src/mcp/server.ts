@@ -16,7 +16,7 @@ import { callTool, TOOL_DESCRIPTORS, type ToolContext } from "./tools.js";
 
 export const PROTOCOL_VERSION = "2024-11-05";
 export const SERVER_NAME = "slipstream";
-export const SERVER_VERSION = "0.2.0";
+export const SERVER_VERSION = "0.3.0";
 
 export interface JsonRpcRequest {
   jsonrpc: "2.0";

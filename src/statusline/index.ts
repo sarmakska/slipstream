@@ -20,6 +20,8 @@ export interface StatuslineInput {
   windowTokens?: number;
   /** Count of durable memories in the project store. */
   memoryCount?: number;
+  /** Count of auto-captured observations in the project store. */
+  observationCount?: number;
   /** The active skill or output style name, if any. */
   activeSkill?: string;
   /** Model display name, for example "Opus 4.8". */
@@ -34,7 +36,7 @@ const LEVEL_GLYPH: Record<BudgetReport["level"], string> = {
 
 /**
  * Format the statusline. The shape is stable so the test can pin it:
- *   cp | ctx 12% ok | mem 4 | skill scoped-read | Opus 4.8
+ *   cp | ctx 12% ok | mem 4 | obs 37 | skill scoped-read | Opus 4.8
  * Segments with no data are dropped, so a fresh project shows a short line
  * rather than a row of zeros.
  */
@@ -49,6 +51,9 @@ export function formatStatusline(input: StatuslineInput): string {
   segments.push(`ctx ${pct}% ${LEVEL_GLYPH[report.level]}`);
   if (typeof input.memoryCount === "number") {
     segments.push(`mem ${input.memoryCount}`);
+  }
+  if (typeof input.observationCount === "number" && input.observationCount > 0) {
+    segments.push(`obs ${input.observationCount}`);
   }
   if (input.activeSkill) {
     segments.push(`skill ${input.activeSkill}`);

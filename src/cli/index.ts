@@ -21,6 +21,16 @@ import {
   renderRecall,
   buildDigest,
   digestToMemory,
+  captureObservations,
+  loadObservations,
+  getObservations,
+  searchObservations,
+  timeline,
+  renderHits,
+  renderTimeline,
+  renderObservations,
+  OBSERVATION_KINDS,
+  type ObservationKind,
   type MemoryType,
   type TaskSignal
 } from "../memory/index.js";
@@ -66,6 +76,10 @@ Usage:
   slipstream memory list [--root .]
   slipstream memory prune <name> [--root .]
   slipstream memory index [--root .]
+  slipstream memory search "query" [--kind K] [--session S] [--since ISO] [--limit N] [--root .]
+  slipstream memory timeline <id|"query"> [--window N] [--session S] [--root .]
+  slipstream memory observations <id> [id...] [--root .]
+  slipstream observe [--root .] [--session S]
   slipstream mindmap [root] [--mermaid] [--html out.html]
   slipstream status [root] [--bytes N]
   slipstream dashboard start [--root .] [--session S] [--open] [--foreground]
@@ -235,10 +249,82 @@ async function cmdMemory(args: string[]): Promise<number> {
       console.log(rendered);
       return 0;
     }
+    case "search": {
+      const query = rest.find((a) => !a.startsWith("--")) ?? "";
+      if (!query) {
+        console.error('usage: slipstream memory search "query" [--kind K] [--session S] [--since ISO] [--limit N]');
+        return 2;
+      }
+      const kindArg = getFlag(rest, "kind");
+      const kind =
+        kindArg && OBSERVATION_KINDS.includes(kindArg as ObservationKind)
+          ? (kindArg as ObservationKind)
+          : undefined;
+      const hits = await searchObservations(root, {
+        query,
+        kind,
+        session: getFlag(rest, "session"),
+        since: getFlag(rest, "since"),
+        limit: Number(getFlag(rest, "limit") ?? 10)
+      });
+      console.log(renderHits(hits));
+      return 0;
+    }
+    case "timeline": {
+      const raw = rest.find((a) => !a.startsWith("--")) ?? "";
+      if (!raw) {
+        console.error('usage: slipstream memory timeline <id|"query"> [--window N] [--session S]');
+        return 2;
+      }
+      const asNum = Number(raw);
+      const around = Number.isFinite(asNum) && /^\d+$/.test(raw) ? asNum : raw;
+      const entries = await timeline(root, {
+        around,
+        window: Number(getFlag(rest, "window") ?? 3),
+        session: getFlag(rest, "session")
+      });
+      console.log(renderTimeline(entries));
+      return 0;
+    }
+    case "observations": {
+      const ids = rest
+        .filter((a) => !a.startsWith("--"))
+        .flatMap((a) => a.split(","))
+        .map((n) => Number(n.trim()))
+        .filter((n) => Number.isFinite(n));
+      if (ids.length === 0) {
+        console.error("usage: slipstream memory observations <id> [id...]");
+        return 2;
+      }
+      console.log(renderObservations(await getObservations(root, ids)));
+      return 0;
+    }
     default:
-      console.error("usage: slipstream memory <add|recall|list|prune|index>");
+      console.error(
+        "usage: slipstream memory <add|recall|list|prune|index|search|timeline|observations>"
+      );
       return 2;
   }
+}
+
+/**
+ * Capture observations for a session by folding its dashboard event log into the
+ * observation store. The Stop hook shells out to this after each turn; it is
+ * incremental and idempotent thanks to the per-session cursor, so running it twice
+ * adds nothing the second time.
+ */
+async function cmdObserve(args: string[]): Promise<number> {
+  const root = getFlag(args, "root") ?? ".";
+  const session = getFlag(args, "session") ?? "main";
+  const written = await captureObservations(root, session);
+  console.log(
+    written.length
+      ? `captured ${written.length} observation(s) for session ${session} (ids ${written
+          .map((o) => o.id)
+          .join(", ")})`
+      : `no new observations for session ${session}`
+  );
+  return 0;
 }
 
 async function cmdMindmap(args: string[]): Promise<number> {
@@ -382,10 +468,17 @@ async function cmdStatusline(args: string[]): Promise<number> {
   } catch {
     memoryCount = 0;
   }
+  let observationCount = 0;
+  try {
+    observationCount = (await loadObservations(root)).length;
+  } catch {
+    observationCount = 0;
+  }
   console.log(
     formatStatusline({
       bytesRead: bytes,
       memoryCount,
+      observationCount,
       activeSkill: skill,
       model
     })
@@ -486,6 +579,8 @@ async function main(): Promise<number> {
       return cmdBudget(rest);
     case "memory":
       return cmdMemory(rest);
+    case "observe":
+      return cmdObserve(rest);
     case "mindmap":
       return cmdMindmap(rest);
     case "status":

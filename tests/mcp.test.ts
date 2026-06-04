@@ -38,10 +38,13 @@ describe("mcp request handler", () => {
       "sp_lines",
       "sp_map",
       "sp_mindmap",
+      "sp_observations",
       "sp_recall",
       "sp_remember",
       "sp_search",
-      "sp_symbol"
+      "sp_search_memory",
+      "sp_symbol",
+      "sp_timeline"
     ]);
     // Every description is a crisp "Use ..." trigger.
     for (const t of tools) expect(t.description.startsWith("Use")).toBe(true);

@@ -1,6 +1,6 @@
 # Testing strategy
 
-The suite is 88 tests across 11 files, run with `pnpm test` (Vitest). It runs in about 2.1 s on Apple Silicon (Node 25). The strategy is to test the pure cores directly and to spawn the real processes where a process boundary is the thing that could break.
+The suite is 105 tests across 12 files, run with `pnpm test` (Vitest). It runs in about 1.6 s. The strategy is to test the pure cores directly and to spawn the real processes where a process boundary is the thing that could break.
 
 ## What each file covers
 
@@ -9,6 +9,7 @@ The suite is 88 tests across 11 files, run with `pnpm test` (Vitest). It runs in
 | `tests/map.test.ts` | symbol extraction, map generation, that the map embeds no contents, scoped retrieval returns one symbol not the file, line ranges, search ranking, the mind map |
 | `tests/memory.test.ts` | normalise, add/list, preserve created timestamp on overwrite, update, prune, recall ranking from frontmatter, index rendering |
 | `tests/recall.test.ts` | signal ranking by branch, by changed files, by prompt; empty-signal returns nothing; the token-budget ceiling over a 50-memory store; render |
+| `tests/memory-search.test.ts` | the local embedding (unit length, determinism, related-above-unrelated cosine, camel/snake tokenising); `foldObservations` turning turns into observations and leaving open turns unconsumed; idempotent capture with project-wide ids; the three-layer search (index ranking, kind filter, timeline anchor, exact-term beats merely-similar) |
 | `tests/digest.test.ts` | digest build (open task, decisions, files, next step), markdown render, and the lossless property: write a digest, reload it on a stripe branch with the decision intact |
 | `tests/mcp.test.ts` | the pure `handleRequest` (initialize, tools/list, notification, method-not-found), `sp_symbol` returns a slice shorter than the file, `sp_map`/`sp_search` embed no bodies, and a spawned real server answering `tools/list` and a `sp_symbol` call over stdio |
 | `tests/statusline.test.ts` | the exact formatted line for fixed inputs, dropped empty segments, the warn and COMPACT thresholds |
