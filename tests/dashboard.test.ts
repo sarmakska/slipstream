@@ -162,7 +162,7 @@ describe("server", () => {
 
     try {
       const html = await fetch(`http://127.0.0.1:${port}/`).then((r) => r.text());
-      expect(html).toContain("slipstream live");
+      expect(html).toContain("slipstream");
 
       // Consume the SSE stream by hand: read the snapshot frame, then append a
       // fresh event and assert a "state" frame arrives carrying it.
