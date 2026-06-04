@@ -13,7 +13,7 @@
 // compaction, so every failure path degrades to a no-op.
 
 import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { readPayload, sessionId, emit, withLatencyGuard } from "./emit.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -31,8 +31,8 @@ const openTaskHint =
     : undefined;
 
 try {
-  const dash = await import(join(here, "..", "dist", "dashboard", "index.js"));
-  const memory = await import(join(here, "..", "dist", "memory", "index.js"));
+  const dash = await import(pathToFileURL(join(here, "..", "dist", "dashboard", "index.js")).href);
+  const memory = await import(pathToFileURL(join(here, "..", "dist", "memory", "index.js")).href);
 
   // Reconstruct what happened this session from the append-only log.
   const events = await dash.readLog(cwd, session).catch(() => []);
@@ -58,7 +58,7 @@ try {
   });
   const saved = await memory.addMemory(cwd, memory.digestToMemory(digest));
 
-  emit({
+  await emit({
     session,
     kind: "stop",
     label: `compaction (${trigger}): saved digest ${saved.name}`,

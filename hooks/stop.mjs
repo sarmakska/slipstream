@@ -7,31 +7,27 @@
 // in the transcript via additionalContext, and it only fires occasionally so it
 // is not noisy. The agent decides what, if anything, is worth a memory.
 
-import { spawn } from "node:child_process";
 import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { readPayload, sessionId, emit, withLatencyGuard } from "./emit.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
-const cli = join(here, "..", "dist", "cli", "index.js");
 
 await withLatencyGuard("stop", async () => {
 const payload = await readPayload();
 const session = sessionId(payload);
-emit({ session, kind: "stop", label: "turn finished" });
+await emit({ session, kind: "stop", label: "turn finished" });
 
 // Fold this turn into the observation store so memory builds itself. The stop
 // event above closes the turn, so by the time capture runs the turn is complete.
-// Detached and swallowed: capturing memory must never block or break the session.
+// Run it in-process and await it: a detached child does not survive the hook's
+// immediate exit on Windows, which left the observation store permanently empty.
+// Swallowed and best-effort: capturing memory must never break the session.
 try {
-  const child = spawn(
-    process.execPath,
-    [cli, "observe", "--root", process.cwd(), "--session", String(session)],
-    { cwd: process.cwd(), stdio: "ignore", detached: true }
-  );
-  child.unref();
+  const memory = await import(pathToFileURL(join(here, "..", "dist", "memory", "index.js")).href);
+  await memory.captureObservations(process.cwd(), String(session));
 } catch {
-  // Never let observation capture break the session.
+  // No dist build, or capture failed: stay silent, never break the session.
 }
 
 const output = {

@@ -21,7 +21,7 @@ async function main() {
 
   const input = payload.tool_input ?? {};
   const targetLabel = input.file_path ?? input.path ?? "";
-  emit({
+  await emit({
     session,
     kind: "pre-tool",
     label: `${toolName} ${targetLabel}`.trim()
