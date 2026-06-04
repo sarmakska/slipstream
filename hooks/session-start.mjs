@@ -17,7 +17,7 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { readPayload, sessionId, emit } from "./emit.mjs";
+import { readPayload, sessionId, emit, withLatencyGuard } from "./emit.mjs";
 
 const execFileAsync = promisify(execFile);
 const here = dirname(fileURLToPath(import.meta.url));
@@ -57,6 +57,7 @@ async function taskSignal(payload) {
   return signal;
 }
 
+await withLatencyGuard("session-start", async () => {
 const payload = await readPayload();
 const session = sessionId(payload);
 
@@ -160,3 +161,4 @@ const output = {
 };
 
 process.stdout.write(JSON.stringify(output));
+});

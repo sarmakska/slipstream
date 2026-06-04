@@ -15,12 +15,20 @@
 
 import { createServer, type Server, type IncomingMessage, type ServerResponse } from "node:http";
 import { URL } from "node:url";
-import { reduceEvents, totalApproxTokens, type DashboardState } from "./state.js";
+import {
+  reduceEvents,
+  totalApproxTokens,
+  stepTokenHistory,
+  type DashboardState
+} from "./state.js";
+import { forecastTokens } from "../budget/forecast.js";
 import { readLog, listSessions } from "./log.js";
 import { renderDashboardHtml } from "./ui.js";
 import {
   searchObservations,
   getObservations,
+  loadObservations,
+  aggregateBySkill,
   type ObservationKind
 } from "../memory/index.js";
 import { budget, BYTES_PER_TOKEN } from "../context/budget.js";
@@ -208,6 +216,15 @@ export class DashboardServer {
         warnFraction: fr.warnFraction,
         compactFraction: fr.compactFraction
       });
+      // Build a step-token history from the event log so the budget JSON can
+      // expose a forecast of how many more steps fit before compaction. Pure;
+      // shares the same compaction fraction the gauge uses.
+      const history = stepTokenHistory(await readLog(this.opts.projectRoot, session));
+      const forecast = forecastTokens({
+        history,
+        currentTokens: served,
+        thresholdTokens: Math.round((fr.windowTokens ?? 0) * (fr.compactFraction ?? 0.85))
+      });
       res.writeHead(200, {
         "content-type": "application/json"
       });
@@ -218,7 +235,12 @@ export class DashboardServer {
           estimated,
           source: hasActual ? "actual" : "estimated",
           level: report.level,
-          fraction: report.usedFraction
+          fraction: report.usedFraction,
+          forecast: {
+            stepsUntilCompact: forecast.stepsUntilCompact,
+            avgStepTokens: forecast.avgStepTokens,
+            remainingTokens: forecast.remainingTokens
+          }
         })
       );
       return;
@@ -230,6 +252,12 @@ export class DashboardServer {
       const summary = summarizeSavings(await loadSavings(this.opts.projectRoot));
       res.writeHead(200, { "content-type": "application/json" });
       res.end(JSON.stringify(summary));
+      return;
+    }
+    if (url.pathname === "/api/stats/by-skill") {
+      const obs = await loadObservations(this.opts.projectRoot);
+      res.writeHead(200, { "content-type": "application/json" });
+      res.end(JSON.stringify({ stats: aggregateBySkill(obs) }));
       return;
     }
     // Full detail for one observation, by id, for the viewer and for citations.

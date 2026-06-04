@@ -19,7 +19,28 @@ export interface Check {
   id: string;
   pass: boolean;
   detail: string;
+  /** A one-line remedy printed beneath the check when it fails. */
+  fix?: string;
 }
+
+/**
+ * Stable map from check id to a short remedy string. Doctor surfaces these
+ * under any FAIL line so a new user can copy the suggested fix without leaving
+ * the terminal. Keep each string single-line and under 100 characters; the
+ * goal is action, not a manual.
+ */
+export const DOCTOR_FIXES: Record<string, string> = {
+  "claude-dir":
+    "Create the project store: mkdir -p .claude/slipstream/memory",
+  "mcp-declared":
+    "Add the slipstream server to .claude-plugin/plugin.json under mcpServers.slipstream",
+  "memory-dir":
+    "Run slipstream once or call /slipstream:remember to create .claude/slipstream/memory",
+  "dashboard-port":
+    "Free the dashboard port: lsof -nP -iTCP:LISTEN | grep slipstream then kill the PID",
+  "dashboard-socket":
+    "Reset permissions on the dashboard socket: rm -f .claude/slipstream/dashboard.sock"
+};
 
 export interface DoctorReport {
   ok: boolean;
@@ -47,8 +68,23 @@ export async function runDoctor(
 ): Promise<DoctorReport> {
   const checks: Check[] = [];
   const add = (id: string, pass: boolean, detail: string): void => {
-    checks.push({ id, pass, detail });
+    const check: Check = { id, pass, detail };
+    if (!pass && DOCTOR_FIXES[id]) check.fix = DOCTOR_FIXES[id];
+    checks.push(check);
   };
+
+  // 0. The project .claude/ directory exists. Without it the memory and
+  // dashboard stores have nowhere to live. Informational on a fresh project:
+  // slipstream creates it on first write, so absence does not fail the report.
+  const claudeDir = join(projectRoot, ".claude");
+  const hasClaude = await exists(claudeDir);
+  add(
+    "claude-dir",
+    true,
+    hasClaude
+      ? claudeDir
+      : `no ${claudeDir} yet; created automatically on first slipstream write`
+  );
 
   // 1. The compiled MCP server entry exists and declares the tools.
   const mcpEntry = join(pluginRoot, "dist", "mcp", "index.js");
@@ -130,7 +166,35 @@ export async function runDoctor(
     add("plugin-valid", false, (error as Error).message);
   }
 
+  // Dashboard runtime artefacts under the project. These are best-effort and
+  // pass when absent; they only fail when something is present and broken.
+  const portFile = join(projectRoot, ".claude", "slipstream", "dashboard.port");
+  add("dashboard-port", !(await isStalePortFile(portFile)), portFile);
+  const sockFile = join(projectRoot, ".claude", "slipstream", "dashboard.sock");
+  add("dashboard-socket", await isReadablePathOrAbsent(sockFile), sockFile);
+
   return { ok: checks.every((c) => c.pass), checks };
+}
+
+async function isStalePortFile(path: string): Promise<boolean> {
+  try {
+    const raw = await readFile(path, "utf8");
+    const port = Number(raw.trim());
+    if (!Number.isFinite(port) || port <= 0) return true;
+    return false;
+  } catch {
+    return false; // absent is fine
+  }
+}
+
+async function isReadablePathOrAbsent(path: string): Promise<boolean> {
+  try {
+    await stat(path);
+    return true;
+  } catch (err) {
+    const code = (err as { code?: string }).code;
+    return code === "ENOENT";
+  }
 }
 
 /** Render the report as a pass/fail block for the slash command output. */
@@ -140,6 +204,7 @@ export function renderDoctor(report: DoctorReport): string {
   lines.push("");
   for (const c of report.checks) {
     lines.push(`${c.pass ? "PASS" : "FAIL"}  ${c.id}: ${c.detail}`);
+    if (!c.pass && c.fix) lines.push(`      fix: ${c.fix}`);
   }
   lines.push("");
   lines.push(report.ok ? "All checks passed. slipstream is wired correctly." : "Some checks failed. See the lines marked FAIL above.");

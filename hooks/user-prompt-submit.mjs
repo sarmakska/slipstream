@@ -8,10 +8,11 @@
 
 import { stat } from "node:fs/promises";
 import { join } from "node:path";
-import { readPayload, sessionId, emit } from "./emit.mjs";
+import { readPayload, sessionId, emit, withLatencyGuard } from "./emit.mjs";
 
 const cwd = process.cwd();
 
+await withLatencyGuard("user-prompt-submit", async () => {
 const payload = await readPayload();
 const session = sessionId(payload);
 const prompt = typeof payload.prompt === "string" ? payload.prompt : "";
@@ -51,7 +52,7 @@ if (hasMap) {
 }
 
 if (hints.length === 0) {
-  process.exit(0);
+  return;
 }
 
 const output = {
@@ -62,3 +63,4 @@ const output = {
 };
 
 process.stdout.write(JSON.stringify(output));
+});

@@ -11,6 +11,7 @@
  */
 
 import { budget, type BudgetReport } from "../context/budget.js";
+import { forecastTokens } from "../budget/forecast.js";
 
 /** The subset of the Claude Code statusline payload slipstream reads. */
 export interface StatuslineInput {
@@ -33,6 +34,8 @@ export interface StatuslineInput {
   activeSkill?: string;
   /** Model display name, for example "Opus 4.8". */
   model?: string;
+  /** Per-step token deltas for the recent session. Drives the forecast suffix. */
+  stepHistory?: number[];
 }
 
 const LEVEL_GLYPH: Record<BudgetReport["level"], string> = {
@@ -58,7 +61,18 @@ export function formatStatusline(input: StatuslineInput): string {
 
   const segments: string[] = ["cp"];
   // A trailing "*" marks an exact reading from the transcript versus an estimate.
-  segments.push(`ctx ${pct}%${hasActual ? "*" : ""} ${LEVEL_GLYPH[report.level]}`);
+  let ctxSegment = `ctx ${pct}%${hasActual ? "*" : ""} ${LEVEL_GLYPH[report.level]}`;
+  // Forecast suffix: only when the budget is engaged (warn or compact) and a
+  // step history is supplied. Keeps the line short for fresh sessions.
+  if (input.stepHistory && input.stepHistory.length > 0 && report.level !== "ok") {
+    const fc = forecastTokens({
+      history: input.stepHistory,
+      currentTokens: report.approxTokens,
+      thresholdTokens: Math.round(report.windowTokens * 0.85)
+    });
+    ctxSegment += ` (~${fc.stepsUntilCompact} steps)`;
+  }
+  segments.push(ctxSegment);
   if (typeof input.memoryCount === "number") {
     segments.push(`mem ${input.memoryCount}`);
   }

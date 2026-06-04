@@ -14,11 +14,12 @@
 
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { readPayload, sessionId, emit } from "./emit.mjs";
+import { readPayload, sessionId, emit, withLatencyGuard } from "./emit.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const cwd = process.cwd();
 
+await withLatencyGuard("pre-compact", async () => {
 const payload = await readPayload();
 const session = sessionId(payload);
 // Claude Code reports the trigger: "manual" for /compact, "auto" when the
@@ -77,4 +78,5 @@ try {
 } catch {
   // No dist build or no log: nothing to digest. Stay silent.
 }
+});
 process.exit(0);

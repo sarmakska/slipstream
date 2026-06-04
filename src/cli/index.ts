@@ -8,7 +8,8 @@ import {
   mapToMarkdown,
   retrieveSymbol,
   retrieveLines,
-  searchMap
+  searchMap,
+  createMapWatcher
 } from "../map/index.js";
 import {
   addMemory,
@@ -31,6 +32,10 @@ import {
   renderTimeline,
   renderObservations,
   renderLessons,
+  loadObservations,
+  aggregateBySkill,
+  renderSkillStats,
+  writeActiveSkill,
   OBSERVATION_KINDS,
   type ObservationKind,
   type MemoryType,
@@ -59,8 +64,11 @@ import {
   startDashboard,
   openInBrowser,
   loadSettings,
+  exportReplay,
+  resolveSessionForExport,
   type EventKind
 } from "../dashboard/index.js";
+import { stepTokenHistory } from "../dashboard/state.js";
 import { validatePlugin } from "../plugin-validate/index.js";
 import { resolveSkillsDir, resolvePluginRoot } from "./skills-dir.js";
 
@@ -91,14 +99,16 @@ Usage:
   slipstream memory timeline <id|"query"> [--window N] [--session S] [--root .]
   slipstream memory observations <id> [id...] [--root .]
   slipstream memory lessons [--min N] [--limit N] [--root .]
-  slipstream observe [--root .] [--session S]
+  slipstream observe [--root .] [--session S] [--watch-map] [--ci]
   slipstream savings [--root .]
   slipstream mindmap [root] [--mermaid] [--html out.html]
   slipstream status [root] [--bytes N]
-  slipstream dashboard start [--root .] [--session S] [--open] [--foreground]
+  slipstream dashboard start [--root .] [--session S] [--open] [--foreground] [--watch-map]
   slipstream dashboard emit --kind K --label "..." [--root .] [--session S] [--agent A] [--bytes N]
   slipstream dashboard replay [--root .] [--session S]
   slipstream dashboard sessions [--root .]
+  slipstream export <sessionId> --out replay.zip [--root .]
+  slipstream stats --by-skill [--root .]
   slipstream validate [--skills dir]
   slipstream plugin-validate [--plugin dir]
   slipstream doctor [--plugin dir] [--root .]
@@ -344,6 +354,8 @@ async function cmdSavings(args: string[]): Promise<number> {
 async function cmdObserve(args: string[]): Promise<number> {
   const root = getFlag(args, "root") ?? ".";
   const session = getFlag(args, "session") ?? "main";
+  const ci = args.includes("--ci");
+  if (ci) return runObserveCi(root, session);
   const written = await captureObservations(root, session);
   console.log(
     written.length
@@ -352,6 +364,35 @@ async function cmdObserve(args: string[]): Promise<number> {
           .join(", ")})`
       : `no new observations for session ${session}`
   );
+  if (args.includes("--watch-map")) {
+    const watcher = createMapWatcher({
+      root,
+      onChange: async () => {
+        const next = await captureObservations(root, session);
+        if (next.length) {
+          console.log(`re-captured ${next.length} observation(s) after map change`);
+        }
+      }
+    });
+    process.on("SIGINT", () => {
+      watcher.close();
+      process.exit(0);
+    });
+    await new Promise(() => {});
+  }
+  return 0;
+}
+
+/**
+ * CI mode: capture observations, emit one JSON line per observation to stdout,
+ * never start the dashboard, never open a socket. Exit code 0 unless capture
+ * threw. Suitable for piping in GitHub Actions.
+ */
+async function runObserveCi(root: string, session: string): Promise<number> {
+  const written = await captureObservations(root, session);
+  for (const o of written) {
+    process.stdout.write(JSON.stringify(o) + "\n");
+  }
   return 0;
 }
 
@@ -417,9 +458,22 @@ async function cmdDashboard(args: string[]): Promise<number> {
           ? `slipstream dashboard running at ${result.url}`
           : `slipstream dashboard already running at ${result.url}`
       );
+      let watcher: { close: () => void } | null = null;
+      if (rest.includes("--watch-map")) {
+        watcher = createMapWatcher({
+          root,
+          onChange: async () => {
+            await generateMap(root).catch(() => null);
+          }
+        });
+      }
       // In the foreground case startDashboard returns the live server; keep the
       // process alive so `--foreground` actually serves.
       if (foreground && result.server) {
+        process.on("SIGINT", () => {
+          if (watcher) watcher.close();
+          process.exit(0);
+        });
         await new Promise(() => {});
       }
       return 0;
@@ -527,6 +581,25 @@ async function cmdStatusline(args: string[]): Promise<number> {
     }
   }
 
+  // Persist the active skill so the next observation capture can stamp it on
+  // each new observation. Skill-less renders clear the marker so the per-skill
+  // stats do not attribute idle turns to a stale skill.
+  await writeActiveSkill(root, skill).catch(() => {});
+
+  // Build a recent step history so the statusline can append a forecast suffix
+  // once the budget is engaged. Errors are silently ignored; the statusline is
+  // a hot path and any failure here must not break rendering.
+  let stepHistory: number[] | undefined;
+  try {
+    const sessions = await listSessions(root);
+    const target = sessions[0];
+    if (target) {
+      stepHistory = stepTokenHistory(await readLog(root, target));
+    }
+  } catch {
+    stepHistory = undefined;
+  }
+
   console.log(
     formatStatusline({
       bytesRead: bytes,
@@ -536,7 +609,8 @@ async function cmdStatusline(args: string[]): Promise<number> {
       observationCount,
       optimizationPct,
       activeSkill: skill,
-      model
+      model,
+      stepHistory
     })
   );
   return 0;
@@ -578,6 +652,43 @@ async function cmdDigest(args: string[]): Promise<number> {
   });
   const m = await addMemory(root, digestToMemory(digest));
   console.log(`wrote session digest "${m.name}" (${digest.trigger}) to ${m.sourcePath}`);
+  return 0;
+}
+
+async function cmdStats(args: string[]): Promise<number> {
+  const root = getFlag(args, "root") ?? ".";
+  if (args.includes("--by-skill")) {
+    const obs = await loadObservations(root);
+    const stats = aggregateBySkill(obs);
+    console.log(renderSkillStats(stats));
+    return 0;
+  }
+  console.error("usage: slipstream stats --by-skill [--root .]");
+  return 2;
+}
+
+async function cmdExport(args: string[]): Promise<number> {
+  const positional = args.filter((a) => !a.startsWith("--"));
+  const sessionArg = positional[0];
+  if (!sessionArg) {
+    console.error("usage: slipstream export <sessionId> --out replay.zip [--root .]");
+    return 2;
+  }
+  const out = getFlag(args, "out");
+  if (!out) {
+    console.error("usage: slipstream export <sessionId> --out replay.zip");
+    return 2;
+  }
+  const root = getFlag(args, "root") ?? ".";
+  const sessionId = await resolveSessionForExport(root, sessionArg);
+  const manifest = await exportReplay(resolve(out), {
+    projectRoot: root,
+    sessionId
+  });
+  console.log(
+    `wrote replay bundle for session ${sessionId} to ${out} ` +
+      `(${manifest.files.length} file${manifest.files.length === 1 ? "" : "s"})`
+  );
   return 0;
 }
 
@@ -645,6 +756,10 @@ async function main(): Promise<number> {
       return cmdStatus(rest);
     case "dashboard":
       return cmdDashboard(rest);
+    case "export":
+      return cmdExport(rest);
+    case "stats":
+      return cmdStats(rest);
     case "validate":
       return cmdValidate(rest);
     case "plugin-validate":

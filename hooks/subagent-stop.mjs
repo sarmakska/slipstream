@@ -7,18 +7,20 @@
 // matching SubagentStart event, so the dashboard infers a subagent's existence
 // from the first event that names it; this stop is the reliable lifecycle point.
 
-import { readPayload, sessionId, emit } from "./emit.mjs";
+import { readPayload, sessionId, emit, withLatencyGuard } from "./emit.mjs";
 
-const payload = await readPayload();
-const session = sessionId(payload);
-const agent = payload.subagent_id || payload.agent_id || "subagent";
-const failed = Boolean(payload.error || payload.failed);
+await withLatencyGuard("subagent-stop", async () => {
+  const payload = await readPayload();
+  const session = sessionId(payload);
+  const agent = payload.subagent_id || payload.agent_id || "subagent";
+  const failed = Boolean(payload.error || payload.failed);
 
-emit({
-  session,
-  agent: String(agent),
-  kind: "subagent-stop",
-  label: failed ? "subagent failed" : "subagent finished"
+  emit({
+    session,
+    agent: String(agent),
+    kind: "subagent-stop",
+    label: failed ? "subagent failed" : "subagent finished"
+  });
 });
 
 process.exit(0);

@@ -155,3 +155,24 @@ export function reduceEvents(events: DashboardEvent[]): DashboardState {
 export function totalApproxTokens(state: DashboardState): number {
   return state.agents.reduce((sum, a) => sum + a.approxTokens, 0);
 }
+
+/**
+ * Per-step token deltas computed from the event stream. A step closes on each
+ * `stop` event; the delta is the sum of approximate post-tool token costs
+ * inside the step. Used by the budget forecast in the dashboard JSON and the
+ * statusline.
+ */
+export function stepTokenHistory(events: DashboardEvent[]): number[] {
+  const history: number[] = [];
+  let current = 0;
+  for (const e of events) {
+    if (e.kind === "post-tool") {
+      current += Math.round(bytesOf(e.data) / BYTES_PER_TOKEN);
+    } else if (e.kind === "stop") {
+      history.push(current);
+      current = 0;
+    }
+  }
+  if (current > 0) history.push(current);
+  return history;
+}

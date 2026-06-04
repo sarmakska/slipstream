@@ -10,11 +10,12 @@
 import { spawn } from "node:child_process";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { readPayload, sessionId, emit } from "./emit.mjs";
+import { readPayload, sessionId, emit, withLatencyGuard } from "./emit.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const cli = join(here, "..", "dist", "cli", "index.js");
 
+await withLatencyGuard("stop", async () => {
 const payload = await readPayload();
 const session = sessionId(payload);
 emit({ session, kind: "stop", label: "turn finished" });
@@ -47,4 +48,5 @@ const output = {
 if (Math.random() < 0.34) {
   process.stdout.write(JSON.stringify(output));
 }
+});
 process.exit(0);

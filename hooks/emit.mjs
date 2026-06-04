@@ -36,6 +36,26 @@ export function sessionId(payload) {
   );
 }
 
+// Latency guard. Wraps a hook handler so that any handler exceeding the
+// configured budget logs a one-line warning to stderr with the hook name and
+// elapsed ms. The default budget is 200ms, overridable with
+// SLIPSTREAM_HOOK_BUDGET_MS. A throw is rethrown unchanged; the timer never
+// swallows errors.
+export async function withLatencyGuard(name, fn) {
+  const budget = Number(process.env.SLIPSTREAM_HOOK_BUDGET_MS) || 200;
+  const start = process.hrtime.bigint();
+  try {
+    return await fn();
+  } finally {
+    const elapsedMs = Number(process.hrtime.bigint() - start) / 1e6;
+    if (elapsedMs > budget) {
+      process.stderr.write(
+        `[slipstream] hook ${name} took ${elapsedMs.toFixed(1)}ms (budget ${budget}ms)\n`
+      );
+    }
+  }
+}
+
 // Fire-and-forget append. Detached so the hook returns immediately and never
 // blocks the agent; errors are intentionally ignored.
 export function emit({ kind, label, agent = "main", session, bytes }) {

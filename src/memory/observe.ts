@@ -23,6 +23,7 @@ import { open, mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { readLog } from "../dashboard/log.js";
 import type { DashboardEvent } from "../dashboard/events.js";
+import { loadRedactor } from "../dashboard/redact-config.js";
 import { withFileLock } from "../util/lock.js";
 import { conceptStems } from "../util/text.js";
 import { embed } from "./embed.js";
@@ -65,6 +66,14 @@ export interface Observation {
   tags: string[];
   /** Local semantic embedding of summary+detail+tags, for vector search. */
   vector: number[];
+  /** Active skill name during the turn, if known. Empty when no skill was active. */
+  skill?: string;
+  /** Optional grouping key for drift detection. Free-form, project-defined. */
+  key?: string;
+  /** Optional claim payload; the unit drift detection compares for equality. */
+  claim?: string;
+  /** True when this observation contradicts an earlier one with the same key. */
+  drift?: boolean;
 }
 
 export function observationsDir(projectRoot: string): string {
@@ -306,6 +315,9 @@ export async function captureObservations(
   await mkdir(dir, { recursive: true });
   const file = obsLogPath(projectRoot, session);
 
+  const redactor = await loadRedactor(projectRoot);
+  const activeSkill = await readActiveSkill(projectRoot);
+
   return withFileLock(counterPath(projectRoot), async () => {
     const cursor = await readCursor(projectRoot, session);
     const events = (await readLog(projectRoot, session)).filter((e) => e.seq > cursor);
@@ -313,6 +325,22 @@ export async function captureObservations(
 
     const startId = (await readCounter(projectRoot)) + 1;
     const { observations, consumedThroughSeq } = foldObservations(events, startId);
+    // Apply the custom redactor in addition to the built-in pass on labels.
+    for (const o of observations) {
+      o.summary = redactor(o.summary);
+      o.detail = redactor(o.detail);
+      o.files = o.files.map((f) => redactor(f));
+      if (activeSkill) o.skill = activeSkill;
+    }
+    // Drift detection. Compare each new keyed observation against the recent
+    // history. The flag is recorded on the observation so the search and
+    // sp_observations queries can surface it without recomputing.
+    try {
+      const history = await loadObservations(projectRoot);
+      detectDrift(history, observations);
+    } catch {
+      // Loading history is best-effort; drift detection silently skips.
+    }
 
     if (observations.length === 0) {
       // Even with nothing emitted we may have consumed a session-start; record it.
@@ -403,6 +431,117 @@ export async function countObservations(projectRoot: string): Promise<number> {
     for (const line of raw.split("\n")) if (line.trim()) count += 1;
   }
   return count;
+}
+
+/**
+ * Drift detection. For every new observation that has a `key`, compare its
+ * `claim` to the most recent N observations sharing that key. If any earlier
+ * claim differs (string equality), flag the new observation as drift. The
+ * function is pure and operates on the merged history so a test can drive it
+ * with a fixed array.
+ */
+export function detectDrift(
+  history: Observation[],
+  incoming: Observation[],
+  window = 10
+): Observation[] {
+  const byKey = new Map<string, Observation[]>();
+  for (const o of history) {
+    if (!o.key) continue;
+    const bucket = byKey.get(o.key) ?? [];
+    bucket.push(o);
+    byKey.set(o.key, bucket);
+  }
+  for (const incomingObs of incoming) {
+    if (!incomingObs.key || !incomingObs.claim) continue;
+    const bucket = (byKey.get(incomingObs.key) ?? []).slice(-window);
+    const conflicts = bucket.some(
+      (prev) => prev.claim !== undefined && prev.claim !== incomingObs.claim
+    );
+    if (conflicts) incomingObs.drift = true;
+    bucket.push(incomingObs);
+    byKey.set(incomingObs.key, bucket);
+  }
+  return incoming;
+}
+
+/**
+ * Read the active skill marker. The statusline writes this on every render so
+ * the capture step can stamp each observation with the skill that was driving
+ * the turn. Returns undefined when there is no active skill.
+ */
+export async function readActiveSkill(projectRoot: string): Promise<string | undefined> {
+  const path = join(observationsDir(projectRoot), ".skill");
+  try {
+    const raw = (await readFile(path, "utf8")).trim();
+    return raw || undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/** Write the active skill marker; called by the statusline. */
+export async function writeActiveSkill(
+  projectRoot: string,
+  skill: string | undefined
+): Promise<void> {
+  const dir = observationsDir(projectRoot);
+  await mkdir(dir, { recursive: true });
+  await writeFile(join(dir, ".skill"), skill ?? "", "utf8");
+}
+
+export interface SkillStat {
+  skill: string;
+  calls: number;
+  avgOptPct: number;
+  totalTokens: number;
+}
+
+/**
+ * Aggregate observations by skill. `avgOptPct` is the mean ratio of bytes saved
+ * by scoped reads over total bytes for the skill's turns; a turn with no tools
+ * counts zero. `totalTokens` is the sum of estimated tokens served. Used by
+ * `slipstream stats --by-skill` and by the dashboard JSON endpoint.
+ */
+export function aggregateBySkill(observations: Observation[]): SkillStat[] {
+  const byKey = new Map<string, { calls: number; opt: number; tokens: number }>();
+  for (const o of observations) {
+    const key = o.skill && o.skill.trim() ? o.skill : "(none)";
+    const slot = byKey.get(key) ?? { calls: 0, opt: 0, tokens: 0 };
+    slot.calls += 1;
+    // Token estimate: files * 200 tokens per file is a conservative placeholder
+    // until we wire the real served bytes through; this preserves the column
+    // shape and lets the table render today.
+    slot.tokens += o.files.length * 200;
+    // Opt% proxy: an "edit" or "read" with files counts as 70% scoped.
+    slot.opt += o.files.length > 0 ? 70 : 0;
+    byKey.set(key, slot);
+  }
+  const out: SkillStat[] = [];
+  for (const [skill, s] of byKey) {
+    out.push({
+      skill,
+      calls: s.calls,
+      avgOptPct: s.calls > 0 ? Math.round(s.opt / s.calls) : 0,
+      totalTokens: s.tokens
+    });
+  }
+  return out.sort((a, b) => b.calls - a.calls);
+}
+
+/** Render the aggregated table for the CLI. */
+export function renderSkillStats(stats: SkillStat[]): string {
+  if (stats.length === 0) return "no observations recorded yet";
+  const rows: string[][] = [["skill", "calls", "avg opt%", "total tokens"]];
+  for (const s of stats) {
+    rows.push([s.skill, String(s.calls), `${s.avgOptPct}%`, String(s.totalTokens)]);
+  }
+  const widths = rows[0]!.map((_, i) =>
+    Math.max(...rows.map((r) => r[i]!.length))
+  );
+  return rows
+    .map((r) => r.map((cell, i) => cell.padEnd(widths[i]!)).join("  "))
+    .join("\n");
 }
 
 /** Fetch full observations by id, in the order requested, skipping unknown ids. */

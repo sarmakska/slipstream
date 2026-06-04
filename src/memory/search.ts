@@ -185,10 +185,12 @@ export function renderObservations(observations: Observation[]): string {
   if (observations.length === 0) return "no observations for those ids";
   return observations
     .map((o) => {
-      const head = `## #${o.id} [${o.kind}] ${o.ts}`;
+      const driftFlag = o.drift ? " [DRIFT]" : "";
+      const head = `## #${o.id} [${o.kind}]${driftFlag} ${o.ts}`;
       const files = o.files.length ? `\nfiles: ${o.files.join(", ")}` : "";
       const tags = o.tags.length ? `\ntags: ${o.tags.join(", ")}` : "";
-      return `${head}\n${o.summary}${files}${tags}\n\n${o.detail}`;
+      const claim = o.claim ? `\nclaim: ${o.claim}` : "";
+      return `${head}\n${o.summary}${files}${tags}${claim}\n\n${o.detail}`;
     })
     .join("\n\n---\n\n");
 }

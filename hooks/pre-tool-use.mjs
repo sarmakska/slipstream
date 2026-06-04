@@ -9,7 +9,7 @@
 // LARGE_FILE_BYTES in src/context/budget.ts.
 
 import { stat } from "node:fs/promises";
-import { readPayload, sessionId, emit } from "./emit.mjs";
+import { readPayload, sessionId, emit, withLatencyGuard } from "./emit.mjs";
 
 const LARGE_FILE_BYTES = 16000;
 const BYTES_PER_TOKEN = 3.6;
@@ -60,4 +60,4 @@ async function main() {
   process.exit(0);
 }
 
-main();
+withLatencyGuard("pre-tool-use", main);
