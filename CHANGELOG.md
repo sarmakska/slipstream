@@ -5,10 +5,34 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] - 2026-06-04
+
+### Added
+
+- Map watcher: `--watch-map` flag on `slipstream observe` and `slipstream dashboard start` re-reads the project map on disk changes with a 500ms debounce.
+- Token forecast: new `forecastTokens(history)` in `src/budget/forecast.ts`, surfaced as `forecast.stepsUntilCompact` on the dashboard JSON and as an optional `(~N steps)` suffix on the statusline when the budget is engaged.
+- Replay export: `slipstream export <sessionId> --out replay.zip` bundles the session transcript, reduced state, observations and a project map snapshot with a `manifest.json` describing each entry.
+- Configurable redaction: optional `.claude/slipstream/redact.json` adds project-specific regex patterns to the built-in secret redactor; invalid files are ignored silently.
+- Doctor one-line fixes: failed `slipstream doctor` checks now print a one-line remedy, covering `.claude/` dir, MCP declaration, memory dir, dashboard port and dashboard socket.
+- Hook latency budget guard: every hook handler is wrapped in `withLatencyGuard`; handlers exceeding `SLIPSTREAM_HOOK_BUDGET_MS` (default 200) log a warning to stderr without throwing.
+- Per-skill stats: observations now record the active skill; `slipstream stats --by-skill` prints a table of calls, average opt% and total tokens, and the same data is served on the dashboard at `/api/stats/by-skill`.
+- CI mode: `slipstream observe --ci` emits one JSON line per captured observation to stdout and exits without booting the dashboard or opening a socket.
+- Drift detection: a new keyed observation whose `claim` contradicts the recent history is flagged with `drift: true` and rendered with a `[DRIFT]` marker in `sp_observations`.
+
+### Deferred to a later sprint
+
+Skill marketplace, ONNX MiniLM embedding upgrade, inline memory editor in the dashboard, dashboard auth for tunnelled access, JetBrains plugin (native), cross-session anomaly detection.
+
 ## [Unreleased]
 
 ### Added
 
+- Discipline skills exposed as MCP prompts (issue #7). The MCP server now
+  implements `prompts/list` and `prompts/get`, surfacing think-before-coding,
+  write-plan, systematic-debugging, scoped-read, context-budget and
+  compact-and-offload as slash-command prompts in any MCP client. The
+  `sp_budget` tool also accepts an `actualTokens` parameter for hosts without
+  a readable transcript.
 - `slipstream-setup` editor-aware bin (issue #5). One idempotent command wires
   slipstream into Claude Code (`.claude/settings.local.json`) or any of
   Cursor, Windsurf, Antigravity and VS Code (`<editor>/mcp.json`). Detects the

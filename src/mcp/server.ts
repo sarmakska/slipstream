@@ -17,6 +17,7 @@ import { appendEvent } from "../dashboard/log.js";
 import { makeEvent } from "../dashboard/events.js";
 import { startDashboard } from "../dashboard/launch.js";
 import { detectMode, shouldEmit, shouldStartDashboard } from "./mode-detect.js";
+import { listSkillPrompts, getSkillPrompt } from "./prompts.js";
 
 export const PROTOCOL_VERSION = "2024-11-05";
 export const SERVER_NAME = "slipstream";
@@ -64,7 +65,10 @@ export async function handleRequest(
     case "initialize":
       return ok(req.id, {
         protocolVersion: PROTOCOL_VERSION,
-        capabilities: { tools: { listChanged: false } },
+        capabilities: {
+          tools: { listChanged: false },
+          prompts: { listChanged: false }
+        },
         serverInfo: { name: SERVER_NAME, version: SERVER_VERSION }
       });
 
@@ -76,6 +80,34 @@ export async function handleRequest(
 
     case "tools/list":
       return ok(req.id, { tools: TOOL_DESCRIPTORS });
+
+    case "prompts/list": {
+      const prompts = await listSkillPrompts();
+      return ok(req.id, {
+        prompts: prompts.map((p) => ({ name: p.name, description: p.description }))
+      });
+    }
+
+    case "prompts/get": {
+      const params = req.params ?? {};
+      const name = params["name"];
+      if (typeof name !== "string") {
+        return fail(req.id, INVALID_PARAMS, "prompts/get requires a string name");
+      }
+      const detail = await getSkillPrompt(name);
+      if (!detail) {
+        return fail(req.id, INVALID_PARAMS, `unknown prompt: ${name}`);
+      }
+      return ok(req.id, {
+        description: detail.description,
+        messages: [
+          {
+            role: "user",
+            content: { type: "text", text: detail.content }
+          }
+        ]
+      });
+    }
 
     case "tools/call": {
       const params = req.params ?? {};
