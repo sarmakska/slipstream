@@ -50,7 +50,8 @@ flowchart TD
 |---|---|
 | [Install in VS Code](Install-in-VS-Code) | Marketplace add, install, first run, doctor |
 | [MCP tools](MCP-Tools) | The bundled server and every `sp_` tool |
-| [Observation memory and semantic search](Observation-Memory) | Self-building memory, the local embedding, three-layer search |
+| [Observation memory and semantic search](Observation-Memory) | Self-building memory, the local embedding, three-layer search, lesson distillation |
+| [Cross-IDE support](Cross-IDE-Support) | The dashboard, budget gauge and tools in Cursor, Windsurf, Antigravity, VS Code |
 | [Lossless compaction](Lossless-Compaction) | The PreCompact digest and the reload |
 | [Memory recall](Memory-Recall) | Signal-ranked relevant recall, not load-everything |
 | [Live agent dashboard](Live-Agent-Dashboard) | Hooks, event log, server, UI, replay |
@@ -69,7 +70,7 @@ flowchart TD
 | [Performance and benchmarks](Performance-and-Benchmarks) | Real numbers from this machine |
 | [Design decisions](Design-Decisions) | Choices made and alternatives rejected |
 | [Security model](Security-Model) | Local-only, redaction, what to trust |
-| [Testing strategy](Testing-Strategy) | What the 105 tests cover and why |
+| [Testing strategy](Testing-Strategy) | What the 114 tests cover and why |
 | [Examples and recipes](Examples-and-Recipes) | Copy-paste flows |
 | [Comparisons](Comparisons) | Versus the obvious alternatives |
 | [Integrations](Integrations) | Cloudflare, Supabase, Vercel, Resend |

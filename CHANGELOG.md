@@ -7,6 +7,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0]
+
+### Added
+
+- Cross-IDE support: slipstream's value now reaches any MCP editor (Cursor,
+  Windsurf, Antigravity, generic VS Code), not only Claude Code, through the one
+  component every editor runs — the MCP server.
+  - The MCP server self-emits an activity event after each tool call, so the live
+    dashboard fills with no lifecycle hooks. Each MCP connection gets a readable
+    session id derived from the client. Gated by `SLIPSTREAM_MCP_EMIT` (the plugin
+    sets it to `0` because its PostToolUse hook already emits).
+  - The MCP server auto-starts the dashboard on connect (detached, idempotent),
+    gated by `SLIPSTREAM_DASHBOARD`. New `sp_dashboard` tool returns the URL on
+    demand from any editor.
+- Token-budget control: an editable `.claude/slipstream/budget.json`
+  (`targetTokens`, `warnPct`, `compactPct`, optional `actualTokens`) read by the
+  dashboard gauge, the `sp_budget` tool and the statusline alike. The dashboard
+  gained a live budget gauge with ok/warn/compact zones, a panel to set the target
+  and thresholds, and a "Session work" view (files touched, tool breakdown,
+  cumulative tokens). New `/api/budget` (GET/POST) routes.
+- Lesson distillation ("continuous learning"): `sp_lessons` and
+  `slipstream memory lessons` distil recurring topics from the observation store —
+  what a project keeps making you work on, across sessions, with citations — built
+  on the v0.3.0 observation memory (`src/memory/lessons.ts`).
+- Four adopted workflow skills (original, slipstream-native): `think-before-coding`
+  (assumptions, simplicity, surgical changes, goal-driven verification),
+  `systematic-debugging` (four-phase root-cause process), `brainstorm-spec`
+  (Socratic spec refinement) and `write-plan` (small, verifiable task plans).
+  Skill library is now 63.
+- 9 new tests (114 total across 13 files) covering budget config, the MCP session
+  id and lesson distillation.
+
+### Note
+
+- A true HNSW vector index was evaluated and deferred: at slipstream's store sizes
+  brute-force cosine is already sub-10ms, and an index would add complexity against
+  the zero-dependency design. Tracked on the roadmap.
+
 ## [0.3.0]
 
 ### Added
@@ -80,6 +118,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Continuous integration running install, lint, build, plugin validation and
   tests on push to main and on every pull request.
 
-[Unreleased]: https://github.com/sarmakska/slipstream/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/sarmakska/slipstream/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/sarmakska/slipstream/releases/tag/v0.4.0
 [0.3.0]: https://github.com/sarmakska/slipstream/releases/tag/v0.3.0
 [0.2.0]: https://github.com/sarmakska/slipstream/commits/main

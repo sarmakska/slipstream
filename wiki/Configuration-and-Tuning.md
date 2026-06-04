@@ -17,10 +17,28 @@ Environment overrides, for a single session without editing the file:
 
 | Variable | Effect |
 |---|---|
-| `SLIPSTREAM_DASHBOARD=0` | disable the dashboard |
+| `SLIPSTREAM_DASHBOARD=0` | disable the dashboard (also stops the MCP server auto-starting it) |
 | `SLIPSTREAM_DASHBOARD=1` | force enable |
 | `SLIPSTREAM_DASHBOARD_OPEN=0` | keep the browser shut |
 | `SLIPSTREAM_DASHBOARD_OPEN=1` | force open |
+| `SLIPSTREAM_MCP_EMIT=0` | stop the MCP server emitting activity events (set by the plugin, since its PostToolUse hook already emits) |
+
+These last two gate the [cross-IDE](Cross-IDE-Support) behaviour. Outside Claude Code both default on, so the MCP server feeds and auto-starts the dashboard with no setup; the plugin sets both to `0` because the hooks already do it.
+
+## Token-budget control
+
+`.claude/slipstream/budget.json` is the shared, editable budget the dashboard gauge, `sp_budget` and the statusline all read (`src/context/budget-config.ts`):
+
+```jsonc
+{
+  "targetTokens": 200000,  // the target the gauge fills toward
+  "warnPct": 60,           // gauge turns amber here
+  "compactPct": 85,        // gauge turns red here
+  "actualTokens": 0        // optional: paste the editor's real count to calibrate
+}
+```
+
+Edit it from the dashboard's "set budget" panel, with `slipstream budget`, or by hand. Thresholds are clamped and ordered on save so a bad edit cannot break the math.
 
 ## Context budget
 
@@ -62,6 +80,8 @@ slipstream writes only under `.claude/slipstream/` in your project:
 .claude/slipstream/
   map.md  map.json              # the project map (from /slipstream:map)
   memory/                       # one .md per fact + MEMORY.md index
+  observations/<session>.jsonl  # auto-captured observation memory (+ .cursor, .counter)
+  budget.json                   # editable token-budget target + thresholds
   dashboard/<session>.jsonl     # append-only event log per session
   dashboard/server.json         # the running server's pid/port/url
   dashboard.json                # optional settings

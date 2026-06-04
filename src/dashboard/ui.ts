@@ -52,9 +52,18 @@ export function renderDashboardHtml(session: string): string {
   .budget{margin-bottom:16px}
   .bar{height:10px;border-radius:6px;background:var(--surface);
     border:1px solid var(--line);overflow:hidden}
-  .bar > i{display:block;height:100%;
+  .bar > i{display:block;height:100%;transition:width .3s ease;
     background:linear-gradient(90deg,var(--emerald),var(--cyan),var(--sky))}
+  .bar > i.warn{background:linear-gradient(90deg,var(--cyan),var(--amber))}
+  .bar > i.compact{background:linear-gradient(90deg,var(--amber),var(--red))}
   .budget .n{color:var(--muted);font-size:11px;margin-top:5px}
+  .budget-edit{margin-top:8px;font-size:11px;color:var(--muted)}
+  .budget-edit summary{cursor:pointer;color:var(--sky)}
+  .budget-edit label{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:6px 0}
+  .budget-edit input{width:120px;background:var(--surface);color:var(--fg);
+    border:1px solid var(--line);border-radius:5px;padding:3px 6px;font:inherit}
+  .budget-edit button{background:var(--surface);color:var(--sky);border:1px solid var(--sky);
+    border-radius:5px;padding:4px 10px;font:inherit;cursor:pointer;margin-top:4px}
   pre.mermaid{background:var(--surface);border:1px solid var(--line);
     border-radius:10px;padding:12px;font-size:12px;white-space:pre-wrap}
   ol.plan{padding-left:18px;margin:0} ol.plan li{margin:4px 0;color:var(--fg)}
@@ -75,6 +84,13 @@ export function renderDashboardHtml(session: string): string {
   .hit .sum{color:var(--fg);font-size:12px}
   .hit .detail{color:var(--muted);font-size:11px;margin-top:6px;white-space:pre-wrap;
     border-top:1px solid var(--line);padding-top:6px}
+  #work .row{display:flex;justify-content:space-between;gap:8px;padding:3px 0;font-size:12px}
+  #work .row .k{color:var(--muted)} #work .row .v{color:var(--fg)}
+  #work .files{margin-top:6px;border-top:1px solid var(--line);padding-top:6px}
+  #work .file{color:var(--blue);font-size:11px;padding:1px 0;overflow:hidden;
+    text-overflow:ellipsis;white-space:nowrap}
+  #work .chip{display:inline-block;color:var(--cyan);font-size:10px;border:1px solid var(--line);
+    border-radius:999px;padding:1px 7px;margin:2px 4px 0 0}
 </style>
 </head>
 <body>
@@ -92,6 +108,15 @@ export function renderDashboardHtml(session: string): string {
       <h2>Token budget</h2>
       <div class="bar"><i id="bbar" style="width:0%"></i></div>
       <div class="n" id="bnum">0 of 200000 tokens</div>
+      <details class="budget-edit">
+        <summary>set budget</summary>
+        <label>target <input id="btarget" type="number" min="1000" step="1000" /></label>
+        <label>warn % <input id="bwarn" type="number" min="1" max="99" /></label>
+        <label>compact % <input id="bcompact" type="number" min="1" max="100" /></label>
+        <label>actual tokens <input id="bactual" type="number" min="0" placeholder="paste from editor" /></label>
+        <button id="bsave" type="button">save</button>
+      </details>
+      <div class="note">Estimated context slipstream pulled in, not the model's true tokens.</div>
     </div>
   </section>
   <section>
@@ -104,6 +129,8 @@ export function renderDashboardHtml(session: string): string {
     <h2 style="margin-top:18px">Mind map</h2>
     <pre class="mermaid" id="map">flowchart LR
   n0(["session"]) --> n1["waiting"]</pre>
+    <h2 style="margin-top:18px">Session work</h2>
+    <div id="work"><div class="empty">no work yet</div></div>
     <h2 style="margin-top:18px">Memory search</h2>
     <input id="msearch" type="search" placeholder="search past observations…" autocomplete="off" />
     <div id="mhits"><div class="empty">type to search this project's memory</div></div>
@@ -174,13 +201,39 @@ export function renderDashboardHtml(session: string): string {
     }
   }
 
-  function renderBudget() {
-    const total = state ? state.agents.reduce((s,a)=>s+a.approxTokens,0) : 0;
-    const win = state ? state.windowTokens : 200000;
-    const pct = Math.min(100, Math.round((total / win) * 100));
-    $("bbar").style.width = pct + "%";
-    $("bnum").textContent = total + " of " + win + " tokens (" + pct + "%)";
+  let budgetCfg = null;
+  async function loadBudget() {
+    const r = await fetch("/api/budget?session=" + encodeURIComponent(current))
+      .then((x) => x.json()).catch(() => null);
+    if (!r) return;
+    budgetCfg = r.config;
+    const pct = Math.min(100, Math.round((r.fraction || 0) * 100));
+    const bar = $("bbar");
+    bar.style.width = pct + "%";
+    bar.className = r.level === "compact" ? "compact" : r.level === "warn" ? "warn" : "";
+    $("bnum").textContent = r.served + " of " + r.config.targetTokens +
+      " tokens (" + pct + "%, " + r.level + ")";
+    // Populate the editor only when the user is not mid-edit.
+    if (document.activeElement && document.activeElement.tagName === "INPUT") return;
+    if ($("btarget")) $("btarget").value = r.config.targetTokens;
+    if ($("bwarn")) $("bwarn").value = r.config.warnPct;
+    if ($("bcompact")) $("bcompact").value = r.config.compactPct;
+    if ($("bactual") && r.config.actualTokens != null) $("bactual").value = r.config.actualTokens;
   }
+  function renderBudget() { loadBudget(); }
+  const bsave = $("bsave");
+  if (bsave) bsave.onclick = async () => {
+    const body = {
+      targetTokens: Number($("btarget").value) || undefined,
+      warnPct: Number($("bwarn").value) || undefined,
+      compactPct: Number($("bcompact").value) || undefined
+    };
+    const a = Number($("bactual").value);
+    if (a > 0) body.actualTokens = a;
+    await fetch("/api/budget", { method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify(body) }).catch(() => {});
+    loadBudget();
+  };
 
   function renderPlan() {
     const ol = $("plan");
@@ -203,7 +256,39 @@ export function renderDashboardHtml(session: string): string {
     el.textContent = src;
   }
 
-  function render() { renderAgents(); renderStream(); renderBudget(); renderPlan(); renderMap(); }
+  // Phase 4: a rolled-up view of the session's work, derived from the same
+  // activity stream — files touched, a tool-use breakdown and cumulative tokens.
+  function renderWork() {
+    const box = $("work");
+    if (!state || state.agents.length === 0) { box.innerHTML = '<div class="empty">no work yet</div>'; return; }
+    const tools = {};
+    const files = new Map();
+    let toolCalls = 0;
+    const tokens = state.agents.reduce((s,a)=>s+a.approxTokens,0);
+    for (const a of state.agents) {
+      for (const e of a.activity) {
+        if (e.kind !== "post-tool" && e.kind !== "pre-tool") continue;
+        const parts = String(e.label).split(/\s+/);
+        const tool = parts[0] || "";
+        if (!tool) continue;
+        if (e.kind === "post-tool") { tools[tool] = (tools[tool]||0)+1; toolCalls++; }
+        const target = parts.slice(1).join(" ");
+        if (target && /[\\/.]/.test(target)) files.set(target, (files.get(target)||0)+1);
+      }
+    }
+    const chips = Object.entries(tools).sort((a,b)=>b[1]-a[1]).slice(0,8)
+      .map(([t,n])=>'<span class="chip">'+escape(t)+(n>1?" ×"+n:"")+'</span>').join("");
+    const fileList = [...files.keys()].slice(0,12)
+      .map(f=>'<div class="file" title="'+escape(f)+'">'+escape(f)+'</div>').join("");
+    box.innerHTML =
+      '<div class="row"><span class="k">tokens pulled</span><span class="v">'+tokens+'</span></div>' +
+      '<div class="row"><span class="k">tool calls</span><span class="v">'+toolCalls+'</span></div>' +
+      '<div class="row"><span class="k">files touched</span><span class="v">'+files.size+'</span></div>' +
+      (chips ? '<div>'+chips+'</div>' : '') +
+      (fileList ? '<div class="files">'+fileList+'</div>' : '');
+  }
+
+  function render() { renderAgents(); renderStream(); renderBudget(); renderPlan(); renderMap(); renderWork(); }
 
   function tick() {
     const ms = Date.now() - startedAtRef.t;

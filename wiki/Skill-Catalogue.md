@@ -1,6 +1,6 @@
 # Skill catalogue
 
-slipstream ships 59 Claude Code agent skills. Each is a `SKILL.md` with valid `name` and `description` frontmatter; each shipping skill carries a verification gate. Run `npx slipstream validate` to list them with live per-category counts.
+slipstream ships 63 Claude Code agent skills. Each is a `SKILL.md` with valid `name` and `description` frontmatter; each shipping skill carries a verification gate. Run `npx slipstream validate` to list them with live per-category counts.
 
 ## Shipping integrations
 
@@ -42,8 +42,10 @@ git-init-repo, git-conventional-commit, git-feature-branch, git-pull-request, gi
 ### memory (3)
 memory-capture, memory-recall, memory-prune
 
-### context (3)
-scoped-read, context-budget, compact-and-offload
+### context (7)
+scoped-read, context-budget, compact-and-offload, think-before-coding, systematic-debugging, brainstorm-spec, write-plan
+
+The last four are token-discipline workflow skills: `think-before-coding` (surface assumptions, keep changes minimal and surgical, define a verifiable success criterion before editing), `systematic-debugging` (a four-phase root-cause process that stops the guess-and-patch loop), `brainstorm-spec` (refine a vague request into an agreed written spec before coding), and `write-plan` (decompose agreed work into small, independently verifiable tasks).
 
 ## Verification gates by example
 

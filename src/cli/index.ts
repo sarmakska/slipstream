@@ -26,9 +26,11 @@ import {
   getObservations,
   searchObservations,
   timeline,
+  distillProjectLessons,
   renderHits,
   renderTimeline,
   renderObservations,
+  renderLessons,
   OBSERVATION_KINDS,
   type ObservationKind,
   type MemoryType,
@@ -79,6 +81,7 @@ Usage:
   slipstream memory search "query" [--kind K] [--session S] [--since ISO] [--limit N] [--root .]
   slipstream memory timeline <id|"query"> [--window N] [--session S] [--root .]
   slipstream memory observations <id> [id...] [--root .]
+  slipstream memory lessons [--min N] [--limit N] [--root .]
   slipstream observe [--root .] [--session S]
   slipstream mindmap [root] [--mermaid] [--html out.html]
   slipstream status [root] [--bytes N]
@@ -299,9 +302,17 @@ async function cmdMemory(args: string[]): Promise<number> {
       console.log(renderObservations(await getObservations(root, ids)));
       return 0;
     }
+    case "lessons": {
+      const lessons = await distillProjectLessons(root, {
+        minCount: Number(getFlag(rest, "min") ?? 3),
+        limit: Number(getFlag(rest, "limit") ?? 10)
+      });
+      console.log(renderLessons(lessons));
+      return 0;
+    }
     default:
       console.error(
-        "usage: slipstream memory <add|recall|list|prune|index|search|timeline|observations>"
+        "usage: slipstream memory <add|recall|list|prune|index|search|timeline|observations|lessons>"
       );
       return 2;
   }

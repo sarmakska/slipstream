@@ -13,10 +13,13 @@
  */
 
 import { callTool, TOOL_DESCRIPTORS, type ToolContext } from "./tools.js";
+import { appendEvent } from "../dashboard/log.js";
+import { makeEvent } from "../dashboard/events.js";
+import { startDashboard } from "../dashboard/launch.js";
 
 export const PROTOCOL_VERSION = "2024-11-05";
 export const SERVER_NAME = "slipstream";
-export const SERVER_VERSION = "0.3.0";
+export const SERVER_VERSION = "0.4.0";
 
 export interface JsonRpcRequest {
   jsonrpc: "2.0";
@@ -92,6 +95,63 @@ export async function handleRequest(
 }
 
 /**
+ * Derive a session id for an MCP connection from the client that connected. In
+ * editors other than Claude Code there are no lifecycle hooks, so the MCP server
+ * is the only thing that can name a session; we build a stable, readable id from
+ * the client name plus a short time suffix so each editor session is distinct in
+ * the dashboard picker.
+ */
+export function sessionFromClient(params: Record<string, unknown> | undefined): string {
+  const info = params?.["clientInfo"] as { name?: string } | undefined;
+  const raw = (info?.name ?? "mcp").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+  const suffix = Date.now().toString(36).slice(-5);
+  return `${raw || "mcp"}-${suffix}`;
+}
+
+/** Pull the most informative argument from a tools/call for the activity label. */
+function callTarget(args: Record<string, unknown>): string {
+  for (const key of ["file", "symbol", "query", "around", "fact", "name"]) {
+    const v = args[key];
+    if (typeof v === "string" && v) return v;
+  }
+  return "";
+}
+
+/**
+ * Phase 1 of cross-IDE support: the server feeds the dashboard itself. After a
+ * tools/call it appends a post-tool event to the same append-only log the hooks
+ * write, so in Cursor, Windsurf, Antigravity or any MCP client the live dashboard
+ * fills with activity even though those editors expose no hooks. Inside Claude
+ * Code the PostToolUse hook already emits, so the plugin sets SLIPSTREAM_MCP_EMIT=0
+ * to keep this quiet and avoid double-counting. Emission is fire-and-forget and
+ * never affects the response.
+ */
+async function emitToolEvent(
+  root: string,
+  session: string,
+  params: Record<string, unknown>,
+  result: unknown
+): Promise<void> {
+  if (process.env["SLIPSTREAM_MCP_EMIT"] === "0") return;
+  const name = typeof params["name"] === "string" ? (params["name"] as string) : "tool";
+  const args = (params["arguments"] as Record<string, unknown>) ?? {};
+  const target = callTarget(args);
+  const content = (result as { content?: Array<{ text?: string }> })?.content;
+  const text = content?.[0]?.text ?? "";
+  const bytes = Buffer.byteLength(text, "utf8");
+  await appendEvent(
+    root,
+    makeEvent({
+      session,
+      agent: "main",
+      kind: "post-tool",
+      label: `${name} ${target}`.trim(),
+      data: { bytes, source: "mcp" }
+    })
+  );
+}
+
+/**
  * Run the stdio transport: read newline-delimited JSON-RPC requests from stdin,
  * dispatch each, and write newline-delimited responses to stdout. Never writes
  * anything but framed responses to stdout, because the host parses it; logging
@@ -99,6 +159,7 @@ export async function handleRequest(
  */
 export async function runStdioServer(ctx: ToolContext): Promise<void> {
   let buffer = "";
+  let session = "mcp";
   process.stdin.setEncoding("utf8");
 
   const flush = async (): Promise<void> => {
@@ -115,8 +176,28 @@ export async function runStdioServer(ctx: ToolContext): Promise<void> {
         continue; // a malformed line cannot have an id to answer to
       }
       try {
+        if (req.method === "initialize") {
+          session = sessionFromClient(req.params);
+          // Record the session opening so the dashboard lists it immediately.
+          if (process.env["SLIPSTREAM_MCP_EMIT"] !== "0") {
+            appendEvent(
+              ctx.defaultRoot,
+              makeEvent({ session, agent: "main", kind: "session-start", label: `mcp session: ${session}` })
+            ).catch(() => {});
+          }
+          // Phase 2: zero-setup dashboard. In editors without Claude Code's hooks,
+          // the MCP server brings the dashboard up itself (detached, idempotent),
+          // so opening the editor is all it takes. The plugin sets
+          // SLIPSTREAM_DASHBOARD=0 because its SessionStart hook already does this.
+          if (process.env["SLIPSTREAM_DASHBOARD"] !== "0") {
+            startDashboard({ projectRoot: ctx.defaultRoot, session, detached: true }).catch(() => {});
+          }
+        }
         const res = await handleRequest(req, ctx);
         if (res) process.stdout.write(JSON.stringify(res) + "\n");
+        if (req.method === "tools/call" && res && !res.error) {
+          emitToolEvent(ctx.defaultRoot, session, req.params ?? {}, res.result).catch(() => {});
+        }
       } catch (error) {
         process.stdout.write(
           JSON.stringify(fail(req.id ?? null, -32603, (error as Error).message)) + "\n"

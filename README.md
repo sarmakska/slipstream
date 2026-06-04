@@ -90,8 +90,10 @@ The bundled MCP server (declared in `.claude-plugin/plugin.json` under `mcpServe
 | `sp_search_memory(query)` | layer 1 of memory search: a compact ranked index of auto-captured observations (id, time, kind, summary). |
 | `sp_timeline(around)` | layer 2: chronological context around an observation id or the best match for a query. |
 | `sp_observations(ids)` | layer 3: full detail for only the observation ids you filtered down to. |
-| `sp_budget()` | the context-budget level (ok/warn/compact) and a token estimate. |
+| `sp_lessons()` | recurring topics distilled from the observation store — what this project keeps making you work on — with citations. |
+| `sp_budget()` | the context-budget level (ok/warn/compact) against the shared `budget.json` target and thresholds. |
 | `sp_mindmap()` | the project as a themed Mermaid mind map. |
+| `sp_dashboard()` | ensures the live dashboard is running and returns its URL, in any editor. |
 
 Every tool returns the smallest correct thing; `sp_symbol` never returns the whole file, and the three memory-search tools are layered cheapest-first so recall never dumps full bodies into context to find one record. That discipline lives in `src/mcp/tools.ts` where it cannot be bypassed.
 
@@ -106,6 +108,8 @@ You search it back through three tools, used cheapest-first so recall never pays
 3. `sp_observations(ids)` fetches full detail only for the ids you kept.
 
 Ranking is hybrid: a local semantic embedding (`src/memory/embed.ts`, a deterministic hashed term-frequency vector with cosine similarity) blended with exact-term overlap, so a result that literally contains the words is never beaten by one that is merely similar. It is honestly lexical-semantic, not a learned model — the trade that keeps it zero-dependency, with no SQLite, no Python and no vector-database process. Each observation id doubles as a citation handle, browsable while the dashboard runs at `http://127.0.0.1:<port>/api/observation/<id>`, and the dashboard's Memory search panel queries the same store. The full design is in the wiki: [Observation memory and semantic search](https://github.com/sarmakska/slipstream/wiki/Observation-Memory).
+
+Over time, `sp_lessons` distils that history one step further: it clusters the observations by the files and concepts the work centred on and surfaces the topics that **recur** — how often, across how many sessions, with citations — so "what does this project keep making me do" has an answer, and the strongest patterns are candidates to promote into a hand-authored memory.
 
 ## Lossless compaction and smart recall
 
@@ -141,7 +145,7 @@ After install, run `/slipstream:doctor`. It checks the whole install end to end 
 
 ## Run it in any IDE
 
-slipstream has two layers. The full plugin (skills, hooks, memory, lossless compaction, the statusline and the live dashboard) runs inside Claude Code. The MCP tools, which are the token-saving core (sp_map, sp_symbol, sp_lines and the memory tools), are standard Model Context Protocol and run in any MCP-capable editor, including Antigravity, Cursor and Windsurf.
+slipstream has two layers. The full plugin (skills, hooks, lossless compaction, the statusline and auto-captured memory) runs inside Claude Code. The MCP server — the token-saving tools, the memory search, **and now the live dashboard and token-budget gauge** — is standard Model Context Protocol and runs in any MCP-capable editor, including Antigravity, Cursor and Windsurf. The full cross-IDE story is in the wiki: [Cross-IDE support](https://github.com/sarmakska/slipstream/wiki/Cross-IDE-Support).
 
 ### Claude Code: the full experience
 
@@ -156,7 +160,7 @@ Open your project, build the map once with `/slipstream:map`, then work as norma
 
 ### Any MCP-capable IDE: Antigravity, Cursor, Windsurf and others
 
-These editors do not load Claude Code plugins, so the skills, hooks, slash commands and dashboard are not available there. The MCP tools are. Build the server once, then register it.
+These editors do not load Claude Code plugins, so the skills, hooks, slash commands and statusline are not available there. The MCP tools are — and as of v0.4.0 the MCP server also feeds and auto-starts the live dashboard itself, so you get the activity view, the token-budget gauge and memory search in a browser tab with no hooks. Build the server once, then register it.
 
 ```
 git clone https://github.com/sarmakska/slipstream
@@ -185,7 +189,7 @@ Where that config lives, by editor:
 - Windsurf: edit `~/.codeium/windsurf/mcp_config.json`, or add it under Settings, then Cascade MCP.
 - Any other MCP client: wherever that client reads an `mcpServers` block.
 
-Once it loads, the agent gains `sp_map`, `sp_symbol`, `sp_lines`, `sp_search`, `sp_remember`, `sp_recall`, `sp_forget`, `sp_search_memory`, `sp_timeline`, `sp_observations`, `sp_budget` and `sp_mindmap`. Ask it to orient with `sp_map` and to read single declarations with `sp_symbol` rather than whole files, which is where the token saving comes from. The memory-search tools work here too, though auto-capture is driven by the `Stop` hook and so fills in fully only under Claude Code; outside it, you can still record observations with `slipstream observe` and search them. The full plugin layer still needs Claude Code, so for skills, hooks and the dashboard, open the same project there.
+Once it loads, the agent gains `sp_map`, `sp_symbol`, `sp_lines`, `sp_search`, `sp_remember`, `sp_recall`, `sp_forget`, `sp_search_memory`, `sp_timeline`, `sp_observations`, `sp_lessons`, `sp_budget`, `sp_mindmap` and `sp_dashboard`. Ask it to orient with `sp_map`, to read single declarations with `sp_symbol` rather than whole files (where the token saving comes from), and to call `sp_dashboard` to open the live view — the dashboard fills as it works, the budget gauge climbs, and memory search is in the panel. The memory-search tools work here too, though auto-capture is driven by the `Stop` hook and so fills in fully only under Claude Code; outside it, the MCP server still emits activity for the dashboard, and you can record observations with `slipstream observe`. Skills, hooks and the statusline still need Claude Code, so for those open the same project there.
 
 ## Architecture
 
@@ -195,7 +199,7 @@ flowchart TD
   subgraph CC[Claude Code in VS Code]
     Hooks[Hooks: SessionStart, UserPromptSubmit, PreToolUse, PostToolUse, SubagentStop, Stop, PreCompact]
     Cmds[Slash commands]
-    Skills[59 agent skills]
+    Skills[63 agent skills]
     Agents[Subagents: sp-shipper, sp-schema, sp-reviewer]
   end
 
@@ -229,7 +233,7 @@ flowchart TD
 
 1. **Token efficiency.** A compact, regenerable map of files, exported symbols and purpose (`src/map`), exposed through the bundled MCP server (`src/mcp`) as `sp_map`, `sp_symbol`, `sp_lines` and `sp_search`. Claude reads the map and one slice, not whole files. The `PreToolUse` hook warns before a large whole-file read; `UserPromptSubmit` reminds it to use the map and recall memory. A budget estimate (`src/context/budget.ts`) tracks approximate usage and says when to compact.
 2. **Persistent memory, with lossless compaction and self-building observations.** A file-based store under `.claude/slipstream/memory/`: one fact per file with frontmatter, plus a regenerated `MEMORY.md` index (`src/memory`). The `PreCompact` hook writes a session digest before compaction; `SessionStart` reloads that digest plus a signal-ranked relevant subset (branch, changed files, last prompt), never the whole store. `Stop` nudges Claude to write durable facts — and also auto-captures the turn as a searchable observation. Alongside the hand-authored store, `.claude/slipstream/observations/` holds a compact, semantically searchable record of every turn, queried through the three-layer `sp_search_memory` / `sp_timeline` / `sp_observations` tools and a local vector embedding (`src/memory/embed.ts`, `observe.ts`, `search.ts`).
-3. **Guardrailed skill library.** 59 skills across frontend, backend, Supabase, Cloudflare, Vercel, Resend, auth, payments, SEO, analytics, git/release, plus memory and context discipline. Each is a real agent skill with a `SKILL.md`; each shipping skill carries a verification gate, a check the agent runs to prove the step worked. `slipstream plugin-validate` fails loudly on anything malformed.
+3. **Guardrailed skill library.** 63 skills across frontend, backend, Supabase, Cloudflare, Vercel, Resend, auth, payments, SEO, analytics, git/release, plus memory and context discipline (including the workflow skills `think-before-coding`, `systematic-debugging`, `brainstorm-spec` and `write-plan`). Each is a real agent skill with a `SKILL.md`; each shipping skill carries a verification gate, a check the agent runs to prove the step worked. `slipstream plugin-validate` fails loudly on anything malformed.
 4. **Mind map and status in the chat.** `/slipstream:mindmap` renders the project as a themed Mermaid diagram in chat or a self-contained HTML artifact (`src/dashboard/artifact.ts`). `/slipstream:status` shows the plan, the budget with a recommendation, the memory count and the map.
 5. **Live agent dashboard.** The auto-launching local observability dashboard described above (`src/dashboard`). Hooks to event log to local server to live UI, with replay.
 
@@ -274,7 +278,7 @@ pnpm validate
 pnpm plugin-validate
 ```
 
-The suite is 105 tests across 12 files; `pnpm test` runs them in about 1.6s. Beyond the dashboard tests (event validity, the concurrency-safe append-only writer under 25 parallel writers, a real SSE server end to end, idempotent start, replay), the suite spawns the real MCP server over stdio and asserts `tools/list` and a `sp_symbol` call return correct, minimal output; checks the PreCompact digest builds and reloads; checks signal-ranked recall returns only the relevant subset within budget; exercises the local embedding, the turn-folding observation capture and the three-layer semantic search; pins the statusline string; and runs doctor against both the real tree and a deliberately broken one.
+The suite is 114 tests across 13 files; `pnpm test` runs them in about 1.6s. Beyond the dashboard tests (event validity, the concurrency-safe append-only writer under 25 parallel writers, a real SSE server end to end, idempotent start, replay), the suite spawns the real MCP server over stdio and asserts `tools/list` and a `sp_symbol` call return correct, minimal output; checks the PreCompact digest builds and reloads; checks signal-ranked recall returns only the relevant subset within budget; exercises the local embedding, the turn-folding observation capture and the three-layer semantic search; pins the statusline string; and runs doctor against both the real tree and a deliberately broken one.
 
 The wiki has the full write-up: [Home](https://github.com/sarmakska/slipstream/wiki) . [Architecture](https://github.com/sarmakska/slipstream/wiki/Architecture) . [MCP-Tools](https://github.com/sarmakska/slipstream/wiki/MCP-Tools) . [Lossless-Compaction](https://github.com/sarmakska/slipstream/wiki/Lossless-Compaction) . [Memory-Recall](https://github.com/sarmakska/slipstream/wiki/Memory-Recall) . [Subagents](https://github.com/sarmakska/slipstream/wiki/Subagents) . [Statusline](https://github.com/sarmakska/slipstream/wiki/Statusline) . [Output-Style](https://github.com/sarmakska/slipstream/wiki/Output-Style) . [Live-Agent-Dashboard](https://github.com/sarmakska/slipstream/wiki/Live-Agent-Dashboard) . [Token-Efficiency](https://github.com/sarmakska/slipstream/wiki/Token-Efficiency) . [Skill-Engine](https://github.com/sarmakska/slipstream/wiki/Skill-Engine) . [Skill-Catalogue](https://github.com/sarmakska/slipstream/wiki/Skill-Catalogue) . [Writing-a-Skill](https://github.com/sarmakska/slipstream/wiki/Writing-a-Skill) . [Hooks](https://github.com/sarmakska/slipstream/wiki/Hooks) . [Install-in-VS-Code](https://github.com/sarmakska/slipstream/wiki/Install-in-VS-Code) . [FAQ](https://github.com/sarmakska/slipstream/wiki/FAQ) . [Troubleshooting](https://github.com/sarmakska/slipstream/wiki/Troubleshooting) . [Roadmap-and-Limitations](https://github.com/sarmakska/slipstream/wiki/Roadmap-and-Limitations)
 

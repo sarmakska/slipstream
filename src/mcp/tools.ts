@@ -19,7 +19,9 @@ import {
   searchMap
 } from "../map/index.js";
 import { buildMindMap, mindMapToMermaid } from "../dashboard/model.js";
+import { startDashboard } from "../dashboard/launch.js";
 import { budget } from "../context/budget.js";
+import { loadBudgetConfig, configToFractions } from "../context/budget-config.js";
 import {
   addMemory,
   listMemories,
@@ -28,9 +30,11 @@ import {
   searchObservations,
   timeline,
   getObservations,
+  distillProjectLessons,
   renderHits,
   renderTimeline,
   renderObservations,
+  renderLessons,
   OBSERVATION_KINDS,
   type ObservationKind,
   type MemoryType,
@@ -228,6 +232,28 @@ export const TOOL_DESCRIPTORS: ToolDescriptor[] = [
       type: "object",
       properties: { root: { type: "string" } }
     }
+  },
+  {
+    name: "sp_lessons",
+    description:
+      "Use to see the recurring patterns slipstream has learned from this project's history: topics worked on repeatedly across sessions, distilled from the observation store. A fast answer to 'what do I keep doing here' and a source of durable facts worth promoting with sp_remember.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        minCount: { type: "number", description: "Min observations for a topic to count (default 3)." },
+        limit: { type: "number", description: "Max lessons (default 10)." },
+        root: { type: "string" }
+      }
+    }
+  },
+  {
+    name: "sp_dashboard",
+    description:
+      "Use to open the live work dashboard: ensures the local dashboard server is running and returns its URL, so you can watch activity, the token-budget gauge and memory search in a browser tab. Works in any editor, not only Claude Code.",
+    inputSchema: {
+      type: "object",
+      properties: { root: { type: "string" } }
+    }
   }
 ];
 
@@ -363,16 +389,41 @@ export async function callTool(
       }
       case "sp_budget": {
         const bytesRead = Number(args["bytesRead"]) || 0;
-        const windowTokens = args["windowTokens"] ? Number(args["windowTokens"]) : undefined;
-        const report = budget({ bytesRead, windowTokens });
+        // The persisted budget config is the shared source of truth: the gauge,
+        // the statusline and this tool all read the same target and thresholds.
+        const config = await loadBudgetConfig(rootOf(args, ctx));
+        const fractions = configToFractions(config);
+        const windowTokens = args["windowTokens"] ? Number(args["windowTokens"]) : fractions.windowTokens;
+        const report = budget({
+          bytesRead,
+          windowTokens,
+          warnFraction: fractions.warnFraction,
+          compactFraction: fractions.compactFraction
+        });
         return text(
           `level=${report.level} approxTokens=${report.approxTokens} ` +
-            `window=${report.windowTokens} used=${(report.usedFraction * 100).toFixed(0)}%\n${report.advice}`
+            `target=${report.windowTokens} used=${(report.usedFraction * 100).toFixed(0)}% ` +
+            `(warn ${config.warnPct}%, compact ${config.compactPct}%)\n${report.advice}`
         );
       }
       case "sp_mindmap": {
         const map = await generateMap(rootOf(args, ctx));
         return text("```mermaid\n" + mindMapToMermaid(buildMindMap(map)) + "\n```");
+      }
+      case "sp_lessons": {
+        const lessons = await distillProjectLessons(rootOf(args, ctx), {
+          minCount: Number(args["minCount"]) || 3,
+          limit: Number(args["limit"]) || 10
+        });
+        return text(renderLessons(lessons));
+      }
+      case "sp_dashboard": {
+        const result = await startDashboard({ projectRoot: rootOf(args, ctx), detached: true });
+        return text(
+          `Live dashboard: ${result.url} ` +
+            (result.started ? "(started)" : "(already running)") +
+            ". Open it in a browser; it streams locally and nothing leaves the machine."
+        );
       }
       default:
         return err(`unknown tool "${name}"`);

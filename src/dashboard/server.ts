@@ -15,7 +15,7 @@
 
 import { createServer, type Server, type IncomingMessage, type ServerResponse } from "node:http";
 import { URL } from "node:url";
-import { reduceEvents, type DashboardState } from "./state.js";
+import { reduceEvents, totalApproxTokens, type DashboardState } from "./state.js";
 import { readLog, listSessions } from "./log.js";
 import { renderDashboardHtml } from "./ui.js";
 import {
@@ -23,6 +23,13 @@ import {
   getObservations,
   type ObservationKind
 } from "../memory/index.js";
+import { budget } from "../context/budget.js";
+import {
+  loadBudgetConfig,
+  saveBudgetConfig,
+  configToFractions,
+  type BudgetConfig
+} from "../context/budget-config.js";
 
 export interface DashboardServerOptions {
   projectRoot: string;
@@ -99,6 +106,18 @@ export class DashboardServer {
     this.server = null;
   }
 
+  /** Read and JSON-parse a request body, returning {} on anything malformed. */
+  private async readJsonBody(req: IncomingMessage): Promise<Record<string, unknown>> {
+    const chunks: Buffer[] = [];
+    for await (const chunk of req) chunks.push(chunk as Buffer);
+    try {
+      const raw = Buffer.concat(chunks).toString("utf8");
+      return raw ? (JSON.parse(raw) as Record<string, unknown>) : {};
+    } catch {
+      return {};
+    }
+  }
+
   private async resolveSession(requested?: string): Promise<string> {
     if (requested) return requested;
     if (this.opts.session) return this.opts.session;
@@ -149,6 +168,32 @@ export class DashboardServer {
         : [];
       res.writeHead(200, { "content-type": "application/json" });
       res.end(JSON.stringify({ hits }));
+      return;
+    }
+    // Budget control: GET reports the config plus the served-context gauge for a
+    // session; POST writes the editable target and thresholds. The gauge measures
+    // context slipstream pulled in (an estimate), not the model's true tokens.
+    if (url.pathname === "/api/budget") {
+      if (req.method === "POST") {
+        const patch = await this.readJsonBody(req);
+        const saved = await saveBudgetConfig(this.opts.projectRoot, patch as Partial<BudgetConfig>);
+        res.writeHead(200, { "content-type": "application/json" });
+        res.end(JSON.stringify({ config: saved }));
+        return;
+      }
+      const config = await loadBudgetConfig(this.opts.projectRoot);
+      const session = await this.resolveSession(url.searchParams.get("session") ?? undefined);
+      const state = reduceEvents(await readLog(this.opts.projectRoot, session));
+      const served = totalApproxTokens(state);
+      const fr = configToFractions(config);
+      const report = budget({
+        bytesRead: served * 3.6,
+        windowTokens: fr.windowTokens,
+        warnFraction: fr.warnFraction,
+        compactFraction: fr.compactFraction
+      });
+      res.writeHead(200, { "content-type": "application/json" });
+      res.end(JSON.stringify({ config, served, level: report.level, fraction: report.usedFraction }));
       return;
     }
     // Full detail for one observation, by id, for the viewer and for citations.

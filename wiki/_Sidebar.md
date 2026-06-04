@@ -9,6 +9,7 @@
 **Headline features**
 - [MCP tools](MCP-Tools)
 - [Observation memory & search](Observation-Memory)
+- [Cross-IDE support](Cross-IDE-Support)
 - [Lossless compaction](Lossless-Compaction)
 - [Memory recall](Memory-Recall)
 - [Live agent dashboard](Live-Agent-Dashboard)

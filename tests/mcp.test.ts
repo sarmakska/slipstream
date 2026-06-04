@@ -34,7 +34,9 @@ describe("mcp request handler", () => {
     const names = tools.map((t) => t.name).sort();
     expect(names).toEqual([
       "sp_budget",
+      "sp_dashboard",
       "sp_forget",
+      "sp_lessons",
       "sp_lines",
       "sp_map",
       "sp_mindmap",
@@ -113,7 +115,9 @@ describe("the bundled server runs over real stdio", () => {
     const entry = join(here, "..", "dist", "mcp", "index.js");
     const child = spawn(process.execPath, [entry], {
       cwd: sample,
-      stdio: ["pipe", "pipe", "pipe"]
+      stdio: ["pipe", "pipe", "pipe"],
+      // Keep the test hermetic: no event emission into the fixture, no dashboard spawn.
+      env: { ...process.env, SLIPSTREAM_MCP_EMIT: "0", SLIPSTREAM_DASHBOARD: "0" }
     });
 
     const responses: Record<string, unknown>[] = [];

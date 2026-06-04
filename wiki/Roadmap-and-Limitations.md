@@ -21,7 +21,8 @@ Real projects say what they are not. This page is the honest version.
 ## Shipped since the first release
 
 - The bundled MCP server (`sp_map`, `sp_symbol`, `sp_lines`, `sp_search`, `sp_remember`/`sp_recall`/`sp_forget`, `sp_search_memory`/`sp_timeline`/`sp_observations`, `sp_budget`, `sp_mindmap`), so Claude works through precise tools. See [MCP tools](MCP-Tools).
-- Self-building observation memory with a local semantic embedding and three-layer search, captured automatically each turn. See [Observation memory and semantic search](Observation-Memory).
+- Self-building observation memory with a local semantic embedding and three-layer search, captured automatically each turn, plus lesson distillation of recurring topics. See [Observation memory and semantic search](Observation-Memory).
+- Cross-IDE support: the MCP server self-emits dashboard events and auto-starts the dashboard, with a token-budget gauge and `sp_dashboard`, so Cursor, Windsurf, Antigravity and VS Code get the live view and budget control. See [Cross-IDE support](Cross-IDE-Support).
 - Lossless compaction via a `PreCompact` digest reloaded at session start. See [Lossless compaction](Lossless-Compaction).
 - Signal-ranked memory recall, not load-everything. See [Memory recall](Memory-Recall).
 - Three shipped subagents (sp-shipper, sp-schema, sp-reviewer). See [Subagents](Subagents).
@@ -36,6 +37,7 @@ What I intend to add next, roughly in order:
 - An optional per-agent diff view in the activity stream.
 - Export of a session log as a shareable, self-contained HTML artifact, the same shape as the existing mind-map artifact.
 - Per-model context windows for the budget, so the bar matches the model in use.
+- An HNSW vector index for observation search. Deferred for now: at slipstream's store sizes brute-force cosine is already sub-10ms, and an index would add complexity against the zero-dependency design. Worth it only once stores routinely reach tens of thousands of observations.
 - A real `SubagentStart` event if Claude Code exposes one, for cleaner subagent timelines.
 
 What I will not add: anything that breaks the local-only promise, an MCP SDK dependency while the hand-rolled server suffices, and anything that turns the observability dashboard into a control plane.

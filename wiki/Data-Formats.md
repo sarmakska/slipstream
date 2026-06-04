@@ -117,6 +117,21 @@ One JSON record per line, append-only (`Observation` in `src/memory/observe.ts`)
 
 `kind` is the dominant activity of the turn. `vector` is a unit-length 256-float hashed term-frequency embedding (`src/memory/embed.ts`), rounded to five decimals so the file stays compact without changing cosine ranking. A sibling `<session>.cursor` file records the last event seq folded into observations, so capture is incremental; a project-wide `.counter` file holds the next id. See [Observation memory and semantic search](Observation-Memory).
 
+## budget.json
+
+The editable token-budget control (`BudgetConfig` in `src/context/budget-config.ts`), read by the dashboard gauge, `sp_budget` and the statusline so they agree:
+
+```jsonc
+{
+  "targetTokens": 200000,  // the target the gauge fills toward
+  "warnPct": 60,           // amber threshold, percent of target
+  "compactPct": 85,        // red threshold, percent of target
+  "actualTokens": 0        // optional real count pasted from the editor, to calibrate
+}
+```
+
+Thresholds are clamped to a sane ordered range on save (compact always above warn). The gauge measures context slipstream pulled in, an estimate, not the model's true tokens.
+
 ## server.json
 
 ```jsonc

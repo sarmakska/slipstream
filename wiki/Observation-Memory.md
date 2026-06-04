@@ -77,6 +77,15 @@ node dist/cli/index.js observe --session main      # capture manually (the Stop 
 
 The [live dashboard](Live-Agent-Dashboard) also has a **Memory search** panel: type a query, get the ranked index, click a hit to expand its full detail (fetched lazily from `/api/observation/<id>`), so the index stays cheap until you ask for a body.
 
+## Lessons: distilling what recurs
+
+Over time the same areas of a project get touched again and again. `sp_lessons` (and `slipstream memory lessons`) distil that: they cluster observations by the file and concept stems the work centred on, and surface the topics that recur — how many times, across how many sessions, which files, and what kind of work it mostly was — each with the observation ids behind it. It is a fast answer to "what does this project keep making me do", and a source of durable facts worth promoting to a hand-authored memory with `sp_remember`. Distillation (`src/memory/lessons.ts`) is a pure function over the loaded observations, so its ranking is pinned by tests.
+
+```bash
+node dist/cli/index.js memory lessons --min 3
+# - Recurring work on "webhook": 6 observations across 3 sessions, mostly edit; files: src/payments/webhook.ts. [obs 1, 2, 5, …]
+```
+
 ## Citations
 
 Every observation has a stable project-wide id. That id is the citation handle: reference `#1` in a discussion and anyone can fetch the full record with `sp_observations` or open `http://127.0.0.1:<port>/api/observation/1` while the dashboard runs.

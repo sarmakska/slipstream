@@ -19,7 +19,7 @@ The bundled MCP server is the biggest single token win in slipstream. It lets Cl
 
 ## The tools
 
-All twelve tools, defined in `TOOL_DESCRIPTORS` in `src/mcp/tools.ts`:
+All fourteen tools, defined in `TOOL_DESCRIPTORS` in `src/mcp/tools.ts`:
 
 | Tool | Arguments | Returns |
 |---|---|---|
@@ -33,8 +33,10 @@ All twelve tools, defined in `TOOL_DESCRIPTORS` in `src/mcp/tools.ts`:
 | `sp_search_memory` | `query`, `kind?`, `session?`, `since?`, `limit?`, `root?` | layer 1: a compact ranked index of auto-captured observations (id, time, kind, summary). |
 | `sp_timeline` | `around` (id or query), `window?`, `session?`, `root?` | layer 2: the chronological neighbours of an observation or the best match for a query. |
 | `sp_observations` | `ids`, `root?` | layer 3: the full detail of the observation ids you filtered down to. |
-| `sp_budget` | `bytesRead?`, `windowTokens?` | the budget level (ok/warn/compact) and a token estimate. |
+| `sp_lessons` | `minCount?`, `limit?`, `root?` | recurring topics distilled from the observation store ("what you keep working on here"), with citations. |
+| `sp_budget` | `bytesRead?`, `windowTokens?` | the budget level (ok/warn/compact) against the persisted `budget.json` target and thresholds. |
 | `sp_mindmap` | `root?` | the project as a themed Mermaid mind map. |
+| `sp_dashboard` | `root?` | ensures the live dashboard server is running and returns its URL (works in any editor). |
 
 Every tool description is a crisp "Use ..." trigger, because Claude reads the description to decide when to call the tool. `sp_symbol` reads "Use to read one declaration instead of a whole file."
 

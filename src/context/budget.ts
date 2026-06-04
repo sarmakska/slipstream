@@ -21,7 +21,14 @@ export interface BudgetInput {
   bytesRead: number;
   /** Optional override for the model window. */
   windowTokens?: number;
+  /** Fraction at which the level becomes "warn". Defaults to COMFORT_FRACTION. */
+  warnFraction?: number;
+  /** Fraction at which the level becomes "compact". Defaults to 0.85. */
+  compactFraction?: number;
 }
+
+/** The default fraction at which the budget escalates to "compact". */
+export const COMPACT_FRACTION = 0.85;
 
 export interface BudgetReport {
   approxTokens: number;
@@ -44,17 +51,19 @@ export function estimateTokens(bytes: number): number {
  */
 export function budget(input: BudgetInput): BudgetReport {
   const windowTokens = input.windowTokens ?? DEFAULT_WINDOW_TOKENS;
+  const warnFraction = input.warnFraction ?? COMFORT_FRACTION;
+  const compactFraction = input.compactFraction ?? COMPACT_FRACTION;
   const approxTokens = estimateTokens(input.bytesRead);
   const usedFraction = approxTokens / windowTokens;
-  const comfortTokens = Math.round(windowTokens * COMFORT_FRACTION);
+  const comfortTokens = Math.round(windowTokens * warnFraction);
 
   let level: BudgetReport["level"];
   let advice: string;
-  if (usedFraction < COMFORT_FRACTION) {
+  if (usedFraction < warnFraction) {
     level = "ok";
     advice =
       "Plenty of headroom. Keep reading the map and pulling single slices.";
-  } else if (usedFraction < 0.85) {
+  } else if (usedFraction < compactFraction) {
     level = "warn";
     advice =
       "Approaching the comfortable budget. Prefer slices over whole files and " +
