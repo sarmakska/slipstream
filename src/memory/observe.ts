@@ -213,9 +213,20 @@ export interface FoldResult {
  * capture picks it up once it has closed. This is what makes incremental capture
  * safe to run on every Stop without duplicating or losing a turn.
  */
+export interface FoldOptions {
+  /**
+   * Materialise the trailing open turn (no `stop` event) at the end of the
+   * loop. False by default so hook-fed Claude Code keeps splitting turns only
+   * at `stop` boundaries. Set true in MCP-only mode where no `stop` ever
+   * arrives and the turn would otherwise leave the cursor stuck (#10).
+   */
+  flushOpen?: boolean;
+}
+
 export function foldObservations(
   events: DashboardEvent[],
-  startId: number
+  startId: number,
+  options: FoldOptions = {}
 ): FoldResult {
   const observations: Observation[] = [];
   let id = startId;
@@ -272,6 +283,15 @@ export function foldObservations(
     }
   }
 
+  // Terminal flush: in MCP-only editors no `stop` event is ever emitted (no
+  // hooks), so an open turn at the end of the log would leave the cursor
+  // stuck and the observation store permanently empty (#10). Opt-in so Claude
+  // Code keeps materialising only at `stop` boundaries.
+  if (options.flushOpen && turnHasContent(turn)) {
+    const lastSeq = events[events.length - 1]?.seq ?? consumed;
+    flush(lastSeq);
+  }
+
   return { observations, consumedThroughSeq: consumed };
 }
 
@@ -307,9 +327,20 @@ function compact(o: Observation): Observation {
  * advance the cursor. Returns the observations written (possibly none). Never
  * throws on a missing log; a session with no events yields nothing.
  */
+export interface CaptureOptions {
+  /**
+   * Force the trailing open turn to be materialised at the end of the log,
+   * even without a closing `stop`. Set true in MCP-only mode where no `stop`
+   * event ever arrives (#10). Defaults to off so Claude Code keeps splitting
+   * turns at `stop` boundaries.
+   */
+  flushOpen?: boolean;
+}
+
 export async function captureObservations(
   projectRoot: string,
-  session: string
+  session: string,
+  options: CaptureOptions = {}
 ): Promise<Observation[]> {
   const dir = observationsDir(projectRoot);
   await mkdir(dir, { recursive: true });
@@ -324,7 +355,9 @@ export async function captureObservations(
     if (events.length === 0) return [];
 
     const startId = (await readCounter(projectRoot)) + 1;
-    const { observations, consumedThroughSeq } = foldObservations(events, startId);
+    const { observations, consumedThroughSeq } = foldObservations(events, startId, {
+      flushOpen: options.flushOpen
+    });
     // Apply the custom redactor in addition to the built-in pass on labels.
     for (const o of observations) {
       o.summary = redactor(o.summary);

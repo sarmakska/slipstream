@@ -40,11 +40,33 @@ import {
   renderLessons,
   buildAndSaveDigest,
   loadLatestDigest,
+  captureObservations,
   OBSERVATION_KINDS,
   type ObservationKind,
   type MemoryType,
   MEMORY_TYPES
 } from "../memory/index.js";
+import { listSessions } from "../dashboard/log.js";
+import { detectMode } from "./mode-detect.js";
+
+/**
+ * Before a memory-reading tool returns, fold any open observations sitting in
+ * the event log so the result reflects the latest activity. In MCP-only editors
+ * there is no `stop` hook, so we ask the folder to flush the trailing turn
+ * (#10). Best-effort: any error is swallowed and the tool returns whatever the
+ * store currently has.
+ */
+async function refreshObservations(projectRoot: string): Promise<void> {
+  if (detectMode({ env: process.env, cwd: projectRoot }).mode !== "mcp-only") return;
+  try {
+    const sessions = await listSessions(projectRoot);
+    for (const session of sessions) {
+      await captureObservations(projectRoot, session, { flushOpen: true });
+    }
+  } catch {
+    // Best-effort; the read path still returns whatever was already persisted.
+  }
+}
 
 /** The MCP tool descriptor as advertised by tools/list. */
 export interface ToolDescriptor {
@@ -421,6 +443,7 @@ export async function callTool(
           typeof kindArg === "string" && OBSERVATION_KINDS.includes(kindArg as ObservationKind)
             ? (kindArg as ObservationKind)
             : undefined;
+        await refreshObservations(rootOf(args, ctx));
         const hits = await searchObservations(rootOf(args, ctx), {
           query,
           kind,
@@ -435,6 +458,7 @@ export async function callTool(
         if (!raw) return err("sp_timeline needs an id or query in 'around'");
         const asNum = Number(raw);
         const around = raw.trim() !== "" && Number.isFinite(asNum) ? asNum : raw;
+        await refreshObservations(rootOf(args, ctx));
         const entries = await timeline(rootOf(args, ctx), {
           around,
           window: Number(args["window"]) || 3,
@@ -448,6 +472,7 @@ export async function callTool(
           ? idsRaw.map((n) => Number(n)).filter((n) => Number.isFinite(n))
           : [];
         if (ids.length === 0) return err("sp_observations needs an array of numeric ids");
+        await refreshObservations(rootOf(args, ctx));
         const obs = await getObservations(rootOf(args, ctx), ids);
         return text(renderObservations(obs));
       }
@@ -508,6 +533,7 @@ export async function callTool(
         return text("```mermaid\n" + mindMapToMermaid(buildMindMap(map)) + "\n```");
       }
       case "sp_lessons": {
+        await refreshObservations(rootOf(args, ctx));
         const lessons = await distillProjectLessons(rootOf(args, ctx), {
           minCount: Number(args["minCount"]) || 3,
           limit: Number(args["limit"]) || 10

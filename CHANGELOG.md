@@ -5,6 +5,12 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.2] - 2026-06-05
+
+### Fixed
+- **Observation memory in MCP-only editors (#10).** `foldObservations` gains an opt-in `flushOpen` option that materialises the trailing open turn when no closing `stop` event arrives. The four memory-reading tools (`sp_search_memory`, `sp_timeline`, `sp_observations`, `sp_lessons`) now call `captureObservations({ flushOpen: true })` against every session when the runtime is `mcp-only`, so Cursor, Windsurf and Antigravity finally get a populated memory the moment they query it. Hook-fed Claude Code continues to materialise only at `stop` boundaries, so turns are not prematurely split.
+- **Doctor `duplicate-registration` false-positive (#13).** The check used to compare static file presence; in legitimate hybrid setups (manual hooks via `.claude/settings.json` plus `.mcp.json`) it fired without the plugin being loaded. It now keys off the detected runtime: a FAIL only fires when the Claude Code plugin is actually active alongside a project `.mcp.json` that also registers slipstream.
+
 ## [0.7.1] - 2026-06-05
 
 ### Fixed

@@ -104,6 +104,24 @@ describe("foldObservations", () => {
     expect(consumedThroughSeq).toBe(3);
   });
 
+  it("flushOpen materialises the trailing open turn for MCP-only mode (#10)", () => {
+    // A log with no closing stop, the kind every MCP-only editor produces. The
+    // default path would leave it stuck. flushOpen drains it so the store fills.
+    const events = [
+      ev(1, "user-prompt", "do the thing"),
+      ev(2, "post-tool", "Edit src/pay/webhook.ts"),
+      ev(3, "post-tool", "Edit src/pay/handler.ts")
+    ];
+    const closed = foldObservations(events, 100);
+    expect(closed.observations.length).toBe(0);
+
+    const flushed = foldObservations(events, 100, { flushOpen: true });
+    expect(flushed.observations.length).toBe(1);
+    expect(flushed.observations[0]!.id).toBe(100);
+    expect(flushed.observations[0]!.files).toContain("src/pay/webhook.ts");
+    expect(flushed.consumedThroughSeq).toBe(3);
+  });
+
   it("classifies a command-only turn as a command", () => {
     const events = [
       ev(1, "user-prompt", "run the migration"),
