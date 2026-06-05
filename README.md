@@ -7,7 +7,7 @@
 <p align="center">
 <a href="https://github.com/sarmakska/slipstream/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/sarmakska/slipstream/actions/workflows/ci.yml/badge.svg"></a>
 <a href="https://github.com/sarmakska/slipstream/releases"><img alt="Version" src="https://img.shields.io/github/package-json/v/sarmakska/slipstream"></a>
-<img alt="Tests" src="https://img.shields.io/badge/tests-120%20passing-brightgreen">
+<img alt="Tests" src="https://img.shields.io/badge/tests-208%20passing-brightgreen">
 <img alt="Node" src="https://img.shields.io/badge/node-%3E%3D20-brightgreen">
 <a href="./LICENSE"><img alt="License: MIT" src="https://img.shields.io/github/license/sarmakska/slipstream"></a>
 <a href="https://github.com/sarmakska/slipstream"><img alt="Language" src="https://img.shields.io/github/languages/top/sarmakska/slipstream"></a>
@@ -16,7 +16,15 @@
 
 A long Claude Code session usually dies one of two ways. Either it reads whole files until the context window is full and starts forgetting the start of its own plan, or it does good work and then the session ends and every decision it made evaporates. slipstream is a Claude Code plugin I built to stop both, and to let me actually see what the agent is doing while it does it.
 
-You install it into Claude Code in VS Code. It is not a CLI you run as a product; there is a small helper binary the plugin shells out to from its hooks, its slash commands and a bundled MCP server, but you never invoke it directly.
+You install it into Claude Code in VS Code. It is not a CLI you run as a product; there is a small helper binary the plugin shells out to from its hooks, its slash commands and a bundled MCP server, but you never invoke it directly. Since v0.6 the same MCP server also works in **Cursor, Windsurf, Antigravity, plain VS Code via MCP and JetBrains via MCP**, with the same fourteen `sp_*` tools, the same dashboard and a one-line idempotent install through `slipstream-setup`.
+
+## What's new in v0.7
+
+- **Tabbed live dashboard** (v0.7.0): five views on one local URL. **Live** keeps the v0.6 KPI strip and timeline. **Project** adds a 365-day GitHub-style activity heatmap, a file leaderboard, an inline-SVG kinds donut and a distilled lessons grid. **Journal** gives a per-day digest with prev/today/next nav, clickable straight from the heatmap. **Sessions** lists every recorded session with open and delete actions, gated behind a confirmation modal. **Memory** wraps the full-project observation search with kind filter chips.
+- **Windows hook telemetry** (v0.7.1): `emit()` writes in-process and every hook awaits it. The detached-spawn-then-exit pattern silently lost every event on Windows; observation memory now builds.
+- **MCP-only memory populates** (v0.7.2): `foldObservations` gains an opt-in `flushOpen`. The four memory-reading `sp_` tools call it in MCP-only mode so Cursor, Windsurf and Antigravity see a populated memory the moment they query it. Claude Code mode is unchanged.
+- **Doctor cross-IDE checks** (v0.6.1 + v0.7.2): `duplicate-registration`, `double-emit` and `stale-dashboard` catch the exact setup problems that bit early MCP-only users. Each FAIL line carries a one-line fix.
+- **Dashboard `/api/health`** (v0.6.1): version, pid, startedAt. `sp_dashboard` probes it on every start and restarts a stale dashboard from a previous build instead of reusing it.
 
 ## What you feel on day one
 
