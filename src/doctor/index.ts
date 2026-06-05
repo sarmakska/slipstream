@@ -182,14 +182,22 @@ export async function runDoctor(
   add("dashboard-socket", await isReadablePathOrAbsent(sockFile), sockFile);
 
   // 10. Duplicate registration: slipstream wired via the plugin AND a project
-  // .mcp.json. Each emits events, so the observation store double-counts.
+  // .mcp.json. Each emits events, so the observation store double-counts. We
+  // only flag this when the plugin is actually loaded at runtime, otherwise the
+  // mere presence of plugin.json next to a project .mcp.json (hybrid setups,
+  // forked plugin repos) trips a false positive (#13).
   const pluginEntry = await pluginRegistersSlipstream(pluginRoot);
   const projectEntry = await mcpJsonRegistersSlipstream(projectRoot);
-  const dup = pluginEntry && projectEntry;
+  const pluginActive = isPluginRuntime(process.env);
+  const dup = pluginEntry && projectEntry && pluginActive;
   add(
     "duplicate-registration",
     !dup,
-    dup ? "slipstream registered in both plugin.json and .mcp.json" : "single registration"
+    dup
+      ? "plugin is loaded AND .mcp.json registers slipstream; events will be counted twice"
+      : pluginEntry && projectEntry
+        ? "plugin.json and .mcp.json both register slipstream, but the plugin is not loaded; single emit path"
+        : "single registration"
   );
 
   // 11. Double-emit: hooks active AND SLIPSTREAM_MCP_EMIT explicitly enabled.
@@ -303,6 +311,17 @@ async function isReadablePathOrAbsent(path: string): Promise<boolean> {
     const code = (err as { code?: string }).code;
     return code === "ENOENT";
   }
+}
+
+/**
+ * Mirror of the mode-detect heuristic, kept local so doctor does not pull in
+ * the MCP server module. Plugin is "loaded" when Claude Code's own env vars
+ * are present at runtime. Compares against the same signals detectMode uses.
+ */
+function isPluginRuntime(env: NodeJS.ProcessEnv): boolean {
+  if (env["SLIPSTREAM_MODE"] === "plugin") return true;
+  if (env["SLIPSTREAM_MODE"] === "mcp-only") return false;
+  return Boolean(env["CLAUDE_PLUGIN_ROOT"] || env["CLAUDE_CODE_SESSION"]);
 }
 
 /** Render the report as a pass/fail block for the slash command output. */
