@@ -5,6 +5,17 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.1] - 2026-06-05
+
+### Fixed
+- **Windows hook telemetry (#9).** `emit()` previously spawned a detached child to write the event, then exited; the child was torn down before the write completed and every hook event was silently lost. `emit()` now writes in-process and every hook awaits it. Also faster: no node cold-start per hook.
+- **Observation memory builds in-process (#10, Claude Code half).** `stop` now folds the turn in-process via `captureObservations` instead of a detached `observe` spawn, so the observation store actually populates. The remaining MCP-only-editor half of #10 stays open.
+- **Dist imports on Windows.** Dynamic `import(absolutePath)` was parsed as a `c:` URL scheme on Windows and threw. All dist dynamic imports now route through `pathToFileURL`.
+- **Server version (#11).** `serverInfo.version` on the MCP initialize handshake was a hardcoded literal (lagging at 0.5.1). It now reads from `package.json` at module load with a regression test asserting the two stay in lockstep.
+
+### Removed
+- The retired `describe.skip` `sp_digest` block in `tests/mcp.test.ts` (already gone in 0.6.x; cleaned up the leftover stub).
+
 ## [0.7.0] - 2026-06-04
 
 ### Added
