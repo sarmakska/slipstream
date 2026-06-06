@@ -1,10 +1,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { Link, Route, Switch, useLocation } from "wouter";
 import { api } from "./api";
-import {
-  OverviewPage, LivePage, FlowPage, ConversationPage,
-  ProjectPage, JournalPage, SessionsPage, MemoryPage, GraphPage
-} from "./pages";
+import { OverviewPage, LivePage, SessionsPage, MemoryPage } from "./pages";
 import { CodeGraphView } from "./CodeGraph";
 import { Office } from "./Office";
 
@@ -27,16 +24,9 @@ const NAV: { section: string; items: { path: string; label: string }[] }[] = [
     { path: "/live", label: "Live activity" },
     { path: "/office", label: "Agents office" }
   ] },
-  { section: "History", items: [
-    { path: "/flow", label: "Said & done" },
-    { path: "/conversation", label: "Full conversation" },
-    { path: "/journal", label: "Daily journal" },
-    { path: "/sessions", label: "Sessions" }
-  ] },
-  { section: "Knowledge", items: [
-    { path: "/project", label: "Project stats" },
-    { path: "/memory", label: "Memory" },
-    { path: "/graph", label: "Memory graph" },
+  { section: "Memory", items: [
+    { path: "/sessions", label: "Sessions" },
+    { path: "/memory", label: "What Claude remembers" },
     { path: "/code", label: "Code map" }
   ] }
 ];
@@ -86,15 +76,10 @@ export function App() {
             <Switch>
               <Route path="/" component={OverviewPage} />
               <Route path="/live" component={LivePage} />
-              <Route path="/flow" component={FlowPage} />
-              <Route path="/conversation" component={ConversationPage} />
-              <Route path="/project" component={ProjectPage} />
-              <Route path="/journal" component={JournalPage} />
+              <Route path="/office" component={Office} />
               <Route path="/sessions" component={SessionsPage} />
               <Route path="/memory" component={MemoryPage} />
-              <Route path="/graph" component={GraphPage} />
               <Route path="/code" component={CodeGraphPage} />
-              <Route path="/office" component={Office} />
             </Switch>
           </main>
         </div>
