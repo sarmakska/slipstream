@@ -57,6 +57,7 @@ import {
 } from "./insights.js";
 import { storyFlow } from "./story.js";
 import { extractFailures } from "./failures.js";
+import { agentMood } from "./presence.js";
 import { summariseMap } from "./overview.js";
 import { generateMap } from "../map/index.js";
 
@@ -439,6 +440,20 @@ export class DashboardServer {
         recent,
         counts: { sessions: sessions.length, observations: obs.length, memories: memories.length }
       }));
+      return;
+    }
+    // Presence: each agent as a live character with a mood derived from its
+    // latest activity, so the dashboard can animate what is happening now.
+    if (url.pathname === "/api/presence") {
+      const session = await this.resolveSession(url.searchParams.get("session") ?? undefined);
+      const state = reduceEvents(await readLog(this.opts.projectRoot, session));
+      const agents = state.agents.map((a) => {
+        const last = a.activity[a.activity.length - 1];
+        const { mood, verb } = agentMood(a.status, last?.label ?? "");
+        return { id: a.id, status: a.status, task: a.task, mood, verb, lastLabel: last?.label ?? "" };
+      });
+      res.writeHead(200, { "content-type": "application/json" });
+      res.end(JSON.stringify({ session, agents }));
       return;
     }
     // Message outbox: leave a message for the working agent from the dashboard.

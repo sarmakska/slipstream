@@ -363,6 +363,31 @@ export function renderDashboardHtml(session: string): string {
   .fail-row .fr-meta{color:var(--muted-2);font-size:9px;margin-top:3px;font-variant-numeric:tabular-nums;text-transform:uppercase;letter-spacing:0.06em}
   #fail-count.has{background:rgba(248,113,113,0.14);color:var(--red);border-color:rgba(248,113,113,0.4)}
 
+  /* AGENTS AT WORK (live presence) */
+  .agents-stage{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px;padding:16px 18px;border:1px solid var(--line);border-radius:14px;background:linear-gradient(180deg,rgba(13,17,23,0.65),rgba(8,10,18,0.5));min-height:96px;align-items:flex-start}
+  .bot{display:flex;flex-direction:column;align-items:center;gap:7px;min-width:84px}
+  .bot .av{width:48px;height:48px;border-radius:15px;background:var(--surface-2);border:1px solid var(--line-2);position:relative;overflow:hidden}
+  .bot .av .eyes{position:absolute;top:19px;left:0;right:0;display:flex;gap:9px;justify-content:center}
+  .bot .av .eyes i{width:6px;height:6px;border-radius:50%;background:var(--muted-2);display:block}
+  .bot .av .aura{position:absolute;inset:0;border-radius:15px;border:2px solid transparent}
+  .bot .nm{font-size:10px;color:var(--muted);letter-spacing:0.04em;max-width:84px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .bot .bubble{font-family:var(--sans);font-size:10px;color:var(--fg);background:rgba(13,17,23,0.8);border:1px solid var(--line);border-radius:999px;padding:2px 9px;white-space:nowrap}
+  .bot.mood-typing .av{animation:bot-bob .6s ease-in-out infinite}
+  .bot.mood-typing .eyes i{background:var(--emerald)}
+  @keyframes bot-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+  .bot.mood-reading .eyes{animation:bot-look 1.4s ease-in-out infinite}
+  .bot.mood-reading .eyes i{background:var(--sky)}
+  @keyframes bot-look{0%,100%{transform:translateX(-2px)}50%{transform:translateX(2px)}}
+  .bot.mood-running .eyes i{background:var(--cyan)}
+  .bot.mood-running .aura{border-color:var(--cyan);animation:bot-pulse 1.1s ease-in-out infinite}
+  @keyframes bot-pulse{0%,100%{opacity:0.25}50%{opacity:1}}
+  .bot.mood-delegating .eyes i{background:var(--violet)}
+  .bot.mood-delegating .aura{border-color:var(--violet);animation:bot-pulse 1.4s ease-in-out infinite}
+  .bot.mood-thinking .eyes i{background:var(--amber);animation:bot-blink 2s step-end infinite}
+  @keyframes bot-blink{0%,90%,100%{opacity:1}94%{opacity:0.2}}
+  .bot.mood-waiting{opacity:0.5}
+  .bot.mood-waiting .eyes i{background:var(--muted-2)}
+
   /* MESSAGE THE AGENT */
   #msg-text{width:100%;background:var(--surface);color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font:inherit;font-family:var(--sans);font-size:12px;resize:vertical;margin-bottom:7px}
   #msg-text:focus{outline:none;border-color:var(--sky)}
@@ -459,6 +484,7 @@ export function renderDashboardHtml(session: string): string {
     <p class="ib-paragraph" id="ib-live-p">Reading the session...</p>
     <ul class="ib-bullets" id="ib-live-b"></ul>
   </section>
+  <div class="agents-stage" id="agents-stage"><div class="empty">no agents at work yet</div></div>
   <div class="kpis">
     <div class="kpi" id="kpi-ctx"><div class="lbl">context</div><div class="val" id="kpi-ctx-val">0%</div><div class="sub" id="kpi-ctx-sub">0 / 200k tokens</div><svg class="spark" id="kpi-ctx-spark" viewBox="0 0 64 22" preserveAspectRatio="none"></svg></div>
     <div class="kpi" id="kpi-opt"><div class="lbl">optimised</div><div class="val" id="kpi-opt-val">0%</div><div class="sub" id="kpi-opt-sub">scoped vs whole-file</div><svg class="spark" id="kpi-opt-spark" viewBox="0 0 64 22" preserveAspectRatio="none"></svg></div>
@@ -1077,7 +1103,19 @@ export function renderDashboardHtml(session: string): string {
     await fetch("/api/message?session=" + encodeURIComponent(current), { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ text }) }).catch(() => {});
     ta.value = ""; toast("message queued for the agent"); loadMessages();
   };
-  function renderLive() { renderAgents(); renderFilters(); renderStream(); loadBudget(); renderPlan(); renderMap(); renderWork(); renderMemKpi(); loadLiveInsight(); loadFailures(); loadMessages(); }
+  async function loadPresence() {
+    const r = await fetch("/api/presence?session=" + encodeURIComponent(current)).then((x) => x.json()).catch(() => null);
+    const stage = $("agents-stage"); if (!stage) return;
+    const agents = r && r.agents ? r.agents : [];
+    if (!agents.length) { stage.innerHTML = '<div class="empty">no agents at work yet</div>'; return; }
+    stage.innerHTML = agents.map((a) =>
+      '<div class="bot mood-' + escape(a.mood) + '">' +
+        '<div class="av"><div class="aura"></div><div class="eyes"><i></i><i></i></div></div>' +
+        '<div class="bubble">' + escape(a.verb) + '</div>' +
+        '<div class="nm">' + escape(a.id) + '</div>' +
+      '</div>').join("");
+  }
+  function renderLive() { renderAgents(); renderFilters(); renderStream(); loadBudget(); renderPlan(); renderMap(); renderWork(); renderMemKpi(); loadLiveInsight(); loadFailures(); loadMessages(); loadPresence(); }
 
   // PROJECT TAB
   async function loadProject() {
