@@ -9,7 +9,8 @@ export default [
       "coverage/**",
       "dashboard/public/**",
       "fixtures/**",
-      "skills/**"
+      "skills/**",
+      "web/**"
     ]
   },
   {

@@ -15,8 +15,8 @@
 
 import { createServer, type Server, type IncomingMessage, type ServerResponse } from "node:http";
 import { URL, fileURLToPath } from "node:url";
-import { readFileSync } from "node:fs";
-import { dirname, join as pathJoin } from "node:path";
+import { readFileSync, existsSync } from "node:fs";
+import { dirname, join as pathJoin, extname, normalize } from "node:path";
 import {
   reduceEvents,
   totalApproxTokens,
@@ -86,6 +86,21 @@ export const SERVER_VERSION: string = (() => {
   }
 })();
 const SERVER_STARTED_AT = new Date().toISOString();
+
+/** The built React dashboard, emitted by `vite build` next to this module. */
+const WEB_DIR = pathJoin(dirname(fileURLToPath(import.meta.url)), "web");
+const WEB_INDEX = pathJoin(WEB_DIR, "index.html");
+
+const CONTENT_TYPES: Record<string, string> = {
+  ".html": "text/html; charset=utf-8",
+  ".js": "text/javascript; charset=utf-8",
+  ".css": "text/css; charset=utf-8",
+  ".json": "application/json",
+  ".svg": "image/svg+xml",
+  ".woff2": "font/woff2",
+  ".png": "image/png",
+  ".ico": "image/x-icon"
+};
 
 export interface DashboardServerOptions {
   projectRoot: string;
@@ -196,11 +211,31 @@ export class DashboardServer {
     res: ServerResponse
   ): Promise<void> {
     const url = new URL(req.url ?? "/", this.url());
+    // The React dashboard, when built, is served from WEB_DIR. The old
+    // server-rendered page stays available at ?legacy=1 during the transition,
+    // and is the fallback when the web bundle has not been built yet.
+    const wantLegacy = url.searchParams.get("legacy") === "1";
+    const hasWeb = existsSync(WEB_INDEX);
     if (url.pathname === "/" || url.pathname === "/index.html") {
+      if (hasWeb && !wantLegacy) {
+        res.writeHead(200, { "content-type": "text/html; charset=utf-8" });
+        res.end(readFileSync(WEB_INDEX));
+        return;
+      }
       const session = await this.resolveSession();
       res.writeHead(200, { "content-type": "text/html; charset=utf-8" });
       res.end(renderDashboardHtml(session));
       return;
+    }
+    // Static assets for the React app (hashed JS/CSS under /assets, etc).
+    if (hasWeb && req.method === "GET" && !url.pathname.startsWith("/api")) {
+      const rel = normalize(url.pathname).replace(/^(\.\.[/\\])+/, "").replace(/^[/\\]+/, "");
+      const filePath = pathJoin(WEB_DIR, rel);
+      if (filePath.startsWith(WEB_DIR) && existsSync(filePath) && extname(filePath)) {
+        res.writeHead(200, { "content-type": CONTENT_TYPES[extname(filePath)] ?? "application/octet-stream" });
+        res.end(readFileSync(filePath));
+        return;
+      }
     }
     // /api/health: version-aware probe so a newer client can detect a stale
     // dashboard left behind by a previous build and restart it.
