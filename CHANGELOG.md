@@ -5,6 +5,11 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.16.0] - 2026-06-06
+
+### Added
+- **Agents at work, a live presence stage.** Each agent on the Live tab becomes a small animated character whose mood is derived from its latest activity: typing when editing, reading when searching, a pulsing ring when running a command, blinking when thinking, dimmed when waiting. Original CSS characters, no external assets. New `src/dashboard/presence.ts` with six tests, served by `/api/presence`.
+
 ## [0.15.0] - 2026-06-06
 
 ### Added
