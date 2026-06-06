@@ -5,6 +5,12 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0] - 2026-06-06
+
+### Added
+- **Dashboard insights band.** Every data tab now opens with a natural-language band: one paragraph plus three to five bullets that describe the view rather than only tabulate it. The **Live** band names the session, tool count, optimisation percentage, files in focus and the near-term step runway, and flags the budget level. The **Project** band names the dominant focus directory, drift flags to review, the memory accumulation rate and the optimisation total. The **Journal** band summarises one day: observation and session counts, the files activity concentrated on and the peak activity window. The **Sessions** band ranks sessions and calls out the unusually heavy and quiet ones. Every sentence is generated deterministically from the existing observation store with no LLM and no new persistence, so the prose is reproducible and traceable to a single source query.
+- New `src/dashboard/insights.ts` with five pure generators (`liveInsights`, `projectInsights`, `journalInsights`, `sessionsInsights`, `driftStories`) plus `rankSessions`, and four `/api/insights/{live,project,journal,sessions}` routes. Eighteen tests pin every template branch.
+
 ## [0.7.2] - 2026-06-05
 
 ### Fixed
