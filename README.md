@@ -77,6 +77,18 @@ pnpm benchmark     # reproduce the token-savings table
 pnpm build         # server + dashboard
 ```
 
+## Acknowledgements
+
+slipstream's design was inspired by several excellent open-source projects. The implementations here are original, but credit is due for the ideas:
+
+- **[superpowers](https://github.com/obra/superpowers)** by obra, for the deliberate-engineering skill methodology that shaped slipstream's own skill suite.
+- **[pixel-agents](https://github.com/pixel-agents-hq/pixel-agents)**, for the idea of watching agents work as characters, which inspired the agents office.
+- **[ruflo](https://github.com/ruvnet/ruflo)** by ruvnet, for self-learning memory and multi-agent coordination ideas.
+- **[graphify](https://github.com/safishamsi/graphify)**, for the codebase knowledge-graph visualisation that inspired the code map.
+- **[ECC](https://github.com/affaan-m/ECC)**, for the harness-native operator and instinct ideas.
+
+Each is its own project under its own licence; slipstream does not bundle their code or assets.
+
 ## License
 
 MIT. Built by [Sarma](https://sarmalinux.com).

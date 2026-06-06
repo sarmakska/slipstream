@@ -28,13 +28,18 @@ export function Office() {
           {agents.map((a, i) => {
             const skin = SKINS[i % SKINS.length]!;
             return (
-              <div className="desk" key={a.session}>
+              <div className={"desk" + (a.active ? " on" : "")} key={a.session}>
                 {a.thread && <div className="bubble">{a.thread.slice(0, 70)}</div>}
-                <div className={"toon" + (a.active ? " busy" : "")}>
-                  <div className="head" style={{ background: skin }} />
-                  <div className="body" style={{ background: skin }} />
+                <div className={"toon" + (a.active ? " busy" : " idle")}>
+                  <div className="head" style={{ background: skin }}>
+                    <span className="eye" /><span className="eye" />
+                  </div>
+                  <div className="torso" style={{ background: skin }}>
+                    <span className="arm l" style={{ background: skin }} />
+                    <span className="arm r" style={{ background: skin }} />
+                  </div>
                 </div>
-                <div className="deskplate" />
+                <div className="desk-unit"><div className="monitor" /></div>
                 <div className="who">{a.session.slice(0, 8)} {a.active ? "· working" : `· idle ${a.ageMin}m`}</div>
                 {a.files.length > 0 && <div className="files">{a.files.slice(0, 2).map((f) => f.split("/").pop()).join(", ")}</div>}
               </div>
