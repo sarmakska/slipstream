@@ -6,6 +6,7 @@ import {
   ProjectPage, JournalPage, SessionsPage, MemoryPage, GraphPage
 } from "./pages";
 import { CodeGraphView } from "./CodeGraph";
+import { Office } from "./Office";
 
 function CodeGraphPage() {
   return (
@@ -23,7 +24,8 @@ export const useSession = (): SessionCtx => useContext(Ctx);
 const NAV: { section: string; items: { path: string; label: string }[] }[] = [
   { section: "Now", items: [
     { path: "/", label: "Overview" },
-    { path: "/live", label: "Live activity" }
+    { path: "/live", label: "Live activity" },
+    { path: "/office", label: "Agents office" }
   ] },
   { section: "History", items: [
     { path: "/flow", label: "Said & done" },
@@ -92,6 +94,7 @@ export function App() {
               <Route path="/memory" component={MemoryPage} />
               <Route path="/graph" component={GraphPage} />
               <Route path="/code" component={CodeGraphPage} />
+              <Route path="/office" component={Office} />
             </Switch>
           </main>
         </div>

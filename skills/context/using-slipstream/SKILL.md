@@ -1,27 +1,28 @@
 ---
 name: using-slipstream
-description: Use at the start of any session or task in a project that has slipstream, to begin memory-aware and end memory-rich. Recall what past sessions learned and read the project map before opening files, work deliberately, then record what is durable so the next session and the dashboard inherit it.
+description: Use whenever the user says "use slipstream", "use superpowers", or starts any task in a project that has slipstream. A hard, always-on discipline that forces scoped reads over whole-file reads to save tokens, recalls memory before acting, and records what is durable every turn so memory grows constantly.
 slipstream:
   category: context
   requires: []
   tags:
     - discipline
     - memory
-    - orientation
+    - token-efficiency
 ---
 
 ## Overview
 
-slipstream gives every session a memory that survives compaction and the next start, a scoped map of the codebase, and a local dashboard that records what was said and done. Those are only worth having if the agent actually uses them. This skill is the habit that closes the loop: open by recalling and orienting, work without re-reading whole files, and close by recording what is durable. Run it first in any slipstream project, before any other skill.
+slipstream only saves tokens and builds memory if the agent actually uses it. The dashboard showing "0% optimised" means whole files were read instead of scoped slices: a failure, not a neutral state. This skill is a rigid discipline, not a suggestion. When the user invokes slipstream, follow every step. Do not read a whole file when a symbol or a line range will do. Do not finish a turn without recording what is durable.
 
 ## Steps
 
-1. Recall before reading. If the project has memory (`/slipstream:recall` or `npx slipstream memory recall --root .`), pull the relevant durable facts for the task at hand. Do not start from zero on something a past session already decided.
-2. Read the map, not the files. Refresh and read `.claude/slipstream/map.md` (`/slipstream:map`) to find the symbols and line ranges you need, then pull single slices rather than whole files. This is the token discipline slipstream exists to enforce.
-3. State the task in one line and the smallest change that satisfies it. Keep the edit surgical; do not refactor unrelated code.
-4. Work in the open. Let the hooks record the session so the dashboard shows what you said and did. Prefer scoped reads so the optimisation tally stays honest.
-5. Record what is durable. When the turn produces a decision, convention, gotcha or credential location, save it with `/slipstream:remember` so it survives the next compaction and shows up in the next session's recall.
+1. Recall first, always. Before reading any code, pull relevant durable facts and the last session's summary (`/slipstream:recall`). Never start from zero on something a past session already decided.
+2. Read the map, never the whole file. Refresh and read `.claude/slipstream/map.md` (`/slipstream:map`), then pull exactly what you need with `sp_symbol` (one symbol) or `sp_lines` (one range). Reading an entire file when a slice would do is a defect; the optimisation tally must not stay at 0%.
+3. Search scoped, not broad. Use `sp_search` over the map and `sp_search_memory` over past work before grepping the tree.
+4. State the task in one line and make the smallest change that satisfies it. No unrelated refactors.
+5. Record durable outcomes every turn. When the turn produces a decision, convention, gotcha or credential location, save it with `/slipstream:remember`. Memory should grow constantly, not only when asked.
+6. Coordinate with other tabs. If the session-start context lists other open sessions, build on their work; do not duplicate or undo it.
 
 ## Verify
 
-Confirm you recalled memory and read the map before the first file read, and that any durable outcome from the turn is saved (`npx slipstream memory list --root .` shows it). If nothing durable changed, that is a valid outcome; say so rather than inventing a memory.
+Confirm three things before claiming the turn is done: you recalled memory before the first read, you used scoped reads (`sp_symbol`/`sp_lines`) rather than whole-file reads so the optimisation tally moved above 0%, and any durable outcome is saved (`npx slipstream memory list --root .` shows it). If you read a whole file when a slice would have worked, say so and correct the habit.

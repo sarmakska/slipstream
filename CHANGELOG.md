@@ -5,6 +5,18 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0] - 2026-06-06
+
+### Added
+- **Forceful steering for constant token and memory savings.** The using-slipstream skill and the per-turn hook reminder now insist on scoped reads (sp_symbol / sp_lines) over whole-file reads and on recording durable memory every turn, so the optimisation tally actually climbs and memory grows constantly. This is the discipline that makes the savings real.
+- **1.0.0.** First major release: local cross-session memory, cold-start knowledge feed, ~95% per-read token savings (reproducible via pnpm benchmark), cross-tab coordination bus, a React dashboard with nine real-data views and an interactive code graph, and a 75-skill methodology and design library. 320 tests, CI green.
+
+### Added
+- **Cross-tab agent bus.** Multiple Claude Code tabs open on one project now coordinate: each posts its open thread and files in flight to a shared local bus at turn end, and every session sees the others at start and on each prompt, so tabs build on each other instead of duplicating work. Turn-boundary coordination (the platform does not allow live mid-turn messaging). New src/memory/bus.ts, five tests.
+
+### Fixed
+- **plugin.json version drift.** It advertised 0.5.1 while the project was far ahead; now synced.
+
 ## [0.31.0] - 2026-06-06
 
 ### Fixed

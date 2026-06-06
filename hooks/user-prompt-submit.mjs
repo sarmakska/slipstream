@@ -59,15 +59,21 @@ try {
 }
 
 const hints = [];
+// The core discipline, always present: this is how slipstream actually saves
+// tokens and grows memory, so it is stated as a requirement, not a suggestion.
+hints.push(
+  "Read scoped, not whole files: use sp_symbol or sp_lines for the exact code you " +
+    "need. Reading an entire file when a slice would do wastes tokens. Record any " +
+    "durable decision with /slipstream:remember before finishing."
+);
 if (hasMemory) {
   hints.push(
-    "Before answering, recall relevant durable facts with /slipstream:recall " +
-      "if this touches a prior decision."
+    "Recall first with /slipstream:recall if this touches a prior decision; do not start from zero."
   );
 }
 if (hasMap) {
   hints.push(
-    "Use the project map and scoped slices rather than reading whole files."
+    "Refresh and read .claude/slipstream/map.md to find the symbol or range before opening anything."
   );
 }
 

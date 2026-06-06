@@ -39,6 +39,7 @@ import {
   readInbox,
   queueMessage,
   pendingMessages,
+  loadBus,
   listConversations,
   searchConversations,
   deriveInstincts,
@@ -524,6 +525,21 @@ export class DashboardServer {
         savedTokens: savings.savedTokens,
         savedUsd: estimateCost(savings.savedTokens).usd
       }));
+      return;
+    }
+    // Agents office: every session on the shared bus as a character, with what
+    // it is working on, so multiple open tabs appear together in one room.
+    if (url.pathname === "/api/agents") {
+      const bus = await loadBus(this.opts.projectRoot);
+      const latest = new Map<string, { session: string; ts: string; thread: string; files: string[] }>();
+      for (const e of bus) latest.set(e.session, e);
+      const nowMs = Date.now();
+      const agents = [...latest.values()].map((e) => {
+        const ageMin = e.ts ? Math.round((nowMs - new Date(e.ts).getTime()) / 60000) : 9999;
+        return { session: e.session, thread: e.thread, files: e.files, ts: e.ts, active: ageMin <= 10, ageMin };
+      }).sort((a, b) => (a.ts < b.ts ? 1 : -1));
+      res.writeHead(200, { "content-type": "application/json" });
+      res.end(JSON.stringify({ agents }));
       return;
     }
     // Presence: each agent as a live character with a mood derived from its
