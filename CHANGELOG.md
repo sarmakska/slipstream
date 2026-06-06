@@ -5,6 +5,11 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.14.0] - 2026-06-06
+
+### Added
+- **Premium web-design skills.** Four original frontend skills that help build sites that look designed rather than defaulted: `frontend-design-system` (one cohesive set of type, spacing, colour and shadow tokens), `frontend-hero-section` (a high-impact landing hero), `frontend-motion` (tasteful entrance and scroll-reveal motion with reduced-motion respected) and `frontend-marketing-sections` (the polished section set below the hero). Each carries a build verification gate. The library is now 75 skills.
+
 ## [0.13.0] - 2026-06-06
 
 ### Added

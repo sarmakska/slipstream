@@ -18,6 +18,10 @@ A long Claude Code session usually dies one of two ways. Either it reads whole f
 
 You install it into Claude Code in VS Code. It is not a CLI you run as a product; there is a small helper binary the plugin shells out to from its hooks, its slash commands and a bundled MCP server, but you never invoke it directly. Since v0.6 the same MCP server also works in **Cursor, Windsurf, Antigravity, plain VS Code via MCP and JetBrains via MCP**, with the same fourteen `sp_*` tools, the same dashboard and a one-line idempotent install through `slipstream-setup`.
 
+## What's new in v0.14
+
+- **Premium web-design skills** (v0.14.0): a frontend track that helps Claude build sites that look designed, not defaulted, a cohesive design system, a high-impact hero, tasteful scroll-reveal motion and the polished marketing sections below it.
+
 ## What's new in v0.13
 
 - **Where Claude struggled** (v0.13.0): a live failures panel on the Live tab surfaces errors, denials and failed commands as they happen, next to what Claude is doing and the token budget. The Live tab is now a real agent-health view.
@@ -243,7 +247,7 @@ flowchart TD
   subgraph CC[Claude Code in VS Code]
     Hooks[Hooks: SessionStart, UserPromptSubmit, PreToolUse, PostToolUse, SubagentStop, Stop, PreCompact]
     Cmds[Slash commands]
-    Skills[71 agent skills]
+    Skills[75 agent skills]
     Agents[Subagents: sp-shipper, sp-schema, sp-reviewer]
   end
 
@@ -277,7 +281,7 @@ flowchart TD
 
 1. **Token efficiency.** A compact, regenerable map of files, exported symbols and purpose (`src/map`), exposed through the bundled MCP server (`src/mcp`) as `sp_map`, `sp_symbol`, `sp_lines` and `sp_search`. Claude reads the map and one slice, not whole files. The `PreToolUse` hook warns before a large whole-file read; `UserPromptSubmit` reminds it to use the map and recall memory. A budget estimate (`src/context/budget.ts`) tracks approximate usage and says when to compact.
 2. **Persistent memory, with lossless compaction and self-building observations.** A file-based store under `.claude/slipstream/memory/`: one fact per file with frontmatter, plus a regenerated `MEMORY.md` index (`src/memory`). The `PreCompact` hook writes a session digest before compaction; `SessionStart` reloads that digest plus a signal-ranked relevant subset (branch, changed files, last prompt), never the whole store. `Stop` nudges Claude to write durable facts — and also auto-captures the turn as a searchable observation. Alongside the hand-authored store, `.claude/slipstream/observations/` holds a compact, semantically searchable record of every turn, queried through the three-layer `sp_search_memory` / `sp_timeline` / `sp_observations` tools and a local vector embedding (`src/memory/embed.ts`, `observe.ts`, `search.ts`).
-3. **Guardrailed skill library.** 71 skills across frontend, backend, Supabase, Cloudflare, Vercel, Resend, auth, payments, SEO, analytics, git/release, plus memory and context discipline. The context discipline now includes a full deliberate-engineering workflow suite: `using-slipstream` (recall and read the map first, record what is durable), `test-driven-development`, `verification-before-completion`, `requesting-code-review`, `receiving-code-review`, `subagent-driven-development`, `finishing-a-branch` and `writing-skills`, alongside `think-before-coding`, `systematic-debugging`, `brainstorm-spec` and `write-plan`. Each is a real agent skill with a `SKILL.md`; each shipping skill carries a verification gate, a check the agent runs to prove the step worked. `slipstream plugin-validate` fails loudly on anything malformed.
+3. **Guardrailed skill library.** 75 skills across frontend, backend, Supabase, Cloudflare, Vercel, Resend, auth, payments, SEO, analytics, git/release, plus memory and context discipline. The frontend set includes a premium-design track for sites that look designed rather than defaulted: `frontend-design-system`, `frontend-hero-section`, `frontend-motion` and `frontend-marketing-sections`. The context discipline now includes a full deliberate-engineering workflow suite: `using-slipstream` (recall and read the map first, record what is durable), `test-driven-development`, `verification-before-completion`, `requesting-code-review`, `receiving-code-review`, `subagent-driven-development`, `finishing-a-branch` and `writing-skills`, alongside `think-before-coding`, `systematic-debugging`, `brainstorm-spec` and `write-plan`. Each is a real agent skill with a `SKILL.md`; each shipping skill carries a verification gate, a check the agent runs to prove the step worked. `slipstream plugin-validate` fails loudly on anything malformed.
 4. **Mind map and status in the chat.** `/slipstream:mindmap` renders the project as a themed Mermaid diagram in chat or a self-contained HTML artifact (`src/dashboard/artifact.ts`). `/slipstream:status` shows the plan, the budget with a recommendation, the memory count and the map.
 5. **Live agent dashboard.** The auto-launching local observability dashboard described above (`src/dashboard`). Hooks to event log to local server to live UI, with replay.
 
