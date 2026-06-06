@@ -77,15 +77,20 @@ After install, just use Claude Code normally. slipstream captures each session, 
 
 ## The dashboard
 
-Nine views, grouped Now / History / Knowledge, all on real captured data:
+Six focused views on `127.0.0.1`, all on real captured data:
 
 - **Overview** — a plain-English narration of what the project is and how it is organised, key stats, and a downloadable full project brief.
-- **Live activity** — what Claude is doing now, animated agent presence, where it struggled, and the token budget.
-- **Said & done** — each thing you asked and the work it produced, with a per-exchange summary and a downloadable report.
-- **Full conversation** — the complete recorded chat for a session.
-- **Daily journal** — a per-day summary: observations, files, tools and sessions.
-- **Sessions** — every session; click one for its full detail.
-- **Project stats**, **Memory** (summary, health, durable facts, instincts, lessons, search) and two graphs: a **memory graph** and an interactive **code map** (files as nodes, imports as edges, god nodes ringed).
+- **Live activity** — what Claude is doing now, where it struggled, and the token budget.
+- **Agents office** — every open Claude Code tab on the project as a character at a desk (see below).
+- **Sessions** — grouped by day; click one for its full said-and-done detail and conversation.
+- **What Claude remembers** — summary, durable facts, instincts, health and search.
+- **Code map** — an interactive dependency graph: files as nodes, imports as edges, the god nodes everything flows through ringed.
+
+### Agents office
+
+Open several Claude Code tabs on one project and each appears as a working character, fed live by the shared bus, so you can watch the whole team at once and they coordinate instead of duplicating work. Each character animates while its tab is active (typing, blinking, a glowing monitor) and dims when idle.
+
+![The agents office: every open Claude Code tab as a working character at a desk](docs/agents-office.png)
 
 ## How Claude uses it
 

@@ -6,6 +6,12 @@ In Claude Code it is driven by the plugin hooks. In any other MCP editor (Cursor
 
 Everything stays on the machine: local-only bind, no telemetry, no account, and obvious secrets are redacted before they ever reach disk.
 
+## Agents office
+
+Open several Claude Code tabs on one project and each appears as a working character at a desk, fed live by the shared bus. The characters animate while their tab is active and dim when idle, so you can watch the whole team at once while they coordinate instead of duplicating work.
+
+![The agents office](https://raw.githubusercontent.com/sarmakska/slipstream/main/docs/agents-office.png)
+
 ## The panels
 
 - **Agents** — every agent and subagent, its status, and the task it is on.
