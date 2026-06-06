@@ -28,6 +28,12 @@ describe("othersRecent", () => {
     const e = parseBus([JSON.stringify({ session: "a", ts: "t1", thread: "", files: [] })].join("\n"));
     expect(othersRecent(e, "self")).toEqual([]);
   });
+
+  it("does not self-filter generic fallback ids, so coordination never shows nothing", () => {
+    // Two tabs both fall back to "main"; the reader must still see the bus.
+    const e = parseBus([JSON.stringify({ session: "main", ts: "t1", thread: "building x" })].join("\n"));
+    expect(othersRecent(e, "main").length).toBe(1);
+  });
 });
 
 describe("renderBus", () => {

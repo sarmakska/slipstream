@@ -36,12 +36,22 @@ export function parseBus(jsonl: string): BusEntry[] {
   return out;
 }
 
+/**
+ * Generic fallback ids that several tabs can share when Claude Code does not
+ * pass a unique session id. Real sessions get a UUID, so they never collide;
+ * these do, so we must not self-filter them or coordination shows nothing.
+ */
+const GENERIC_IDS = new Set(["main", "this-session", "session", ""]);
+
 /** The latest entry per other session, newest first. Excludes the caller. */
 export function othersRecent(entries: BusEntry[], session: string, limit = 6): BusEntry[] {
   const latest = new Map<string, BusEntry>();
   for (const e of entries) latest.set(e.session, e); // later lines win
+  // With a unique id, drop the caller's own entry. With a generic id that other
+  // tabs may share, keep everything rather than silently filtering to nothing.
+  const generic = GENERIC_IDS.has(session);
   return [...latest.values()]
-    .filter((e) => e.session !== session && (e.thread || e.files.length))
+    .filter((e) => (generic || e.session !== session) && (e.thread || e.files.length))
     .sort((a, b) => (a.ts < b.ts ? 1 : a.ts > b.ts ? -1 : 0))
     .slice(0, limit);
 }

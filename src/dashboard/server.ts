@@ -237,6 +237,13 @@ export class DashboardServer {
         res.end(readFileSync(filePath));
         return;
       }
+      // SPA fallback: any other non-API GET (a client route like /office or
+      // /code) is served the app shell so client-side routing can render it.
+      if (!wantLegacy) {
+        res.writeHead(200, { "content-type": "text/html; charset=utf-8" });
+        res.end(readFileSync(WEB_INDEX));
+        return;
+      }
     }
     // /api/health: version-aware probe so a newer client can detect a stale
     // dashboard left behind by a previous build and restart it.
