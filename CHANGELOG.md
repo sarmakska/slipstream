@@ -5,6 +5,11 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.19.0] - 2026-06-06
+
+### Added
+- **Memory health.** A health line on the Memory tab reports the store's shape, duplicate clusters and stale entries with a plain verdict, so memory stays small, current and trusted as it grows rather than becoming a dump. New `src/memory/health.ts`, five tests, surfaced via `/api/memory/overview`.
+
 ## [0.18.0] - 2026-06-06
 
 ### Added
