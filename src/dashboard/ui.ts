@@ -327,6 +327,14 @@ export function renderDashboardHtml(session: string): string {
   .area-row .ar-stat{color:var(--muted-2);font-size:10px;white-space:nowrap;font-variant-numeric:tabular-nums}
   .area-row .ar-role{color:var(--muted);font-size:11px;line-height:1.5;margin-top:3px}
 
+  /* GRAPH detail */
+  .graph-detail{border:1px solid var(--line);border-radius:12px;padding:14px;background:rgba(13,17,23,0.5);align-self:start;font-family:var(--sans)}
+  .graph-detail .gd-title{color:var(--fg);font-size:14px;font-weight:600;margin-bottom:4px;word-break:break-word}
+  .graph-detail .gd-meta{color:var(--muted-2);font-size:10px;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px}
+  .graph-detail .gd-conn{color:var(--muted);font-size:12px;padding:5px 0;border-top:1px solid var(--line)}
+  #graph-svg circle{cursor:pointer}
+  #graph-svg circle:hover{stroke-width:2.5}
+
   /* RESUME card */
   .resume{border:1px solid var(--line);border-left:3px solid var(--violet);border-radius:12px;background:linear-gradient(180deg,rgba(167,139,250,0.08),rgba(13,17,23,0.6));padding:16px 20px;margin-bottom:16px}
   .resume .ib-label{color:var(--violet)}
@@ -656,8 +664,11 @@ export function renderDashboardHtml(session: string): string {
 <div class="view" id="view-graph">
   <div class="panel">
     <h2>Knowledge graph <span class="badge" id="graph-count">0</span></h2>
-    <div class="note" style="margin-top:0;margin-bottom:10px">Files and the sessions that touched them. Larger nodes are touched more; lines connect a session to the files it changed. The bubble map of this project's memory.</div>
-    <div class="map-wrap"><svg id="graph-svg" viewBox="0 0 800 520" preserveAspectRatio="xMidYMid meet" style="width:100%;height:auto"></svg></div>
+    <div class="note" style="margin-top:0;margin-bottom:10px">Files and the sessions that touched them. Larger nodes are touched more; lines connect a session to the files it changed. Click any node to read its detail.</div>
+    <div class="grid-2" style="grid-template-columns:1fr 280px">
+      <div class="map-wrap"><svg id="graph-svg" viewBox="0 0 800 520" preserveAspectRatio="xMidYMid meet" style="width:100%;height:auto"></svg></div>
+      <div id="graph-detail" class="graph-detail"><div class="empty">click a node to see what connects to it</div></div>
+    </div>
   </div>
 </div>
 
@@ -826,7 +837,24 @@ export function renderDashboardHtml(session: string): string {
     }
   }
 
-  // GRAPH TAB: files and sessions as a node-link bubble map.
+  // GRAPH TAB: click a node to read what connects to it.
+  function showGraphDetail(node, nodes, edges) {
+    const box = $("graph-detail"); if (!box) return;
+    const byId = {}; for (const n of nodes) byId[n.id] = n;
+    const connected = [];
+    for (const e of edges) {
+      if (e.from === node.id && byId[e.to]) connected.push({ node: byId[e.to], weight: e.weight });
+      else if (e.to === node.id && byId[e.from]) connected.push({ node: byId[e.from], weight: e.weight });
+    }
+    connected.sort((a, b) => b.weight - a.weight);
+    const kindWord = node.kind === "file" ? "file" : "session";
+    const connLabel = node.kind === "file" ? "Touched in these sessions" : "Files changed in this session";
+    box.innerHTML =
+      '<div class="gd-title">' + escape(node.label) + '</div>' +
+      '<div class="gd-meta">' + kindWord + ' . touched ' + node.weight + ' time' + (node.weight === 1 ? '' : 's') + '</div>' +
+      '<div class="gd-meta">' + connLabel + ' (' + connected.length + ')</div>' +
+      (connected.length ? connected.map((c) => '<div class="gd-conn">' + escape(c.node.label) + ' . ' + c.weight + 'x</div>').join("") : '<div class="empty">no connections</div>');
+  }
   async function loadGraph() {
     const g = await fetch("/api/graph").then((x) => x.json()).catch(() => null);
     const svg = $("graph-svg"); if (!svg) return;
@@ -863,6 +891,7 @@ export function renderDashboardHtml(session: string): string {
       c.setAttribute("fill", n.kind === "session" ? "rgba(167,139,250,0.85)" : "rgba(52,211,153,0.8)");
       c.setAttribute("stroke", n.kind === "session" ? "#a78bfa" : "#34d399"); c.setAttribute("stroke-width", "1");
       const title = document.createElementNS(ns, "title"); title.textContent = n.label + " (" + n.weight + ")"; c.appendChild(title);
+      c.addEventListener("click", () => showGraphDetail(n, nodes, edges));
       svg.appendChild(c);
       const t = document.createElementNS(ns, "text");
       t.setAttribute("x", p.x); t.setAttribute("y", p.y + r + 10); t.setAttribute("text-anchor", "middle");
