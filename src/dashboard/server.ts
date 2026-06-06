@@ -63,6 +63,7 @@ import {
 import { storyFlow } from "./story.js";
 import { extractFailures } from "./failures.js";
 import { sessionReport } from "./report.js";
+import { buildGraph } from "./graph.js";
 import { agentMood } from "./presence.js";
 import { summariseMap, narrateOverview } from "./overview.js";
 import { generateMap } from "../map/index.js";
@@ -243,6 +244,14 @@ export class DashboardServer {
         : [];
       res.writeHead(200, { "content-type": "application/json" });
       res.end(JSON.stringify({ hits }));
+      return;
+    }
+    // Knowledge graph: files and the sessions that touched them as nodes, with
+    // an edge wherever a session touched a file. The bubble map of the memory.
+    if (url.pathname === "/api/graph") {
+      const obs = await loadObservations(this.opts.projectRoot).catch(() => [] as Awaited<ReturnType<typeof loadObservations>>);
+      res.writeHead(200, { "content-type": "application/json" });
+      res.end(JSON.stringify(buildGraph(obs)));
       return;
     }
     // Instincts: patterns slipstream noticed recurring across sessions, the

@@ -448,6 +448,7 @@ export function renderDashboardHtml(session: string): string {
   <button class="tab" data-tab="journal">Journal</button>
   <button class="tab" data-tab="sessions">Sessions <span class="badge" id="tb-sess">0</span></button>
   <button class="tab" data-tab="memory">Memory</button>
+  <button class="tab" data-tab="graph">Graph</button>
 </nav>
 
 <!-- OVERVIEW -->
@@ -650,6 +651,15 @@ export function renderDashboardHtml(session: string): string {
   </div>
 </div>
 
+<!-- GRAPH -->
+<div class="view" id="view-graph">
+  <div class="panel">
+    <h2>Knowledge graph <span class="badge" id="graph-count">0</span></h2>
+    <div class="note" style="margin-top:0;margin-bottom:10px">Files and the sessions that touched them. Larger nodes are touched more; lines connect a session to the files it changed. The bubble map of this project's memory.</div>
+    <div class="map-wrap"><svg id="graph-svg" viewBox="0 0 800 520" preserveAspectRatio="xMidYMid meet" style="width:100%;height:auto"></svg></div>
+  </div>
+</div>
+
 <!-- MEMORY -->
 <div class="view" id="view-memory">
   <div class="panel" style="margin-bottom:14px">
@@ -761,6 +771,7 @@ export function renderDashboardHtml(session: string): string {
       if (target === "flow") loadFlow();
       if (target === "conversation") loadConv();
       if (target === "memory") loadMemoryOverview();
+      if (target === "graph") loadGraph();
       if (target === "project") loadProject();
       if (target === "journal") loadJournal(currentDate);
       if (target === "sessions") loadSessionsTable();
@@ -811,6 +822,52 @@ export function renderDashboardHtml(session: string): string {
         '<div class="mem-item"><div class="mname">' + escape(item.title || "") + '</div><div class="mexc">' + escape(item.summary || "") + '</div></div>').join("");
     } else {
       rec.innerHTML = '<div class="empty">no recent activity yet</div>';
+    }
+  }
+
+  // GRAPH TAB: files and sessions as a node-link bubble map.
+  async function loadGraph() {
+    const g = await fetch("/api/graph").then((x) => x.json()).catch(() => null);
+    const svg = $("graph-svg"); if (!svg) return;
+    svg.innerHTML = "";
+    const nodes = (g && g.nodes) || [];
+    const edges = (g && g.edges) || [];
+    $("graph-count").textContent = nodes.length + " nodes";
+    if (!nodes.length) { svg.innerHTML = '<text x="400" y="260" text-anchor="middle" fill="#5b6478" font-size="13">no observations yet to graph</text>'; return; }
+    const ns = "http://www.w3.org/2000/svg";
+    const cx = 400, cy = 260;
+    const files = nodes.filter((n) => n.kind === "file");
+    const sessions = nodes.filter((n) => n.kind === "session");
+    const pos = {};
+    const place = (arr, radius) => arr.forEach((n, i) => {
+      const a = (i / Math.max(1, arr.length)) * Math.PI * 2 - Math.PI / 2;
+      pos[n.id] = { x: cx + radius * Math.cos(a), y: cy + radius * Math.sin(a) };
+    });
+    place(files, 210);
+    place(sessions, 90);
+    const maxW = Math.max(1, ...nodes.map((n) => n.weight));
+    // Edges first, so nodes sit on top.
+    for (const e of edges) {
+      const a = pos[e.from], b = pos[e.to]; if (!a || !b) continue;
+      const line = document.createElementNS(ns, "line");
+      line.setAttribute("x1", a.x); line.setAttribute("y1", a.y); line.setAttribute("x2", b.x); line.setAttribute("y2", b.y);
+      line.setAttribute("stroke", "#222b3b"); line.setAttribute("stroke-width", "1");
+      svg.appendChild(line);
+    }
+    for (const n of nodes) {
+      const p = pos[n.id]; if (!p) continue;
+      const r = n.kind === "session" ? 7 : 5 + Math.round((n.weight / maxW) * 13);
+      const c = document.createElementNS(ns, "circle");
+      c.setAttribute("cx", p.x); c.setAttribute("cy", p.y); c.setAttribute("r", r);
+      c.setAttribute("fill", n.kind === "session" ? "rgba(167,139,250,0.85)" : "rgba(52,211,153,0.8)");
+      c.setAttribute("stroke", n.kind === "session" ? "#a78bfa" : "#34d399"); c.setAttribute("stroke-width", "1");
+      const title = document.createElementNS(ns, "title"); title.textContent = n.label + " (" + n.weight + ")"; c.appendChild(title);
+      svg.appendChild(c);
+      const t = document.createElementNS(ns, "text");
+      t.setAttribute("x", p.x); t.setAttribute("y", p.y + r + 10); t.setAttribute("text-anchor", "middle");
+      t.setAttribute("fill", "#8b9bb4"); t.setAttribute("font-size", "9");
+      t.textContent = n.label.length > 18 ? n.label.slice(0, 17) + "…" : n.label;
+      svg.appendChild(t);
     }
   }
 
@@ -1368,6 +1425,7 @@ export function renderDashboardHtml(session: string): string {
     else if (currentTab === "flow") loadFlow();
     else if (currentTab === "conversation") loadConv();
     else if (currentTab === "memory") loadMemoryOverview();
+    else if (currentTab === "graph") loadGraph();
     else if (currentTab === "project") loadProject();
     else if (currentTab === "journal") loadJournal(currentDate);
     else if (currentTab === "sessions") loadSessionsTable();
