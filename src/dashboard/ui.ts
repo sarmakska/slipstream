@@ -25,7 +25,12 @@ export function renderDashboardHtml(session: string): string {
     --rose:#fb7185; --pink:#ec4899; --indigo:#818cf8;
     --gradient: linear-gradient(135deg, #34d399 0%, #22d3ee 50%, #60a5fa 100%);
     --gradient-violet: linear-gradient(135deg, #a78bfa 0%, #ec4899 100%);
+    --sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   }
+  /* Prose surfaces read in a clean sans; labels, numbers and code stay mono. */
+  .hero-name,.hero-desc,.ib-paragraph,.flow-said .what,.ar-role,.mem-item .mexc,
+  .note,.flow-summary,.lesson .body,.day-tile .lbl,.empty{font-family:var(--sans)}
+  .hero-desc,.ib-paragraph,.flow-said .what,.ar-role,.mem-item .mexc{letter-spacing:0.005em}
   *{box-sizing:border-box}
   html,body{margin:0;padding:0}
   body{
