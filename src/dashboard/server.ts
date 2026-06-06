@@ -53,6 +53,7 @@ import {
   type BudgetConfig
 } from "../context/budget-config.js";
 import { loadSavings, summarizeSavings } from "../context/savings.js";
+import { estimateCost } from "../context/cost.js";
 import {
   liveInsights,
   projectInsights,
@@ -325,7 +326,7 @@ export class DashboardServer {
     if (url.pathname === "/api/savings") {
       const summary = summarizeSavings(await loadSavings(this.opts.projectRoot));
       res.writeHead(200, { "content-type": "application/json" });
-      res.end(JSON.stringify(summary));
+      res.end(JSON.stringify({ ...summary, cost: estimateCost(summary.savedTokens) }));
       return;
     }
     // Insight bands. Each route runs the matching pure generator from
@@ -465,7 +466,9 @@ export class DashboardServer {
         narration: overviewMap ? narrateOverview(overviewMap, counts) : "",
         summary,
         recent,
-        counts
+        counts,
+        savedTokens: savings.savedTokens,
+        savedUsd: estimateCost(savings.savedTokens).usd
       }));
       return;
     }

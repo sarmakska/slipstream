@@ -793,10 +793,11 @@ export function renderDashboardHtml(session: string): string {
       $("ov-stats").innerHTML =
         hs(formatNum(r.map.fileCount), "source files") +
         hs(formatNum(r.map.symbolCount), "exported symbols") +
-        hs(r.map.kib + " KiB", "of source") +
         hs(formatNum(c.sessions), "sessions") +
         hs(formatNum(c.observations), "observations") +
-        hs(formatNum(c.memories), "memories");
+        hs(formatNum(c.memories), "memories") +
+        hs(formatNum(r.savedTokens || 0) + " tok", "saved by scoped reads") +
+        hs("$" + (r.savedUsd || 0).toFixed(2), "saved, est");
       const areas = r.map.areas || [];
       $("ov-area-count").textContent = String(areas.length);
       $("ov-areas").innerHTML = areas.length
@@ -1086,7 +1087,7 @@ export function renderDashboardHtml(session: string): string {
   async function loadSavings() {
     const s = await fetch("/api/savings").then((x) => x.json()).catch(() => null);
     const el = $("optv");
-    if (el) el.textContent = s && s.scopedReads ? "saved ~" + formatNum(s.savedTokens) + " tok (" + s.pct + "%, " + s.scopedReads + " reads)" : "no scoped reads yet";
+    if (el) el.textContent = s && s.scopedReads ? "saved ~" + formatNum(s.savedTokens) + " tok" + (s.cost ? " (~$" + s.cost.usd.toFixed(2) + ")" : "") + ", " + s.pct + "%, " + s.scopedReads + " reads" : "no scoped reads yet";
     if (s && s.scopedReads) { $("kpi-opt-val").textContent = s.pct + "%"; $("kpi-opt-sub").textContent = formatNum(s.savedTokens) + " tokens saved"; pushSpark("opt", s.pct); drawSpark("kpi-opt-spark", sparkHistory.opt, "#34d399"); }
   }
   function renderMemKpi() {
