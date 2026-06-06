@@ -5,6 +5,12 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.12.0] - 2026-06-06
+
+### Added
+- **Self-building session summary.** At each turn end the stop hook distils the session into one durable `session-summary` memory, upserted in place, built from the captured conversation and the session's observations. Memory now accrues from what actually happened rather than relying on the agent to call remember, and the next session and the dashboard inherit it. New `src/memory/session-summary.ts`, tested.
+- **Session continuity and resume.** A resume brief reconstructs where we left off (the open thread, the files in flight, a suggested next step) from the conversation and observations. The SessionStart hook injects it so Claude resumes warm, and a Resume card on the Overview shows the human the same brief, served by `/api/resume`. New `src/memory/continuity.ts`, tested.
+
 ## [0.11.0] - 2026-06-06
 
 ### Added
