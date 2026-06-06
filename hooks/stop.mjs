@@ -26,6 +26,12 @@ await emit({ session, kind: "stop", label: "turn finished" });
 try {
   const memory = await import(pathToFileURL(join(here, "..", "dist", "memory", "index.js")).href);
   await memory.captureObservations(process.cwd(), String(session));
+  // Capture the full conversation from the Claude Code transcript so the
+  // dashboard renders the real chat, not the short prompt stub. Best-effort.
+  const transcriptPath = payload.transcript_path;
+  if (transcriptPath) {
+    await memory.ingestConversation(process.cwd(), String(session), String(transcriptPath));
+  }
 } catch {
   // No dist build, or capture failed: stay silent, never break the session.
 }

@@ -6,3 +6,5 @@ export * from "./embed.js";
 export * from "./observe.js";
 export * from "./search.js";
 export * from "./lessons.js";
+export * from "./transcript.js";
+export * from "./conversation.js";
