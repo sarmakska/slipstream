@@ -357,6 +357,12 @@ export function renderDashboardHtml(session: string): string {
   .mem-item .mexc{color:var(--muted);font-size:11px;line-height:1.5;margin-top:4px;white-space:pre-wrap;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
   .mem-item .mmeta{color:var(--muted-2);font-size:9px;margin-top:4px;font-variant-numeric:tabular-nums}
 
+  /* FAILURES */
+  .fail-row{border:1px solid rgba(248,113,113,0.3);border-left:3px solid var(--red);border-radius:8px;padding:7px 10px;margin-bottom:6px;background:rgba(248,113,113,0.05)}
+  .fail-row .fr-sum{color:var(--fg);font-size:11px;font-family:var(--sans);line-height:1.4;word-break:break-word}
+  .fail-row .fr-meta{color:var(--muted-2);font-size:9px;margin-top:3px;font-variant-numeric:tabular-nums;text-transform:uppercase;letter-spacing:0.06em}
+  #fail-count.has{background:rgba(248,113,113,0.14);color:var(--red);border-color:rgba(248,113,113,0.4)}
+
   /* MODAL */
   .modal-bg{position:fixed;inset:0;background:rgba(5,6,10,0.7);backdrop-filter:blur(6px);z-index:50;display:none;align-items:center;justify-content:center;padding:20px}
   .modal-bg.on{display:flex}
@@ -469,6 +475,7 @@ export function renderDashboardHtml(session: string): string {
         </details>
         <div class="note">True context tokens when the host transcript is wired in; otherwise an estimate of bytes slipstream pulled.</div>
       </div>
+      <div class="panel"><h2>Where Claude struggled <span class="badge" id="fail-count">0</span></h2><div id="failures"><div class="empty">no failures detected this session</div></div></div>
       <div class="panel"><h2>Per-skill activity</h2><div id="skills"><div class="empty">no tool calls yet</div></div></div>
     </div>
     <div class="grid-stack">
@@ -1025,7 +1032,19 @@ export function renderDashboardHtml(session: string): string {
     const n = state.observationCount ?? state.observations?.length ?? 0;
     $("kpi-mem-val").textContent = formatNum(n); pushSpark("mem", n); drawSpark("kpi-mem-spark", sparkHistory.mem, "#a78bfa");
   }
-  function renderLive() { renderAgents(); renderFilters(); renderStream(); loadBudget(); renderPlan(); renderMap(); renderWork(); renderMemKpi(); loadLiveInsight(); }
+  async function loadFailures() {
+    const r = await fetch("/api/failures?session=" + encodeURIComponent(current)).then((x) => x.json()).catch(() => null);
+    const box = $("failures"); if (!box) return;
+    const fails = r && r.failures ? r.failures : [];
+    const badge = $("fail-count");
+    if (badge) { badge.textContent = String(fails.length); badge.classList.toggle("has", fails.length > 0); }
+    if (!fails.length) { box.innerHTML = '<div class="empty">no failures detected this session</div>'; return; }
+    box.innerHTML = fails.slice(0, 20).map((f) => {
+      const tm = f.ts ? new Date(f.ts).toLocaleTimeString([], { hour12: false }) : "";
+      return '<div class="fail-row"><div class="fr-sum">' + escape(f.summary) + '</div><div class="fr-meta">' + escape(f.source) + (tm ? ' . ' + tm : '') + '</div></div>';
+    }).join("");
+  }
+  function renderLive() { renderAgents(); renderFilters(); renderStream(); loadBudget(); renderPlan(); renderMap(); renderWork(); renderMemKpi(); loadLiveInsight(); loadFailures(); }
 
   // PROJECT TAB
   async function loadProject() {

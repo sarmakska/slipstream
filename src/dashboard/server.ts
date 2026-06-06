@@ -53,6 +53,7 @@ import {
   sessionsInsights
 } from "./insights.js";
 import { storyFlow } from "./story.js";
+import { extractFailures } from "./failures.js";
 import { summariseMap } from "./overview.js";
 import { generateMap } from "../map/index.js";
 
@@ -435,6 +436,18 @@ export class DashboardServer {
         recent,
         counts: { sessions: sessions.length, observations: obs.length, memories: memories.length }
       }));
+      return;
+    }
+    // Failures: where the agent struggled in this session, errors, denials and
+    // failed commands pulled from the observations and the event log. Powers the
+    // "Where Claude struggled" panel on the Live tab.
+    if (url.pathname === "/api/failures") {
+      const session = await this.resolveSession(url.searchParams.get("session") ?? undefined);
+      const events = await readLog(this.opts.projectRoot, session);
+      const all = await loadObservations(this.opts.projectRoot).catch(() => [] as Awaited<ReturnType<typeof loadObservations>>);
+      const obs = all.filter((o) => o.session === session);
+      res.writeHead(200, { "content-type": "application/json" });
+      res.end(JSON.stringify({ session, failures: extractFailures(obs, events) }));
       return;
     }
     // Resume brief: where we left off for a session, so neither the human nor
