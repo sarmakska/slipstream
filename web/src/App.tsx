@@ -5,6 +5,16 @@ import {
   OverviewPage, LivePage, FlowPage, ConversationPage,
   ProjectPage, JournalPage, SessionsPage, MemoryPage, GraphPage
 } from "./pages";
+import { CodeGraphView } from "./CodeGraph";
+
+function CodeGraphPage() {
+  return (
+    <div className="card">
+      <h2>Code dependency graph</h2>
+      <CodeGraphView />
+    </div>
+  );
+}
 
 interface SessionCtx { session: string; setSession: (s: string) => void; sessions: string[]; }
 const Ctx = createContext<SessionCtx>({ session: "", setSession: () => {}, sessions: [] });
@@ -19,7 +29,8 @@ const NAV: { path: string; label: string }[] = [
   { path: "/journal", label: "Journal" },
   { path: "/sessions", label: "Sessions" },
   { path: "/memory", label: "Memory" },
-  { path: "/graph", label: "Graph" }
+  { path: "/graph", label: "Memory graph" },
+  { path: "/code", label: "Code graph" }
 ];
 
 export function App() {
@@ -69,6 +80,7 @@ export function App() {
               <Route path="/sessions" component={SessionsPage} />
               <Route path="/memory" component={MemoryPage} />
               <Route path="/graph" component={GraphPage} />
+              <Route path="/code" component={CodeGraphPage} />
             </Switch>
           </main>
         </div>

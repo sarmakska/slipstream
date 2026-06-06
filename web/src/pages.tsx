@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { api, type GraphData } from "./api";
 import { useSession } from "./App";
-import { formatNum, formatShort, shortId, timeOf } from "./format";
+import { formatNum, formatShort } from "./format";
 
 function useFetch<T>(fn: () => Promise<T>, deps: unknown[]): T | null {
   const [data, setData] = useState<T | null>(null);

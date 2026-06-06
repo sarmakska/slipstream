@@ -67,7 +67,7 @@ import { buildGraph } from "./graph.js";
 import { assembleBrief } from "./brief.js";
 import { agentMood } from "./presence.js";
 import { summariseMap, narrateOverview } from "./overview.js";
-import { generateMap } from "../map/index.js";
+import { generateMap, buildCodeGraph } from "../map/index.js";
 
 /**
  * Resolved at module load. Read from the bundled package.json so /api/health
@@ -280,6 +280,14 @@ export class DashboardServer {
         : [];
       res.writeHead(200, { "content-type": "application/json" });
       res.end(JSON.stringify({ hits }));
+      return;
+    }
+    // Code dependency graph: files as nodes, imports as edges, the graphify-style
+    // view of how the codebase wires together, with god-node degrees for sizing.
+    if (url.pathname === "/api/codegraph") {
+      const mapRes = await generateMap(this.opts.projectRoot).catch(() => null);
+      res.writeHead(200, { "content-type": "application/json" });
+      res.end(JSON.stringify(mapRes ? buildCodeGraph(mapRes) : { nodes: [], edges: [] }));
       return;
     }
     // Knowledge graph: files and the sessions that touched them as nodes, with

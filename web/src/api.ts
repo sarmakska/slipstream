@@ -23,6 +23,8 @@ export interface StoryLane { index: number; ts: string; prompt: string; opening:
 export interface Story { session: string; lanes: StoryLane[]; promptCount: number; toolCount: number; }
 export interface Conversation { session: string; turnCount: number; exchanges: { ask: string; summary: string; tools: string[]; ts: string; replyChars: number }[]; }
 export interface GraphData { nodes: { id: string; label: string; kind: "file" | "session"; weight: number }[]; edges: { from: string; to: string; weight: number }[]; }
+export interface CodeNode { id: string; label: string; area: string; symbols: number; lines: number; degree: number; }
+export interface CodeGraph { nodes: CodeNode[]; edges: { source: string; target: string }[]; }
 export interface Resume { hasContext: boolean; openThread: string; suggestedNext: string; filesInFlight: string[]; }
 export interface MemoryOverview {
   summary: Insight;
@@ -42,6 +44,7 @@ export const api = {
   story: (s: string) => get<Story>(`/api/story?session=${encodeURIComponent(s)}`),
   conversation: (s: string) => get<Conversation>(`/api/conversation?session=${encodeURIComponent(s)}`),
   graph: () => get<GraphData>("/api/graph"),
+  codegraph: () => get<CodeGraph>("/api/codegraph"),
   resume: (s: string) => get<Resume>(`/api/resume?session=${encodeURIComponent(s)}`),
   memory: () => get<MemoryOverview>("/api/memory/overview"),
   instincts: () => get<{ instincts: { subject: string; note: string; confidence: number }[] }>("/api/instincts"),

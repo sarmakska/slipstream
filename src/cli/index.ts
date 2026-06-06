@@ -9,7 +9,8 @@ import {
   retrieveSymbol,
   retrieveLines,
   searchMap,
-  createMapWatcher
+  createMapWatcher,
+  buildCodeGraph
 } from "../map/index.js";
 import {
   addMemory,
@@ -107,6 +108,7 @@ Usage:
   slipstream mindmap [root] [--mermaid] [--html out.html]
   slipstream status [root] [--bytes N]
   slipstream brief [root] [--out file.md]
+  slipstream graph [root] [--json]
   slipstream dashboard start [--root .] [--session S] [--open] [--foreground] [--watch-map]
   slipstream dashboard emit --kind K --label "..." [--root .] [--session S] [--agent A] [--bytes N]
   slipstream dashboard replay [--root .] [--session S]
@@ -361,6 +363,20 @@ async function cmdMemory(args: string[]): Promise<number> {
 async function cmdSavings(args: string[]): Promise<number> {
   const root = getFlag(args, "root") ?? ".";
   console.log(renderSavings(summarizeSavings(await loadSavings(root))));
+  return 0;
+}
+
+async function cmdGraph(args: string[]): Promise<number> {
+  const root = args[0] && !args[0].startsWith("--") ? args[0] : getFlag(args, "root") ?? ".";
+  const graph = buildCodeGraph(await generateMap(root));
+  if (getFlag(args, "json")) {
+    console.log(JSON.stringify(graph, null, 2));
+    return 0;
+  }
+  const god = [...graph.nodes].sort((a, b) => b.degree - a.degree).slice(0, 12);
+  console.log(`${graph.nodes.length} files, ${graph.edges.length} internal imports.`);
+  console.log("\nMost-connected files (the god nodes everything flows through):");
+  for (const n of god) console.log(`  ${n.degree.toString().padStart(3)}  ${n.id}`);
   return 0;
 }
 
@@ -791,6 +807,8 @@ async function main(): Promise<number> {
       return cmdStatus(rest);
     case "brief":
       return cmdBrief(rest);
+    case "graph":
+      return cmdGraph(rest);
     case "dashboard":
       return cmdDashboard(rest);
     case "export":
