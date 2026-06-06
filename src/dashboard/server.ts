@@ -382,6 +382,61 @@ export class DashboardServer {
       res.end(JSON.stringify(storyFlow(events)));
       return;
     }
+    // Memory overview: the part of slipstream that survives a lost session. A
+    // human-and-agent readable summary of what has been built, the per-session
+    // compaction digests that survive a compact, the durable facts promoted via
+    // sp_remember, and the lessons distilled across sessions. This is the memory
+    // the next session reloads, rendered so a person can read it too.
+    if (url.pathname === "/api/memory/overview") {
+      const root = this.opts.projectRoot;
+      const [obs, sessions, savings, memories, lessons] = await Promise.all([
+        loadObservations(root).catch(() => [] as Awaited<ReturnType<typeof loadObservations>>),
+        listSessions(root).catch(() => [] as string[]),
+        loadSavings(root).then(summarizeSavings).catch(() => ({ scopedReads: 0, savedTokens: 0, pct: 0 })),
+        listMemories(root).catch(() => []),
+        distillProjectLessons(root, { minCount: 2, limit: 5 }).catch(() => [])
+      ]);
+      const summary = projectInsights({
+        observations: obs,
+        sessionCount: sessions.length,
+        memoryCount: memories.length,
+        optPct: savings.pct,
+        savedTokens: savings.savedTokens,
+        scopedReads: savings.scopedReads
+      });
+      const isDigest = (m: { name: string; tags?: string[] }): boolean =>
+        (m.tags ?? []).includes("session-digest") || m.name.startsWith("session-digest-");
+      const stamp = (m: { updated?: string; created?: string }): string => m.updated ?? m.created ?? "";
+      const digests = memories
+        .filter(isDigest)
+        .map((m) => ({
+          name: m.name,
+          session: m.name.replace(/^session-digest-/, ""),
+          updated: stamp(m) || null,
+          excerpt: (m.body || "").trim().slice(0, 320)
+        }))
+        .sort((a, b) => (String(a.updated) < String(b.updated) ? 1 : -1))
+        .slice(0, 8);
+      const durable = memories
+        .filter((m) => !isDigest(m))
+        .map((m) => ({ name: m.name, description: m.description ?? "", updated: stamp(m) || null }))
+        .sort((a, b) => (String(a.updated) < String(b.updated) ? 1 : -1))
+        .slice(0, 12);
+      res.writeHead(200, { "content-type": "application/json" });
+      res.end(JSON.stringify({
+        summary,
+        digests,
+        durable,
+        lessons,
+        counts: {
+          memories: memories.length,
+          digests: digests.length,
+          sessions: sessions.length,
+          observations: obs.length
+        }
+      }));
+      return;
+    }
     if (url.pathname === "/api/stats/by-skill") {
       const obs = await loadObservations(this.opts.projectRoot);
       res.writeHead(200, { "content-type": "application/json" });

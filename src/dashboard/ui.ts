@@ -324,6 +324,12 @@ export function renderDashboardHtml(session: string): string {
   .flow-act .ag{color:var(--violet);font-size:9px;white-space:nowrap}
   .flow-files{margin-top:9px;border-top:1px solid var(--line);padding-top:9px}
 
+  /* MEMORY OVERVIEW */
+  .mem-item{border:1px solid var(--line);border-radius:9px;padding:9px 11px;margin-bottom:7px;background:rgba(13,17,23,0.6)}
+  .mem-item .mname{color:var(--emerald);font-size:11px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .mem-item .mexc{color:var(--muted);font-size:11px;line-height:1.5;margin-top:4px;white-space:pre-wrap;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+  .mem-item .mmeta{color:var(--muted-2);font-size:9px;margin-top:4px;font-variant-numeric:tabular-nums}
+
   /* MODAL */
   .modal-bg{position:fixed;inset:0;background:rgba(5,6,10,0.7);backdrop-filter:blur(6px);z-index:50;display:none;align-items:center;justify-content:center;padding:20px}
   .modal-bg.on{display:flex}
@@ -530,6 +536,23 @@ export function renderDashboardHtml(session: string): string {
 
 <!-- MEMORY -->
 <div class="view" id="view-memory">
+  <div class="panel" style="margin-bottom:14px">
+    <h2>Memory that survives <span class="badge" id="mem-ov-count">0</span></h2>
+    <p class="ib-paragraph" id="mem-summary" style="font-size:14px">Reading memory...</p>
+    <div class="grid-2">
+      <div>
+        <div class="ib-label">Session digests, survive a compact</div>
+        <div id="mem-digests"><div class="empty">no digests yet</div></div>
+      </div>
+      <div>
+        <div class="ib-label">Durable facts via sp_remember</div>
+        <div id="mem-durable"><div class="empty">no durable memories yet</div></div>
+      </div>
+    </div>
+    <div class="ib-label" style="margin-top:14px">Lessons learned across sessions</div>
+    <div id="mem-lessons"><div class="empty">collecting lessons; they appear once topics recur</div></div>
+    <div class="note">This is what the next session reloads after a lost or compacted session. Readable by you here and by Claude Code on the next start.</div>
+  </div>
   <div class="panel">
     <h2>Memory search</h2>
     <input id="msearch" type="search" placeholder="search every observation in this project..." autocomplete="off" />
@@ -614,10 +637,32 @@ export function renderDashboardHtml(session: string): string {
       for (const x of document.querySelectorAll(".tab")) x.classList.toggle("on", x.dataset.tab === target);
       for (const v of document.querySelectorAll(".view")) v.classList.toggle("on", v.id === "view-" + target);
       if (target === "flow") loadFlow();
+      if (target === "memory") loadMemoryOverview();
       if (target === "project") loadProject();
       if (target === "journal") loadJournal(currentDate);
       if (target === "sessions") loadSessionsTable();
     });
+  }
+
+  // MEMORY TAB: what survives a lost session, readable by you and by Claude.
+  async function loadMemoryOverview() {
+    const r = await fetch("/api/memory/overview").then((x) => x.json()).catch(() => null);
+    if (!r) return;
+    if (r.summary && r.summary.paragraph) $("mem-summary").textContent = r.summary.paragraph;
+    $("mem-ov-count").textContent = (r.counts && r.counts.memories ? r.counts.memories : 0) + " memories";
+    const card = (name, body, meta) => '<div class="mem-item"><div class="mname">' + escape(name) + '</div>' + (body ? '<div class="mexc">' + escape(body) + '</div>' : '') + (meta ? '<div class="mmeta">' + escape(meta) + '</div>' : '') + '</div>';
+    const dg = $("mem-digests");
+    dg.innerHTML = (r.digests && r.digests.length)
+      ? r.digests.map((d) => card(d.session, d.excerpt || "", d.updated ? new Date(d.updated).toLocaleString() : "")).join("")
+      : '<div class="empty">no digests yet</div>';
+    const du = $("mem-durable");
+    du.innerHTML = (r.durable && r.durable.length)
+      ? r.durable.map((m) => card(m.name, m.description || "", m.updated ? new Date(m.updated).toLocaleDateString() : "")).join("")
+      : '<div class="empty">no durable memories yet</div>';
+    const ls = $("mem-lessons");
+    ls.innerHTML = (r.lessons && r.lessons.length)
+      ? r.lessons.map((l) => card(l.title || l.topic || "lesson", l.summary || l.body || "", l.count ? l.count + " observations" : "")).join("")
+      : '<div class="empty">collecting lessons; they appear once topics recur</div>';
   }
 
   // FLOW TAB: the said-to-did story for the current session.
@@ -1057,6 +1102,7 @@ export function renderDashboardHtml(session: string): string {
   // ACTIONS
   $("refresh-btn").onclick = () => {
     if (currentTab === "flow") loadFlow();
+    else if (currentTab === "memory") loadMemoryOverview();
     else if (currentTab === "project") loadProject();
     else if (currentTab === "journal") loadJournal(currentDate);
     else if (currentTab === "sessions") loadSessionsTable();
