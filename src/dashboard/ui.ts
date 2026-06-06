@@ -390,6 +390,7 @@ export function renderDashboardHtml(session: string): string {
   <button class="tab on" data-tab="overview">Overview</button>
   <button class="tab" data-tab="live">Live</button>
   <button class="tab" data-tab="flow">Flow</button>
+  <button class="tab" data-tab="conversation">Conversation</button>
   <button class="tab" data-tab="project">Project <span class="badge" id="tb-obs">0</span></button>
   <button class="tab" data-tab="journal">Journal</button>
   <button class="tab" data-tab="sessions">Sessions <span class="badge" id="tb-sess">0</span></button>
@@ -473,6 +474,15 @@ export function renderDashboardHtml(session: string): string {
     <h2>Conversation flow <span class="badge" id="flow-count">0</span></h2>
     <div class="note" style="margin-top:0;margin-bottom:12px">What you said, and what the agent did about it. One lane per prompt, read top to bottom as the story of this session.</div>
     <div id="flow"><div class="empty">no conversation yet for this session</div></div>
+  </div>
+</div>
+
+<!-- CONVERSATION -->
+<div class="view" id="view-conversation">
+  <div class="panel">
+    <h2>Conversation <span class="badge" id="conv-count">0</span></h2>
+    <div class="note" style="margin-top:0;margin-bottom:12px">The full recorded chat for this session: every ask and the work it produced. Captured locally from the Claude Code transcript, nothing leaves the machine.</div>
+    <div id="conv"><div class="empty">no conversation recorded for this session yet</div></div>
   </div>
 </div>
 
@@ -676,6 +686,7 @@ export function renderDashboardHtml(session: string): string {
       for (const v of document.querySelectorAll(".view")) v.classList.toggle("on", v.id === "view-" + target);
       if (target === "overview") loadOverview();
       if (target === "flow") loadFlow();
+      if (target === "conversation") loadConv();
       if (target === "memory") loadMemoryOverview();
       if (target === "project") loadProject();
       if (target === "journal") loadJournal(currentDate);
@@ -709,9 +720,9 @@ export function renderDashboardHtml(session: string): string {
     }
     if (r.summary && r.summary.paragraph) $("ov-summary").textContent = r.summary.paragraph;
     const rec = $("ov-recent");
-    if (r.recent && r.recent.lanes && r.recent.lanes.length) {
-      rec.innerHTML = r.recent.lanes.slice(-5).reverse().map((l) =>
-        '<div class="mem-item"><div class="mname">' + (l.opening ? "Session opened" : escape(l.prompt)) + '</div><div class="mexc">' + escape(l.summary) + '</div></div>').join("");
+    if (r.recent && r.recent.length) {
+      rec.innerHTML = r.recent.map((item) =>
+        '<div class="mem-item"><div class="mname">' + escape(item.title || "") + '</div><div class="mexc">' + escape(item.summary || "") + '</div></div>').join("");
     } else {
       rec.innerHTML = '<div class="empty">no recent activity yet</div>';
     }
@@ -736,6 +747,32 @@ export function renderDashboardHtml(session: string): string {
     ls.innerHTML = (r.lessons && r.lessons.length)
       ? r.lessons.map((l) => card(l.title || l.topic || "lesson", l.summary || l.body || "", l.count ? l.count + " observations" : "")).join("")
       : '<div class="empty">collecting lessons; they appear once topics recur</div>';
+  }
+
+  // CONVERSATION TAB: the full recorded chat for the current session.
+  async function loadConv() {
+    const c = await fetch("/api/conversation?session=" + encodeURIComponent(current)).then((r) => r.json()).catch(() => null);
+    const box = $("conv");
+    if (!c || !c.exchanges || c.exchanges.length === 0) {
+      box.innerHTML = '<div class="empty">no conversation recorded for this session yet</div>';
+      $("conv-count").textContent = "0";
+      return;
+    }
+    $("conv-count").textContent = c.exchanges.length + " exchange" + (c.exchanges.length === 1 ? "" : "s");
+    box.innerHTML = "";
+    for (const ex of c.exchanges) {
+      const el = document.createElement("div");
+      el.className = "flow-lane";
+      const tm = ex.ts ? new Date(ex.ts).toLocaleString() : "";
+      const tools = (ex.tools || []).map((x) => '<span class="chip">' + escape(x) + '</span>').join("");
+      el.innerHTML =
+        '<div class="flow-said"><span class="who">you said</span><span class="what">' + escape(ex.ask) + '</span><span class="time">' + escape(tm) + '</span></div>' +
+        '<div class="flow-did"><div class="flow-summary">' + escape(ex.summary) + '</div>' +
+        (ex.replyChars ? '<div class="ar-stat" style="color:var(--muted-2);font-size:10px">' + formatNum(ex.replyChars) + ' chars of reply</div>' : '') +
+        (tools ? '<div class="flow-files">' + tools + '</div>' : '') +
+        '</div>';
+      box.appendChild(el);
+    }
   }
 
   // FLOW TAB: the said-to-did story for the current session.
@@ -1176,6 +1213,7 @@ export function renderDashboardHtml(session: string): string {
   $("refresh-btn").onclick = () => {
     if (currentTab === "overview") loadOverview();
     else if (currentTab === "flow") loadFlow();
+    else if (currentTab === "conversation") loadConv();
     else if (currentTab === "memory") loadMemoryOverview();
     else if (currentTab === "project") loadProject();
     else if (currentTab === "journal") loadJournal(currentDate);
@@ -1200,6 +1238,7 @@ export function renderDashboardHtml(session: string): string {
     if (es) es.close();
     state = null; selected = null; seenEntryIds.clear(); renderLive();
     if (currentTab === "flow") loadFlow();
+    if (currentTab === "conversation") loadConv();
     setConn("warn");
     es = new EventSource("/api/stream?session=" + encodeURIComponent(current));
     es.addEventListener("snapshot", (ev) => {

@@ -34,6 +34,7 @@ import {
   aggregateBySkill,
   distillProjectLessons,
   listMemories,
+  loadConversation,
   type ObservationKind
 } from "../memory/index.js";
 import { budget, BYTES_PER_TOKEN } from "../context/budget.js";
@@ -409,10 +410,21 @@ export class DashboardServer {
         savedTokens: savings.savedTokens,
         scopedReads: savings.scopedReads
       });
-      let recent: ReturnType<typeof storyFlow> | null = null;
+      // Recent work prefers the real conversation (full asks) and falls back to
+      // the event-derived story when no conversation has been captured yet.
+      let recent: { title: string; summary: string }[] = [];
       if (sessions.length > 0) {
-        const events = await readLog(root, sessions[0]!).catch(() => []);
-        recent = storyFlow(events);
+        const latest = sessions[0]!;
+        const conv = await loadConversation(root, latest).catch(() => null);
+        if (conv && conv.exchanges.length > 0) {
+          recent = conv.exchanges.slice(-5).reverse().map((ex) => ({ title: ex.ask, summary: ex.summary }));
+        } else {
+          const story = storyFlow(await readLog(root, latest).catch(() => []));
+          recent = story.lanes.slice(-5).reverse().map((l) => ({
+            title: l.opening ? "Session opened" : l.prompt,
+            summary: l.summary
+          }));
+        }
       }
       res.writeHead(200, { "content-type": "application/json" });
       res.end(JSON.stringify({
@@ -422,6 +434,16 @@ export class DashboardServer {
         recent,
         counts: { sessions: sessions.length, observations: obs.length, memories: memories.length }
       }));
+      return;
+    }
+    // The full recorded conversation for one session: every human ask and the
+    // assistant work that followed, folded into exchanges. Powers the
+    // Conversation tab. Empty until a session has run with the hooks active.
+    if (url.pathname === "/api/conversation") {
+      const session = await this.resolveSession(url.searchParams.get("session") ?? undefined);
+      const conv = await loadConversation(this.opts.projectRoot, session);
+      res.writeHead(200, { "content-type": "application/json" });
+      res.end(JSON.stringify(conv ?? { session, exchanges: [], turnCount: 0 }));
       return;
     }
     // The said-to-did story for one session: lanes of "you said X, the agent
