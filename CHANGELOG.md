@@ -5,6 +5,15 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.20.0] - 2026-06-06
+
+### Fixed
+- **The Live band printed prompt text as filenames.** It treated any word containing a dot as a file and read from prompt events, so "files in focus" listed prompt fragments like `v0.8.0`. It now takes files only from tool calls and only when the token is a real path.
+
+### Changed
+- **The Overview now opens with a meaningful narration.** Instead of the jargon package description, the hero leads with a sentence built from the code map and activity (file and symbol counts, the largest area and its role, sessions and observations recorded), so the dashboard says something real even before any session has been observed.
+- **Cleaner, more premium look.** Panel headings move from tiny uppercase monospace labels to readable sentence-case sans, and cards gain softer shadows, more padding and a larger radius.
+
 ## [0.19.0] - 2026-06-06
 
 ### Added
