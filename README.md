@@ -18,6 +18,10 @@ A long Claude Code session usually dies one of two ways. Either it reads whole f
 
 You install it into Claude Code in VS Code. It is not a CLI you run as a product; there is a small helper binary the plugin shells out to from its hooks, its slash commands and a bundled MCP server, but you never invoke it directly. Since v0.6 the same MCP server also works in **Cursor, Windsurf, Antigravity, plain VS Code via MCP and JetBrains via MCP**, with the same fourteen `sp_*` tools, the same dashboard and a one-line idempotent install through `slipstream-setup`.
 
+## What's new in v0.30
+
+- **Tabs that make sense** (v0.30.0): the dashboard sidebar is grouped into Now, History and Knowledge with plainer names, and the Daily journal now leads with a detailed summary (counts, top files, tools, sessions).
+
 ## What's new in v0.29
 
 - **Cold-start knowledge feed** (v0.29.0): every session opens with the full app knowledge built fresh and handed to Claude, what the project is, how it is organised, the files to read first, recent asks and durable memory. No session starts cold.

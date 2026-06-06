@@ -5,6 +5,12 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.30.0] - 2026-06-06
+
+### Changed
+- **Sidebar grouped and renamed for clarity.** The navigation is now grouped into Now, History and Knowledge with plainer names (Live activity, Said & done, Full conversation, Daily journal, Project stats, Memory, Memory graph, Code map), so the tabs make sense at a glance.
+- **Detailed daily journal.** The journal now leads with a real summary, observation, session, file and tool counts, plus top files, tools used and the day's sessions, with prev/next/today navigation.
+
 ## [0.29.0] - 2026-06-06
 
 ### Added
