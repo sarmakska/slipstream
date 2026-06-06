@@ -5,6 +5,11 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.25.0] - 2026-06-06
+
+### Added
+- **Project knowledge brief.** Dumps everything slipstream knows about a project into one Markdown document: what it is, how it is organised (the architecture table), what has been built, the durable memory, lessons, instincts and recent work, so someone or a fresh session starting later can pick it up cold. Available as `slipstream brief` on the CLI, a download button on the Overview, and the `/api/brief` endpoint. New `src/dashboard/brief.ts`, three tests.
+
 ## [0.24.0] - 2026-06-06
 
 ### Added
