@@ -5,6 +5,12 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.21.0] - 2026-06-06
+
+### Added
+- **Dollar cost of tokens saved.** The scoped-read token savings are now shown as a money figure on the Overview and the Live tab, with the assumed per-million-token rate stated so the number is honest. New `src/context/cost.ts`, five tests, via `/api/savings` and `/api/overview`.
+- **Downloadable session report.** A session can be exported as a shareable Markdown document, the said-to-did story plus a summary, from a link on the Flow tab. The honest version of team sharing. New `src/dashboard/report.ts`, two tests, served by `/api/report`.
+
 ## [0.20.0] - 2026-06-06
 
 ### Fixed
