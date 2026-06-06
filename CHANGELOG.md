@@ -5,6 +5,11 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.29.0] - 2026-06-06
+
+### Added
+- **Cold-start knowledge feed.** Every session now opens with a freshly built, bounded knowledge feed injected by the SessionStart hook: what the project is, how it is organised, the most-connected files to read first, what was recently asked and what is remembered. No session starts ignorant of the app. New `knowledgeFeed` in `src/dashboard/brief.ts`.
+
 ## [0.28.0] - 2026-06-06
 
 ### Added
