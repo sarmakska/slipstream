@@ -62,6 +62,7 @@ import {
 } from "./insights.js";
 import { storyFlow } from "./story.js";
 import { extractFailures } from "./failures.js";
+import { sessionReport } from "./report.js";
 import { agentMood } from "./presence.js";
 import { summariseMap, narrateOverview } from "./overview.js";
 import { generateMap } from "../map/index.js";
@@ -542,6 +543,18 @@ export class DashboardServer {
       const conv = await loadConversation(this.opts.projectRoot, session);
       res.writeHead(200, { "content-type": "application/json" });
       res.end(JSON.stringify(conv ?? { session, exchanges: [], turnCount: 0 }));
+      return;
+    }
+    // A shareable Markdown report of a session, served as a download.
+    if (url.pathname === "/api/report") {
+      const session = await this.resolveSession(url.searchParams.get("session") ?? undefined);
+      const story = storyFlow(await readLog(this.opts.projectRoot, session));
+      const md = sessionReport(story, new Date().toISOString());
+      res.writeHead(200, {
+        "content-type": "text/markdown; charset=utf-8",
+        "content-disposition": `attachment; filename="slipstream-${session.slice(0, 8)}.md"`
+      });
+      res.end(md);
       return;
     }
     // The said-to-did story for one session: lanes of "you said X, the agent

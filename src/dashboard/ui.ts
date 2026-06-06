@@ -539,7 +539,7 @@ export function renderDashboardHtml(session: string): string {
 <!-- FLOW -->
 <div class="view" id="view-flow">
   <div class="panel">
-    <h2>Conversation flow <span class="badge" id="flow-count">0</span></h2>
+    <h2>Conversation flow <span class="badge" id="flow-count">0</span> <a class="chip-btn" id="flow-report" href="#" style="text-transform:none;letter-spacing:0">download report</a></h2>
     <div class="note" style="margin-top:0;margin-bottom:12px">What you said, and what the agent did about it. One lane per prompt, read top to bottom as the story of this session.</div>
     <div id="flow"><div class="empty">no conversation yet for this session</div></div>
   </div>
@@ -875,6 +875,7 @@ export function renderDashboardHtml(session: string): string {
 
   // FLOW TAB: the said-to-did story for the current session.
   async function loadFlow() {
+    const rep = $("flow-report"); if (rep) rep.href = "/api/report?session=" + encodeURIComponent(current);
     const s = await fetch("/api/story?session=" + encodeURIComponent(current)).then((r) => r.json()).catch(() => null);
     const box = $("flow");
     if (!s || !s.lanes || s.lanes.length === 0) {
