@@ -5,6 +5,11 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.31.0] - 2026-06-06
+
+### Fixed
+- **Clicking a session now shows its detail.** The Sessions tab is clickable: a session opens its prompts, tool calls, files touched, exchanges and failures, the full said-and-done timeline and a report download. Previously clicking did nothing, which made the dashboard feel empty.
+
 ## [0.30.0] - 2026-06-06
 
 ### Changed
