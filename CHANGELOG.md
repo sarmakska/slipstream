@@ -5,6 +5,14 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.0] - 2026-06-06
+
+### Added
+- **Overview landing.** The dashboard now opens on an Overview that answers, in plain English, what the project is (identity read from package.json), how it is organised (a human-readable architecture summary derived from the live code map, each area labelled with its role), what has been built (the observation summary) and the most recent work. New `src/dashboard/overview.ts` is pure over the map with tests; a `/api/overview` route assembles the picture.
+- **Flow tab, the said-to-did map.** A new tab reads a session back as a story: each lane opens with what you said and lists what the agent did about it, the files touched and a one-line summary. New `src/dashboard/story.ts` folds the event log into lanes, pure with tests, served by `/api/story`.
+- **Memory-that-survives surface.** The Memory tab now leads with the context the next session reloads after a lost or compacted session: a summary of what has been built, the per-session compaction digests, the durable facts promoted via `sp_remember` and the lessons distilled across sessions. Served by `/api/memory/overview`.
+- **Auto-open on every session start.** The session-start hook opens the dashboard whenever a session begins, not only the first time the server starts. Honours `autoOpen` and `SLIPSTREAM_DASHBOARD_OPEN=0`.
+
 ## [0.8.0] - 2026-06-06
 
 ### Added
