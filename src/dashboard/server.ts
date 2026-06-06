@@ -44,6 +44,12 @@ import {
   type BudgetConfig
 } from "../context/budget-config.js";
 import { loadSavings, summarizeSavings } from "../context/savings.js";
+import {
+  liveInsights,
+  projectInsights,
+  journalInsights,
+  sessionsInsights
+} from "./insights.js";
 
 /**
  * Resolved at module load. Read from the bundled package.json so /api/health
@@ -286,6 +292,84 @@ export class DashboardServer {
       const summary = summarizeSavings(await loadSavings(this.opts.projectRoot));
       res.writeHead(200, { "content-type": "application/json" });
       res.end(JSON.stringify(summary));
+      return;
+    }
+    // Insight bands. Each route runs the matching pure generator from
+    // insights.js over the same queries the data panels already use, and
+    // returns {paragraph, bullets}. No new persistence, no LLM: the prose is
+    // a deterministic template over the observation store.
+    if (url.pathname === "/api/insights/live") {
+      const session = await this.resolveSession(url.searchParams.get("session") ?? undefined);
+      const events = await readLog(this.opts.projectRoot, session);
+      const state = reduceEvents(events);
+      const savings = summarizeSavings(await loadSavings(this.opts.projectRoot));
+      const config = await loadBudgetConfig(this.opts.projectRoot);
+      const estimated = totalApproxTokens(state);
+      const fr = configToFractions(config);
+      const hasActual = typeof config.actualTokens === "number" && config.actualTokens > 0;
+      const served = hasActual ? (config.actualTokens as number) : estimated;
+      const report = budget({
+        bytesRead: served * BYTES_PER_TOKEN,
+        approxTokens: hasActual ? (config.actualTokens as number) : undefined,
+        windowTokens: fr.windowTokens,
+        warnFraction: fr.warnFraction,
+        compactFraction: fr.compactFraction
+      });
+      const forecast = forecastTokens({
+        history: stepTokenHistory(events),
+        currentTokens: served,
+        thresholdTokens: Math.round((fr.windowTokens ?? 0) * (fr.compactFraction ?? 0.85))
+      });
+      const insight = liveInsights({
+        state,
+        optPct: savings.pct,
+        savedTokens: savings.savedTokens,
+        scopedReads: savings.scopedReads,
+        budgetPct: Math.round((report.usedFraction ?? 0) * 100),
+        budgetLevel: report.level,
+        stepsUntilCompact: forecast.stepsUntilCompact
+      });
+      res.writeHead(200, { "content-type": "application/json" });
+      res.end(JSON.stringify(insight));
+      return;
+    }
+    if (url.pathname === "/api/insights/project") {
+      const root = this.opts.projectRoot;
+      const [obs, sessions, savings, memories] = await Promise.all([
+        loadObservations(root).catch(() => [] as Awaited<ReturnType<typeof loadObservations>>),
+        listSessions(root).catch(() => [] as string[]),
+        loadSavings(root).then(summarizeSavings).catch(() => ({ scopedReads: 0, savedTokens: 0, pct: 0 })),
+        listMemories(root).catch(() => [])
+      ]);
+      const insight = projectInsights({
+        observations: obs,
+        sessionCount: sessions.length,
+        memoryCount: memories.length,
+        optPct: savings.pct,
+        savedTokens: savings.savedTokens,
+        scopedReads: savings.scopedReads
+      });
+      res.writeHead(200, { "content-type": "application/json" });
+      res.end(JSON.stringify(insight));
+      return;
+    }
+    if (url.pathname === "/api/insights/journal") {
+      const date = url.searchParams.get("date") ?? new Date().toISOString().slice(0, 10);
+      const obs = await loadObservations(this.opts.projectRoot).catch(() => []);
+      const insight = journalInsights(date, obs);
+      res.writeHead(200, { "content-type": "application/json" });
+      res.end(JSON.stringify(insight));
+      return;
+    }
+    if (url.pathname === "/api/insights/sessions") {
+      const root = this.opts.projectRoot;
+      const [obs, sessions] = await Promise.all([
+        loadObservations(root).catch(() => [] as Awaited<ReturnType<typeof loadObservations>>),
+        listSessions(root).catch(() => [] as string[])
+      ]);
+      const insight = sessionsInsights(obs, sessions);
+      res.writeHead(200, { "content-type": "application/json" });
+      res.end(JSON.stringify(insight));
       return;
     }
     if (url.pathname === "/api/stats/by-skill") {
