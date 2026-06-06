@@ -5,6 +5,11 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.13.0] - 2026-06-06
+
+### Added
+- **Where Claude struggled.** A live failures panel on the Live tab surfaces the moments the agent hit an error, a denial or a failed command, pulled from the session observations and the event log and ranked newest first. It sits alongside what Claude is doing and the token budget, so the Live tab is now a real agent-health view. New `src/dashboard/failures.ts`, served by `/api/failures`, six tests.
+
 ## [0.12.0] - 2026-06-06
 
 ### Added
