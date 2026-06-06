@@ -44,6 +44,7 @@ const hasMemory = await fileExists(
 // locally; the agent sees them now, on this turn. Drained so each is delivered
 // once.
 let messageBlock = "";
+let busBlock = "";
 try {
   const memory = await import(pathToFileURL(join(here, "..", "dist", "memory", "index.js")).href);
   const messages = await memory.drainMessages(cwd, String(session));
@@ -51,8 +52,10 @@ try {
     messageBlock = "Messages left for you on the slipstream dashboard:\n" +
       messages.map((m) => `- ${m}`).join("\n");
   }
+  // Cross-tab coordination: what other open sessions are working on right now.
+  busBlock = memory.renderBus(await memory.loadBus(cwd), String(session));
 } catch {
-  // No dist or no inbox: no messages to deliver.
+  // No dist, inbox or bus: nothing extra to inject.
 }
 
 const hints = [];
@@ -70,6 +73,7 @@ if (hasMap) {
 
 const parts = [];
 if (messageBlock) parts.push(messageBlock);
+if (busBlock) parts.push(busBlock);
 if (hints.length > 0) parts.push("slipstream reminder: " + hints.join(" "));
 if (parts.length === 0) {
   return;

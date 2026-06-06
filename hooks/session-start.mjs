@@ -125,8 +125,11 @@ try {
     if (brief.filesInFlight.length) lines.push(`- Files in flight: ${brief.filesInFlight.join(", ")}`);
     lines.push(`- Suggested next: ${brief.suggestedNext}`);
   }
+  // Cross-tab coordination: surface what other open sessions are working on.
+  const busNote = memory.renderBus(await memory.loadBus(cwd), String(session));
+  if (busNote) { lines.push(""); lines.push(busNote); }
 } catch {
-  // No dist or no history: skip the resume block.
+  // No dist or no history: skip the resume and coordination blocks.
 }
 
 lines.push("");

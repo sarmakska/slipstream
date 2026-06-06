@@ -40,6 +40,17 @@ try {
   if (conv || sessionObs.length) {
     await memory.addMemory(process.cwd(), memory.summariseSession(String(session), conv ?? null, sessionObs));
   }
+  // Post what this session is working on to the shared bus, so other open tabs
+  // see it on their next turn and coordinate instead of duplicating work.
+  const brief = memory.resumeBrief(conv ?? null, sessionObs);
+  if (brief.hasContext) {
+    await memory.postStatus(process.cwd(), {
+      session: String(session),
+      ts: new Date().toISOString(),
+      thread: brief.openThread || brief.suggestedNext,
+      files: brief.filesInFlight
+    });
+  }
 } catch {
   // No dist build, or capture failed: stay silent, never break the session.
 }
