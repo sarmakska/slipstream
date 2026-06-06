@@ -5,6 +5,11 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.15.0] - 2026-06-06
+
+### Added
+- **Message the working agent from the dashboard.** A message outbox: type a note on the Live tab and it is queued locally, then delivered to the agent as context on its next prompt by the UserPromptSubmit hook, drained so each message arrives exactly once. The dashboard cannot interrupt a turn already in progress, which the panel states plainly. New `src/memory/inbox.ts`, served by `/api/message` and `/api/messages`, four tests.
+
 ## [0.14.0] - 2026-06-06
 
 ### Added
