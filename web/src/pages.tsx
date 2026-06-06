@@ -211,17 +211,57 @@ export function JournalPage() {
 }
 
 export function SessionsPage() {
-  const { session } = useSession();
+  const { session, setSession } = useSession();
   const r = useFetch(() => api.sessions(), []);
+  const [open, setOpen] = useState<string | null>(null);
+  return (
+    <>
+      <div className="card">
+        <h2>All sessions <span className="badge">{r?.sessions.length ?? 0}</span></h2>
+        <div className="empty" style={{ marginTop: 0 }}>Click a session to read what happened in it.</div>
+        <table>
+          <thead><tr><th>id</th><th>status</th><th /></tr></thead>
+          <tbody>
+            {(r?.sessions ?? []).map((s) => (
+              <tr key={s} style={{ cursor: "pointer" }} onClick={() => { setSession(s); setOpen(open === s ? null : s); }}>
+                <td style={{ color: open === s ? "var(--emerald)" : "var(--fg)" }}>{s}</td>
+                <td style={{ color: s === session ? "var(--emerald)" : "var(--muted)" }}>{s === session ? "active" : "past"}</td>
+                <td style={{ color: "var(--muted-2)", fontSize: 11 }}>{open === s ? "hide" : "view detail"}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {open && <SessionDetail session={open} />}
+    </>
+  );
+}
+
+function SessionDetail({ session }: { session: string }) {
+  const story = useFetch(() => api.story(session), [session]);
+  const conv = useFetch(() => api.conversation(session), [session]);
+  const failures = useFetch(() => api.failures(session), [session]);
+  if (!story) return <div className="card"><Empty>loading session detail...</Empty></div>;
+  const files = new Set<string>();
+  story.lanes.forEach((l) => l.files.forEach((f) => files.add(f)));
   return (
     <div className="card">
-      <h2>All sessions <span className="badge">{r?.sessions.length ?? 0}</span></h2>
-      <table>
-        <thead><tr><th>id</th><th>status</th></tr></thead>
-        <tbody>
-          {(r?.sessions ?? []).map((s) => <tr key={s}><td>{s}</td><td style={{ color: s === session ? "var(--emerald)" : "var(--muted)" }}>{s === session ? "active" : "past"}</td></tr>)}
-        </tbody>
-      </table>
+      <h2>What happened in {session.slice(0, 16)}</h2>
+      <div className="stats">
+        <div className="stat"><div className="v">{formatNum(story.promptCount)}</div><div className="l">prompts</div></div>
+        <div className="stat"><div className="v">{formatNum(story.toolCount)}</div><div className="l">tool calls</div></div>
+        <div className="stat"><div className="v">{formatNum(files.size)}</div><div className="l">files touched</div></div>
+        <div className="stat"><div className="v">{formatNum(conv?.exchanges.length ?? 0)}</div><div className="l">exchanges</div></div>
+        <div className="stat"><div className="v">{formatNum(failures?.failures.length ?? 0)}</div><div className="l">failures</div></div>
+      </div>
+      <a className="btn" href={`/api/report?session=${encodeURIComponent(session)}`} style={{ marginTop: 12 }}>download report</a>
+      <h2 style={{ marginTop: 16 }}>Said &amp; done</h2>
+      {story.lanes.length ? story.lanes.map((l) => (
+        <div className="lane" key={l.index}>
+          <div className="said"><div className="who">{l.opening ? "start" : "you said"}</div><div className="what">{l.opening ? "Session opened" : l.prompt}</div></div>
+          <div className="did"><div className="sum">{l.summary}</div>{l.actions.slice(0, 12).map((a, i) => <div className="act" key={i}>{a.label}</div>)}</div>
+        </div>
+      )) : <Empty>no recorded activity in this session</Empty>}
     </div>
   );
 }
