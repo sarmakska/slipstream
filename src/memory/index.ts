@@ -8,3 +8,4 @@ export * from "./search.js";
 export * from "./lessons.js";
 export * from "./transcript.js";
 export * from "./conversation.js";
+export * from "./session-summary.js";

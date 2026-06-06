@@ -29,8 +29,16 @@ try {
   // Capture the full conversation from the Claude Code transcript so the
   // dashboard renders the real chat, not the short prompt stub. Best-effort.
   const transcriptPath = payload.transcript_path;
-  if (transcriptPath) {
-    await memory.ingestConversation(process.cwd(), String(session), String(transcriptPath));
+  const conv = transcriptPath
+    ? await memory.ingestConversation(process.cwd(), String(session), String(transcriptPath))
+    : await memory.loadConversation(process.cwd(), String(session));
+  // Self-building memory: distil this session into one durable summary, upserted
+  // in place, so the next session and the dashboard inherit where we left off
+  // without anyone having to remember to write it down.
+  const allObs = await memory.loadObservations(process.cwd()).catch(() => []);
+  const sessionObs = allObs.filter((o) => o.session === String(session));
+  if (conv || sessionObs.length) {
+    await memory.addMemory(process.cwd(), memory.summariseSession(String(session), conv ?? null, sessionObs));
   }
 } catch {
   // No dist build, or capture failed: stay silent, never break the session.
