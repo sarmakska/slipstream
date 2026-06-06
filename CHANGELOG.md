@@ -5,6 +5,16 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.0] - 2026-06-06
+
+### Added
+- **Full conversation capture.** slipstream now records the whole Claude Code conversation, every human ask and the assistant work that followed, not the 200-character prompt stub it kept before. Claude Code hands every hook the transcript path; the stop hook reads it, folds it into exchanges with a deterministic per-exchange summary, and persists a compact record per session under the gitignored store. New `src/memory/transcript.ts` (parser) and `src/memory/conversation.ts` (fold, summarise, persist), ten tests across the two.
+- **Conversation tab.** A new tab renders the full recorded chat for a session: each ask in full, the work it produced, the tools used and the reply weight. Served by `/api/conversation`.
+- **Real-chat Overview.** The Overview recent-work panel reads the captured conversation when present (real asks and summaries), falling back to the event story otherwise.
+
+### Changed
+- The reading surfaces of the dashboard (hero, insight paragraphs, flow and conversation text, area roles, lessons) now render in a clean sans-serif while labels, numbers and code stay monospace, for a more legible, finished feel.
+
 ## [0.9.0] - 2026-06-06
 
 ### Added
