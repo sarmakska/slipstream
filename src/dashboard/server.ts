@@ -42,6 +42,7 @@ import {
   listConversations,
   searchConversations,
   deriveInstincts,
+  memoryHealth,
   type ObservationKind
 } from "../memory/index.js";
 import { budget, BYTES_PER_TOKEN } from "../context/budget.js";
@@ -592,6 +593,7 @@ export class DashboardServer {
         digests,
         durable,
         lessons,
+        health: memoryHealth(memories, Date.now()),
         counts: {
           memories: memories.length,
           digests: digests.length,

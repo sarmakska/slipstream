@@ -654,6 +654,7 @@ export function renderDashboardHtml(session: string): string {
   <div class="panel" style="margin-bottom:14px">
     <h2>Memory that survives <span class="badge" id="mem-ov-count">0</span></h2>
     <p class="ib-paragraph" id="mem-summary" style="font-size:14px">Reading memory...</p>
+    <div class="note" id="mem-health" style="margin-top:0;margin-bottom:10px"></div>
     <div class="grid-2">
       <div>
         <div class="ib-label">Session digests, survive a compact</div>
@@ -815,6 +816,7 @@ export function renderDashboardHtml(session: string): string {
     if (!r) return;
     if (r.summary && r.summary.paragraph) $("mem-summary").textContent = r.summary.paragraph;
     $("mem-ov-count").textContent = (r.counts && r.counts.memories ? r.counts.memories : 0) + " memories";
+    const health = $("mem-health"); if (health) health.textContent = r.health ? "Health: " + r.health.note : "";
     const card = (name, body, meta) => '<div class="mem-item"><div class="mname">' + escape(name) + '</div>' + (body ? '<div class="mexc">' + escape(body) + '</div>' : '') + (meta ? '<div class="mmeta">' + escape(meta) + '</div>' : '') + '</div>';
     const dg = $("mem-digests");
     dg.innerHTML = (r.digests && r.digests.length)

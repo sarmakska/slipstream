@@ -13,3 +13,4 @@ export * from "./continuity.js";
 export * from "./inbox.js";
 export * from "./conversation-search.js";
 export * from "./instincts.js";
+export * from "./health.js";
