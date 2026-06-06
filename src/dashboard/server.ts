@@ -50,6 +50,7 @@ import {
   journalInsights,
   sessionsInsights
 } from "./insights.js";
+import { storyFlow } from "./story.js";
 
 /**
  * Resolved at module load. Read from the bundled package.json so /api/health
@@ -370,6 +371,15 @@ export class DashboardServer {
       const insight = sessionsInsights(obs, sessions);
       res.writeHead(200, { "content-type": "application/json" });
       res.end(JSON.stringify(insight));
+      return;
+    }
+    // The said-to-did story for one session: lanes of "you said X, the agent
+    // did A, B, C" folded from the event log. Powers the Flow tab.
+    if (url.pathname === "/api/story") {
+      const session = await this.resolveSession(url.searchParams.get("session") ?? undefined);
+      const events = await readLog(this.opts.projectRoot, session);
+      res.writeHead(200, { "content-type": "application/json" });
+      res.end(JSON.stringify(storyFlow(events)));
       return;
     }
     if (url.pathname === "/api/stats/by-skill") {
