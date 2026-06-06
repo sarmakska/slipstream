@@ -62,7 +62,7 @@ import {
 import { storyFlow } from "./story.js";
 import { extractFailures } from "./failures.js";
 import { agentMood } from "./presence.js";
-import { summariseMap } from "./overview.js";
+import { summariseMap, narrateOverview } from "./overview.js";
 import { generateMap } from "../map/index.js";
 
 /**
@@ -456,13 +456,16 @@ export class DashboardServer {
           }));
         }
       }
+      const overviewMap = mapRes ? summariseMap(mapRes) : null;
+      const counts = { sessions: sessions.length, observations: obs.length, memories: memories.length };
       res.writeHead(200, { "content-type": "application/json" });
       res.end(JSON.stringify({
         identity,
-        map: mapRes ? summariseMap(mapRes) : null,
+        map: overviewMap,
+        narration: overviewMap ? narrateOverview(overviewMap, counts) : "",
         summary,
         recent,
-        counts: { sessions: sessions.length, observations: obs.length, memories: memories.length }
+        counts
       }));
       return;
     }

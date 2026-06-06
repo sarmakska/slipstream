@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { summariseMap } from "../src/dashboard/overview.js";
+import { summariseMap, narrateOverview } from "../src/dashboard/overview.js";
 import type { ProjectMap, FileEntry } from "../src/map/types.js";
 
 function file(path: string, symbols: number, lines: number, purpose = "source module"): FileEntry {
@@ -73,6 +73,21 @@ describe("summariseMap", () => {
       file("src/widgets/b.ts", 1, 10, "renders a widget")
     ]));
     expect(o.areas[0].role).toBe("renders a widget.");
+  });
+
+  it("narrates structure and activity in one meaningful paragraph", () => {
+    const o = summariseMap(map([file("src/dashboard/server.ts", 3, 100), file("src/memory/observe.ts", 5, 50)]));
+    const withData = narrateOverview(o, { sessions: 3, observations: 8, memories: 2 });
+    expect(withData).toContain("2 files");
+    expect(withData).toContain("8 observations across 3 sessions");
+    expect(withData).toContain("2 durable memories");
+  });
+
+  it("narrates a useful empty state when nothing has been observed", () => {
+    const o = summariseMap(map([file("src/a.ts", 1, 10)]));
+    const cold = narrateOverview(o, { sessions: 0, observations: 0, memories: 0 });
+    expect(cold).toContain("No sessions recorded yet");
+    expect(cold).toContain("1 file");
   });
 
   it("reports top-level stats and entry points", () => {

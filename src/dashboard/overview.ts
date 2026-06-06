@@ -73,6 +73,49 @@ function heuristicRole(purposes: string[]): string {
   return top ? `${top}.` : "Source files in this area.";
 }
 
+export interface OverviewCounts {
+  sessions: number;
+  observations: number;
+  memories: number;
+}
+
+/**
+ * One strong, always-meaningful paragraph for the top of the Overview. Built
+ * mostly from the code map, which is present even on a project slipstream has
+ * never observed, so the dashboard always opens saying something real rather
+ * than an empty state. Pure and tested.
+ */
+export function narrateOverview(o: OverviewMap, counts: OverviewCounts): string {
+  const areaCount = o.areas.length;
+  const sentences: string[] = [];
+
+  sentences.push(
+    `This project is ${o.fileCount} file${o.fileCount === 1 ? "" : "s"} and ` +
+      `${o.symbolCount} exported symbol${o.symbolCount === 1 ? "" : "s"} across ` +
+      `${areaCount} area${areaCount === 1 ? "" : "s"}, ${o.kib} KiB of source.`
+  );
+
+  const top = o.areas[0];
+  if (top) {
+    const role = top.role.endsWith(".") ? top.role.slice(0, -1) : top.role;
+    sentences.push(`Its largest area is ${top.area}, ${role.charAt(0).toLowerCase()}${role.slice(1)}.`);
+  }
+
+  if (counts.sessions > 0) {
+    sentences.push(
+      `slipstream has recorded ${counts.observations} observation${counts.observations === 1 ? "" : "s"} ` +
+        `across ${counts.sessions} session${counts.sessions === 1 ? "" : "s"}, ` +
+        `with ${counts.memories} durable memor${counts.memories === 1 ? "y" : "ies"} kept.`
+    );
+  } else {
+    sentences.push(
+      "No sessions recorded yet. Run a Claude Code session in this project and slipstream will narrate what happened here."
+    );
+  }
+
+  return sentences.join(" ");
+}
+
 export function summariseMap(map: ProjectMap): OverviewMap {
   const grouped = new Map<string, { files: number; symbols: number; lines: number; purposes: string[] }>();
   for (const f of map.files) {

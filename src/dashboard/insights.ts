@@ -116,10 +116,14 @@ export function liveInsights(ctx: LiveContext): Insight {
   const files = new Set<string>();
   for (const a of s.agents) {
     for (const e of a.activity) {
-      const parts = String(e.label).split(/\s+/);
-      const tool = parts[0] || "";
-      const target = e.label.slice(tool.length).trim();
-      if (target && /[\\/.]/.test(target)) files.add(target);
+      // Only tool calls name files; prompt and lifecycle events carry prose.
+      if (e.kind !== "post-tool") continue;
+      // Take the first token after the tool name and accept it only when it
+      // looks like a real path: it has a slash or a real file extension. This
+      // keeps prompt fragments like "v0.8.0" out of "files in focus".
+      const target = String(e.label).replace(/^\S+\s*/, "").trim();
+      const tok = target.split(/\s+/)[0] ?? "";
+      if (tok && (tok.includes("/") || /\.[a-z]{1,5}$/i.test(tok))) files.add(tok);
     }
   }
   const topFiles = [...files].slice(0, 3).map(shortFile);

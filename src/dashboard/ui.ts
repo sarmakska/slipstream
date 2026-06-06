@@ -783,7 +783,9 @@ export function renderDashboardHtml(session: string): string {
     if (!r) return;
     if (r.identity) {
       $("ov-name").textContent = r.identity.name + (r.identity.version ? "  v" + r.identity.version : "");
-      $("ov-desc").textContent = r.identity.description || "A local-first memory and observability layer for AI coding agents.";
+      // Lead with the always-meaningful narration built from the code map and
+      // activity; fall back to the package description only if it is missing.
+      $("ov-desc").textContent = r.narration || r.identity.description || "";
     }
     const c = r.counts || { sessions: 0, observations: 0, memories: 0 };
     if (r.map) {
