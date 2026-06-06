@@ -39,6 +39,8 @@ import {
   readInbox,
   queueMessage,
   pendingMessages,
+  listConversations,
+  searchConversations,
   type ObservationKind
 } from "../memory/index.js";
 import { budget, BYTES_PER_TOKEN } from "../context/budget.js";
@@ -234,6 +236,17 @@ export class DashboardServer {
             session: url.searchParams.get("session") ?? undefined,
             limit: Number(url.searchParams.get("limit")) || 20
           })
+        : [];
+      res.writeHead(200, { "content-type": "application/json" });
+      res.end(JSON.stringify({ hits }));
+      return;
+    }
+    // Conversation search: find the exchange where a topic was discussed across
+    // the full captured chat. Answers "when did we talk about X".
+    if (url.pathname === "/api/search/conversation") {
+      const query = url.searchParams.get("q") ?? "";
+      const hits = query
+        ? searchConversations(await listConversations(this.opts.projectRoot), query, Number(url.searchParams.get("limit")) || 20)
         : [];
       res.writeHead(200, { "content-type": "application/json" });
       res.end(JSON.stringify({ hits }));

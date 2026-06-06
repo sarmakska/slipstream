@@ -8,7 +8,7 @@
  * buildConversation is pure and tested. ingest/load do the disk IO.
  */
 
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import type { TranscriptTurn } from "./transcript.js";
 import { parseTranscript } from "./transcript.js";
@@ -88,4 +88,24 @@ export async function loadConversation(root: string, session: string): Promise<C
   } catch {
     return null;
   }
+}
+
+/** Load every captured conversation in the project. Best-effort. */
+export async function listConversations(root: string): Promise<Conversation[]> {
+  const dir = join(resolve(root), ".claude", "slipstream", "conversations");
+  let entries: string[];
+  try {
+    entries = (await readdir(dir)).filter((f) => f.endsWith(".json"));
+  } catch {
+    return [];
+  }
+  const out: Conversation[] = [];
+  for (const file of entries) {
+    try {
+      out.push(JSON.parse(await readFile(join(dir, file), "utf8")) as Conversation);
+    } catch {
+      continue;
+    }
+  }
+  return out;
 }

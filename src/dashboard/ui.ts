@@ -682,7 +682,9 @@ export function renderDashboardHtml(session: string): string {
       <button class="chip-btn" data-kind="run">run</button>
     </div>
     <div id="mhits"><div class="empty">type to search this project's memory across every session</div></div>
-    <div class="note">Local bind only. No telemetry. The dashboard never phones home.</div>
+    <div class="ib-label" id="mconv-label" style="margin-top:14px;display:none">Conversation matches</div>
+    <div id="mconv"></div>
+    <div class="note">Local bind only. No telemetry. The dashboard never phones home. Search covers observations and the full recorded conversation.</div>
   </div>
 </div>
 
@@ -1302,8 +1304,21 @@ export function renderDashboardHtml(session: string): string {
     });
   }
   let searchTimer = null;
+  async function runConvSearch(q) {
+    const label = $("mconv-label"); const box = $("mconv");
+    if (!box || !label) return;
+    if (!q || !q.trim()) { label.style.display = "none"; box.innerHTML = ""; return; }
+    const r = await fetch("/api/search/conversation?q=" + encodeURIComponent(q)).then((x) => x.json()).catch(() => ({ hits: [] }));
+    if (!r.hits || r.hits.length === 0) { label.style.display = "none"; box.innerHTML = ""; return; }
+    label.style.display = "block";
+    box.innerHTML = r.hits.map((h) => {
+      const tm = h.ts ? new Date(h.ts).toLocaleDateString() : "";
+      return '<div class="hit"><div class="meta">conversation . ' + escape(h.session.slice(0, 12)) + (tm ? ' . ' + tm : '') + '</div><div class="sum">' + escape(h.ask) + '</div></div>';
+    }).join("");
+  }
   async function runSearch(q) {
     const box = $("mhits");
+    runConvSearch(q);
     if (!q || !q.trim()) { box.innerHTML = '<div class="empty">type to search this project\\'s memory across every session</div>'; return; }
     const u = new URL("/api/search", location.origin);
     u.searchParams.set("q", q);
