@@ -5,6 +5,11 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.11.0] - 2026-06-06
+
+### Added
+- **Deliberate-engineering skill suite.** Eight new context-discipline skills, original to slipstream, that guide the agent through a deliberate loop rather than ad-hoc edits: `using-slipstream` (recall memory and read the map first, work deliberately, record what is durable), `test-driven-development`, `verification-before-completion`, `requesting-code-review`, `receiving-code-review`, `subagent-driven-development`, `finishing-a-branch` and `writing-skills`. The shipped library is now 71 skills, all loading cleanly through `slipstream validate` and `plugin-validate`.
+
 ## [0.10.0] - 2026-06-06
 
 ### Added
