@@ -7,7 +7,7 @@
 <p align="center">
 <a href="https://github.com/sarmakska/slipstream/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/sarmakska/slipstream/actions/workflows/ci.yml/badge.svg"></a>
 <a href="https://github.com/sarmakska/slipstream/releases"><img alt="Version" src="https://img.shields.io/github/package-json/v/sarmakska/slipstream"></a>
-<img alt="Tests" src="https://img.shields.io/badge/tests-309%20passing-brightgreen">
+<img alt="Tests" src="https://img.shields.io/badge/tests-315%20passing-brightgreen">
 <img alt="Node" src="https://img.shields.io/badge/node-%3E%3D20-brightgreen">
 <a href="./LICENSE"><img alt="License: MIT" src="https://img.shields.io/github/license/sarmakska/slipstream"></a>
 <a href="https://github.com/sarmakska/slipstream"><img alt="Language" src="https://img.shields.io/github/languages/top/sarmakska/slipstream"></a>
@@ -17,6 +17,10 @@
 A long Claude Code session usually dies one of two ways. Either it reads whole files until the context window is full and starts forgetting the start of its own plan, or it does good work and then the session ends and every decision it made evaporates. slipstream is a Claude Code plugin I built to stop both, and to let me actually see what the agent is doing while it does it.
 
 You install it into Claude Code in VS Code. It is not a CLI you run as a product; there is a small helper binary the plugin shells out to from its hooks, its slash commands and a bundled MCP server, but you never invoke it directly. Since v0.6 the same MCP server also works in **Cursor, Windsurf, Antigravity, plain VS Code via MCP and JetBrains via MCP**, with the same fourteen `sp_*` tools, the same dashboard and a one-line idempotent install through `slipstream-setup`.
+
+## What's new in v0.28
+
+- **Interactive code graph** (v0.28.0): a graphify-style force-directed dependency graph in the dashboard, files as nodes and imports as edges, with zoom, pan, drag, search and god nodes ringed in white. Click a node to read its imports and importers. Also as the slipstream graph CLI and the /api/codegraph endpoint.
 
 ## What's new in v0.27
 

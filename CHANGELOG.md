@@ -5,6 +5,11 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.28.0] - 2026-06-06
+
+### Added
+- **Interactive code dependency graph.** A graphify-style view of how the codebase wires together: files as nodes, imports as edges, rendered force-directed in the dashboard with d3 (zoom, pan, drag, search, area colouring, and god nodes ringed in white). Click any node to read its imports and importers. Also available as `slipstream graph` on the CLI and the `/api/codegraph` endpoint, so Claude can read the structure too. New `src/map/codegraph.ts`, six tests.
+
 ## [0.27.0] - 2026-06-06
 
 ### Added
