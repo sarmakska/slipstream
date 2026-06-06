@@ -5,6 +5,11 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.26.0] - 2026-06-06
+
+### Added
+- **Interactive knowledge graph.** Click any node in the Graph tab to read its detail in a side panel: a file shows the sessions that touched it, a session shows the files it changed, each with how many times. Navigate the memory by clicking through relationships.
+
 ## [0.25.0] - 2026-06-06
 
 ### Added

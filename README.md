@@ -18,6 +18,10 @@ A long Claude Code session usually dies one of two ways. Either it reads whole f
 
 You install it into Claude Code in VS Code. It is not a CLI you run as a product; there is a small helper binary the plugin shells out to from its hooks, its slash commands and a bundled MCP server, but you never invoke it directly. Since v0.6 the same MCP server also works in **Cursor, Windsurf, Antigravity, plain VS Code via MCP and JetBrains via MCP**, with the same fourteen `sp_*` tools, the same dashboard and a one-line idempotent install through `slipstream-setup`.
 
+## What's new in v0.26
+
+- **Interactive graph** (v0.26.0): click any node in the knowledge graph to read what connects to it, a file shows the sessions that touched it, a session shows the files it changed.
+
 ## What's new in v0.25
 
 - **Project knowledge brief** (v0.25.0): `slipstream brief` (or a download on the Overview) dumps the whole project into one Markdown document, what it is, how it is organised, what was built, the memory, lessons, instincts and recent work, so anyone starting later picks it up cold.
