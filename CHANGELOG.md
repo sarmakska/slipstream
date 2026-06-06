@@ -5,6 +5,11 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.23.0] - 2026-06-06
+
+### Added
+- **Knowledge graph.** A new Graph tab renders files and the sessions that touched them as a node-link diagram: files on an outer ring sized by how often they are touched, sessions on an inner ring, an edge wherever a session changed a file. The bubble map of the project's memory, navigable by relationship rather than by list. New `src/dashboard/graph.ts`, five tests, served by `/api/graph`.
+
 ## [0.22.0] - 2026-06-06
 
 ### Added
