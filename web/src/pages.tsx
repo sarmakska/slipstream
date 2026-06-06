@@ -167,16 +167,44 @@ export function JournalPage() {
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const band = useFetch(() => api.insights("journal", date), [date]);
   const day = useFetch(() => api.day(date), [date]) as Record<string, unknown> | null;
+  const shift = (delta: number) => { const d = new Date(date + "T00:00:00Z"); d.setUTCDate(d.getUTCDate() + delta); setDate(d.toISOString().slice(0, 10)); };
+  const topFiles = (day?.topFiles as { path: string; count: number }[]) ?? [];
+  const tools = Object.entries((day?.tools as Record<string, number>) ?? {}).sort((a, b) => b[1] - a[1]);
+  const sessions = (day?.sessions as string[]) ?? [];
+  const obsCount = (day?.observations as number) ?? 0;
   return (
     <>
       <div className="card">
         <h2>Daily journal</h2>
-        <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <button className="btn" onClick={() => shift(-1)}>&lt; prev</button>
+          <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+          <button className="btn" onClick={() => shift(1)}>next &gt;</button>
+          <button className="btn" onClick={() => setDate(new Date().toISOString().slice(0, 10))}>today</button>
+        </div>
       </div>
       {band && <Band paragraph={band.paragraph} bullets={band.bullets} />}
       <div className="card">
-        <h2>{date}</h2>
-        {day ? <p style={{ color: "var(--muted)" }}>{String((day.observations as number) ?? 0)} observations, {((day.sessions as string[]) ?? []).length} sessions.</p> : <Empty>nothing recorded</Empty>}
+        <h2>Summary for {date}</h2>
+        <div className="stats">
+          <div className="stat"><div className="v">{formatNum(obsCount)}</div><div className="l">observations</div></div>
+          <div className="stat"><div className="v">{formatNum(sessions.length)}</div><div className="l">sessions</div></div>
+          <div className="stat"><div className="v">{formatNum(topFiles.length)}</div><div className="l">files touched</div></div>
+          <div className="stat"><div className="v">{formatNum(tools.length)}</div><div className="l">tools used</div></div>
+          <div className="stat"><div className="v">{formatNum((day?.driftCount as number) ?? 0)}</div><div className="l">drift flags</div></div>
+        </div>
+      </div>
+      <div className="grid2">
+        <div className="card">
+          <h2>Top files this day</h2>
+          {topFiles.length ? topFiles.map((f) => <div className="row" key={f.path}><div className="t">{f.path}</div><div className="s">{f.count} touches</div></div>) : <Empty>no activity on this day</Empty>}
+        </div>
+        <div className="card">
+          <h2>Tools used</h2>
+          {tools.length ? tools.map(([t, n]) => <span className="chip" key={t}>{t} · {n}</span>) : <Empty>no tool calls on this day</Empty>}
+          <h2 style={{ marginTop: 14 }}>Sessions</h2>
+          {sessions.length ? sessions.map((s) => <div className="row" key={s}><div className="t">{s}</div></div>) : <Empty>no sessions on this day</Empty>}
+        </div>
       </div>
     </>
   );

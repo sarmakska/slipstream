@@ -20,17 +20,23 @@ interface SessionCtx { session: string; setSession: (s: string) => void; session
 const Ctx = createContext<SessionCtx>({ session: "", setSession: () => {}, sessions: [] });
 export const useSession = (): SessionCtx => useContext(Ctx);
 
-const NAV: { path: string; label: string }[] = [
-  { path: "/", label: "Overview" },
-  { path: "/live", label: "Live" },
-  { path: "/flow", label: "Flow" },
-  { path: "/conversation", label: "Conversation" },
-  { path: "/project", label: "Project" },
-  { path: "/journal", label: "Journal" },
-  { path: "/sessions", label: "Sessions" },
-  { path: "/memory", label: "Memory" },
-  { path: "/graph", label: "Memory graph" },
-  { path: "/code", label: "Code graph" }
+const NAV: { section: string; items: { path: string; label: string }[] }[] = [
+  { section: "Now", items: [
+    { path: "/", label: "Overview" },
+    { path: "/live", label: "Live activity" }
+  ] },
+  { section: "History", items: [
+    { path: "/flow", label: "Said & done" },
+    { path: "/conversation", label: "Full conversation" },
+    { path: "/journal", label: "Daily journal" },
+    { path: "/sessions", label: "Sessions" }
+  ] },
+  { section: "Knowledge", items: [
+    { path: "/project", label: "Project stats" },
+    { path: "/memory", label: "Memory" },
+    { path: "/graph", label: "Memory graph" },
+    { path: "/code", label: "Code map" }
+  ] }
 ];
 
 export function App() {
@@ -51,10 +57,15 @@ export function App() {
           <div className="brand"><span className="dot" /><span className="name">slipstream</span></div>
           <div className="ver">v{version || "..."}</div>
           <nav className="nav">
-            {NAV.map((n) => (
-              <Link key={n.path} href={n.path} className={location === n.path ? "on" : ""}>
-                <span className="ico" />{n.label}
-              </Link>
+            {NAV.map((group) => (
+              <div key={group.section}>
+                <div className="nav-section">{group.section}</div>
+                {group.items.map((n) => (
+                  <Link key={n.path} href={n.path} className={location === n.path ? "on" : ""}>
+                    <span className="ico" />{n.label}
+                  </Link>
+                ))}
+              </div>
             ))}
           </nav>
         </aside>
