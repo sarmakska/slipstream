@@ -126,7 +126,10 @@ export function liveInsights(ctx: LiveContext): Insight {
 
   const opt = ctx.optPct;
   const steps = ctx.stepsUntilCompact;
-  const stepsClause = steps !== null && steps > 0
+  // Only surface a step runway when it is a meaningful, near-term number. With
+  // no real budget pressure the forecast runs to tens of thousands of steps,
+  // which reads as data not prose, so we drop the clause above 500.
+  const stepsClause = steps !== null && steps > 0 && steps <= 500
     ? `, projected ${steps} steps before compact`
     : "";
   const filesClause = topFiles.length
@@ -180,9 +183,10 @@ export function projectInsights(ctx: ProjectContext): Insight {
   const driftCount = obs.filter((o) => (o as { drift?: unknown }).drift).length;
   const obsPerSession = ctx.sessionCount > 0 ? Math.round(obs.length / ctx.sessionCount) : 0;
 
+  // This clause sits mid-sentence after "observations, " so it stays lower-case.
   const focusClause = focusDir && focusPct >= 15
-    ? `Your focus has been ${focusDir.key} (${focusPct}% of edits).`
-    : `Edits are spread across the project.`;
+    ? `your focus has been ${focusDir.key} (${focusPct}% of edits).`
+    : `edits are spread across the project.`;
   const driftClause = driftCount > 0
     ? ` ${driftCount} drift flag${driftCount === 1 ? "" : "s"} to review.`
     : "";
