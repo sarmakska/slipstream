@@ -5,6 +5,11 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.27.0] - 2026-06-06
+
+### Added
+- **Production React dashboard.** A Vite + React + TypeScript single-page app in `web/` replaces the server-rendered page: a left sidebar with nine routed side-pages (Overview, Live, Flow, Conversation, Project, Journal, Sessions, Memory, Graph), a design-token system, a typed client over the existing JSON API and an interactive click-through knowledge graph. It builds to `dist/dashboard/web` and is served by the existing `node:http` server. React, Vite and d3 are devDependencies bundled to static assets, so the plugin's runtime dependency story is unchanged. The previous page stays at `?legacy=1` during the transition.
+
 ## [0.26.0] - 2026-06-06
 
 ### Added

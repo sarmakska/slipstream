@@ -18,6 +18,10 @@ A long Claude Code session usually dies one of two ways. Either it reads whole f
 
 You install it into Claude Code in VS Code. It is not a CLI you run as a product; there is a small helper binary the plugin shells out to from its hooks, its slash commands and a bundled MCP server, but you never invoke it directly. Since v0.6 the same MCP server also works in **Cursor, Windsurf, Antigravity, plain VS Code via MCP and JetBrains via MCP**, with the same fourteen `sp_*` tools, the same dashboard and a one-line idempotent install through `slipstream-setup`.
 
+## What's new in v0.27
+
+- **Production React dashboard** (v0.27.0): the dashboard is now a Vite + React single-page app with a left sidebar and nine routed side-pages, a design system and an interactive click-through knowledge graph, served by the same local server over the existing API. React and Vite are devDependencies bundled to static assets, so the runtime dependency story is unchanged. The previous page stays at ?legacy=1.
+
 ## What's new in v0.26
 
 - **Interactive graph** (v0.26.0): click any node in the knowledge graph to read what connects to it, a file shows the sessions that touched it, a session shows the files it changed.
