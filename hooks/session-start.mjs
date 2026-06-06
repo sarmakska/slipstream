@@ -94,6 +94,21 @@ if (dashboardLine) {
   lines.push(dashboardLine);
 }
 
+// Cold start: always build and inject the full app knowledge first, so Claude
+// opens every session knowing what the project is, how it is organised, the
+// files everything flows through, what was built last and what is remembered.
+try {
+  const brief = await import(pathToFileURL(join(here, "..", "dist", "dashboard", "brief.js")).href);
+  const feed = await brief.knowledgeFeed(cwd);
+  if (feed && feed.trim()) {
+    lines.push("");
+    lines.push("Project knowledge (built fresh this session):");
+    lines.push(feed);
+  }
+} catch {
+  // No dist or no project to read: skip the knowledge feed.
+}
+
 // Where we left off: reconstruct the open thread and files in flight from the
 // captured conversation and observations so the session resumes warm. The same
 // brief is shown on the dashboard Overview, so the two never disagree.

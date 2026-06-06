@@ -18,7 +18,7 @@ import {
   distillProjectLessons
 } from "../memory/index.js";
 import { listSessions } from "./log.js";
-import { generateMap } from "../map/index.js";
+import { generateMap, buildCodeGraph } from "../map/index.js";
 import { loadSavings, summarizeSavings } from "../context/savings.js";
 import { estimateCost } from "../context/cost.js";
 
@@ -94,6 +94,38 @@ export function projectBrief(input: BriefInput): string {
   out.push("");
 
   return out.join("\n").trim() + "\n";
+}
+
+/**
+ * A compact knowledge feed for the SessionStart hook: the whole app in a bounded
+ * block so every cold session opens with Claude already knowing what the project
+ * is, how it is organised, the files everything flows through, what was built
+ * last and what is remembered. Kept short on purpose so it never bloats context.
+ */
+export async function knowledgeFeed(root: string): Promise<string> {
+  const [mapRes, obs, memories, conversations] = await Promise.all([
+    generateMap(root).catch(() => null),
+    loadObservations(root).catch(() => []),
+    listMemories(root).catch(() => []),
+    listConversations(root).catch(() => [] as Awaited<ReturnType<typeof listConversations>>)
+  ]);
+  const lines: string[] = [];
+  if (mapRes) {
+    const o = summariseMap(mapRes);
+    const sessions = new Set(obs.map((x) => x.session)).size;
+    lines.push(narrateOverview(o, { sessions, observations: obs.length, memories: memories.length }));
+    lines.push("Areas: " + o.areas.slice(0, 6).map((a) => a.area).join(", ") + ".");
+    const god = [...buildCodeGraph(mapRes).nodes].sort((a, b) => b.degree - a.degree).slice(0, 6).map((n) => n.id);
+    if (god.length) lines.push("Most-connected files (read these to orient): " + god.join(", ") + ".");
+  }
+  const recent = (conversations as Conversation[])
+    .flatMap((c) => c.exchanges.map((e) => ({ ask: e.ask, ts: e.ts })))
+    .sort((a, b) => (a.ts < b.ts ? 1 : -1)).slice(0, 3);
+  if (recent.length) lines.push("Recently asked: " + recent.map((r) => `"${r.ask.replace(/\s+/g, " ").trim().slice(0, 80)}"`).join("; ") + ".");
+  if (memories.length) {
+    lines.push(`${memories.length} durable memor${memories.length === 1 ? "y" : "ies"}: ` + memories.slice(0, 5).map((m) => m.name).join(", ") + ".");
+  }
+  return lines.join("\n");
 }
 
 /** Gather every piece from the store and render the brief. Does disk IO. */
