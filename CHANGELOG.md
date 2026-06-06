@@ -5,6 +5,11 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.17.0] - 2026-06-06
+
+### Added
+- **Conversation search.** Find the exchange where a topic was discussed across the full captured chat, lexical and deterministic with a phrase bonus. The Memory tab search now returns conversation matches alongside observation hits, so "when did we talk about X" is answerable. New `src/memory/conversation-search.ts` and `listConversations`, five tests, served by `/api/search/conversation`.
+
 ## [0.16.0] - 2026-06-06
 
 ### Added
