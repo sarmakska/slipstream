@@ -326,6 +326,13 @@ export function renderDashboardHtml(session: string): string {
   .area-row .ar-stat{color:var(--muted-2);font-size:10px;white-space:nowrap;font-variant-numeric:tabular-nums}
   .area-row .ar-role{color:var(--muted);font-size:11px;line-height:1.5;margin-top:3px}
 
+  /* RESUME card */
+  .resume{border:1px solid var(--line);border-left:3px solid var(--violet);border-radius:12px;background:linear-gradient(180deg,rgba(167,139,250,0.08),rgba(13,17,23,0.6));padding:16px 20px;margin-bottom:16px}
+  .resume .ib-label{color:var(--violet)}
+  .resume-thread{font-family:var(--sans);font-size:15px;line-height:1.5;color:var(--fg);margin:0 0 8px}
+  .resume-next{font-family:var(--sans);font-size:12px;color:var(--emerald);margin-bottom:8px}
+  .resume-files{display:flex;flex-wrap:wrap;gap:0}
+
   /* FLOW (said-to-did) */
   .flow-lane{border:1px solid var(--line);border-radius:12px;margin-bottom:14px;background:rgba(13,17,23,0.5);overflow:hidden}
   .flow-said{display:flex;gap:12px;align-items:flex-start;padding:13px 16px;border-left:3px solid var(--sky);background:linear-gradient(180deg,rgba(56,189,248,0.08),transparent)}
@@ -408,6 +415,12 @@ export function renderDashboardHtml(session: string): string {
     <div class="hero-name" id="ov-name">slipstream</div>
     <div class="hero-desc" id="ov-desc">Reading the project...</div>
     <div class="hero-stats" id="ov-stats"></div>
+  </section>
+  <section class="resume" id="resume-card" style="display:none">
+    <div class="ib-label">Where you left off</div>
+    <p class="resume-thread" id="resume-thread"></p>
+    <div class="resume-next" id="resume-next"></div>
+    <div class="resume-files" id="resume-files"></div>
   </section>
   <div class="grid-2">
     <div class="panel">
@@ -701,7 +714,17 @@ export function renderDashboardHtml(session: string): string {
 
   // OVERVIEW TAB: the landing answer to what this project is and what was built.
   function hs(v, l) { return '<div class="hs"><span class="v">' + escape(String(v)) + '</span><span class="l">' + escape(l) + '</span></div>'; }
+  async function loadResume() {
+    const b = await fetch("/api/resume?session=" + encodeURIComponent(current)).then((x) => x.json()).catch(() => null);
+    const card = $("resume-card");
+    if (!b || !b.hasContext) { card.style.display = "none"; return; }
+    card.style.display = "block";
+    $("resume-thread").textContent = b.openThread || "(no open thread)";
+    $("resume-next").textContent = "Next: " + (b.suggestedNext || "");
+    $("resume-files").innerHTML = (b.filesInFlight || []).map((f) => '<span class="chip">' + escape(f) + '</span>').join("");
+  }
   async function loadOverview() {
+    loadResume();
     const r = await fetch("/api/overview").then((x) => x.json()).catch(() => null);
     if (!r) return;
     if (r.identity) {

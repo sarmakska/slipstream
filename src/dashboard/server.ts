@@ -35,6 +35,7 @@ import {
   distillProjectLessons,
   listMemories,
   loadConversation,
+  resumeBrief,
   type ObservationKind
 } from "../memory/index.js";
 import { budget, BYTES_PER_TOKEN } from "../context/budget.js";
@@ -434,6 +435,18 @@ export class DashboardServer {
         recent,
         counts: { sessions: sessions.length, observations: obs.length, memories: memories.length }
       }));
+      return;
+    }
+    // Resume brief: where we left off for a session, so neither the human nor
+    // Claude starts cold. Built from the captured conversation and the session's
+    // observations. Powers the Resume card on the Overview.
+    if (url.pathname === "/api/resume") {
+      const session = await this.resolveSession(url.searchParams.get("session") ?? undefined);
+      const conv = await loadConversation(this.opts.projectRoot, session);
+      const all = await loadObservations(this.opts.projectRoot).catch(() => [] as Awaited<ReturnType<typeof loadObservations>>);
+      const sessionObs = all.filter((o) => o.session === session);
+      res.writeHead(200, { "content-type": "application/json" });
+      res.end(JSON.stringify({ session, ...resumeBrief(conv, sessionObs) }));
       return;
     }
     // The full recorded conversation for one session: every human ask and the

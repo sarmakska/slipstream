@@ -93,6 +93,27 @@ if (dashboardLine) {
   lines.push("");
   lines.push(dashboardLine);
 }
+
+// Where we left off: reconstruct the open thread and files in flight from the
+// captured conversation and observations so the session resumes warm. The same
+// brief is shown on the dashboard Overview, so the two never disagree.
+try {
+  const memory = await import(pathToFileURL(join(here, "..", "dist", "memory", "index.js")).href);
+  const conv = await memory.loadConversation(cwd, String(session)).catch(() => null);
+  const allObs = await memory.loadObservations(cwd).catch(() => []);
+  const sessionObs = allObs.filter((o) => o.session === String(session));
+  const brief = memory.resumeBrief(conv, sessionObs);
+  if (brief.hasContext) {
+    lines.push("");
+    lines.push("Where you left off:");
+    if (brief.openThread) lines.push(`- Open thread: ${brief.openThread}`);
+    if (brief.filesInFlight.length) lines.push(`- Files in flight: ${brief.filesInFlight.join(", ")}`);
+    lines.push(`- Suggested next: ${brief.suggestedNext}`);
+  }
+} catch {
+  // No dist or no history: skip the resume block.
+}
+
 lines.push("");
 lines.push("Token discipline: prefer the project map over whole files.");
 lines.push(
