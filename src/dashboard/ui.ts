@@ -107,13 +107,14 @@ export function renderDashboardHtml(session: string): string {
   @keyframes slidein{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
 
   .panel{
-    border:1px solid var(--line);border-radius:14px;
-    background:linear-gradient(180deg, rgba(13,17,23,0.7), rgba(8,10,18,0.7));
-    padding:16px 18px;overflow:hidden;
+    border:1px solid var(--line);border-radius:16px;
+    background:linear-gradient(180deg, rgba(15,20,30,0.7), rgba(8,10,18,0.6));
+    padding:18px 20px;overflow:hidden;
+    box-shadow:0 1px 0 rgba(255,255,255,0.02), 0 10px 30px rgba(0,0,0,0.22);
   }
   .panel h2{
-    font-size:10px;letter-spacing:0.16em;text-transform:uppercase;
-    color:var(--muted);margin:0 0 12px;
+    font-family:var(--sans);font-size:14px;letter-spacing:-0.01em;text-transform:none;
+    color:var(--fg);font-weight:600;margin:0 0 14px;
     display:flex;align-items:center;justify-content:space-between;gap:8px;
   }
   .panel h2 .badge{
