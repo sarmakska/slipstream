@@ -73,7 +73,9 @@ try {
       session,
       detached: true
     });
-    if (settings.autoOpen && result.started) launch.openInBrowser(result.url);
+    // Open the dashboard on every session start, not only the first, so a new
+    // session always surfaces it. Disable with SLIPSTREAM_DASHBOARD_OPEN=0.
+    if (settings.autoOpen) launch.openInBrowser(result.url);
     dashboardLine =
       `Live agent dashboard: ${result.url} ` +
       (result.started ? "(just started)" : "(already running)") +
