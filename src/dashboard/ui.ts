@@ -363,6 +363,15 @@ export function renderDashboardHtml(session: string): string {
   .fail-row .fr-meta{color:var(--muted-2);font-size:9px;margin-top:3px;font-variant-numeric:tabular-nums;text-transform:uppercase;letter-spacing:0.06em}
   #fail-count.has{background:rgba(248,113,113,0.14);color:var(--red);border-color:rgba(248,113,113,0.4)}
 
+  /* MESSAGE THE AGENT */
+  #msg-text{width:100%;background:var(--surface);color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font:inherit;font-family:var(--sans);font-size:12px;resize:vertical;margin-bottom:7px}
+  #msg-text:focus{outline:none;border-color:var(--sky)}
+  #msg-send{border:1px solid var(--emerald);color:var(--emerald);background:rgba(52,211,153,0.06)}
+  #msg-send:hover{background:rgba(52,211,153,0.14)}
+  .msg-row{font-family:var(--sans);font-size:11px;color:var(--muted);border-left:2px solid var(--line);padding:4px 0 4px 9px;margin-top:7px}
+  .msg-row.pending{border-left-color:var(--amber);color:var(--fg)}
+  .msg-row .ms-meta{color:var(--muted-2);font-size:9px;margin-top:2px;text-transform:uppercase;letter-spacing:0.06em}
+
   /* MODAL */
   .modal-bg{position:fixed;inset:0;background:rgba(5,6,10,0.7);backdrop-filter:blur(6px);z-index:50;display:none;align-items:center;justify-content:center;padding:20px}
   .modal-bg.on{display:flex}
@@ -476,6 +485,13 @@ export function renderDashboardHtml(session: string): string {
         <div class="note">True context tokens when the host transcript is wired in; otherwise an estimate of bytes slipstream pulled.</div>
       </div>
       <div class="panel"><h2>Where Claude struggled <span class="badge" id="fail-count">0</span></h2><div id="failures"><div class="empty">no failures detected this session</div></div></div>
+      <div class="panel">
+        <h2>Message the agent <span class="badge" id="msg-pending">0</span></h2>
+        <textarea id="msg-text" rows="2" placeholder="Leave a message; the agent sees it on its next turn"></textarea>
+        <button id="msg-send" class="chip-btn" type="button">send to agent</button>
+        <div id="msg-list"></div>
+        <div class="note">Queued locally and delivered to the agent at its next prompt. The dashboard cannot interrupt a turn already in progress.</div>
+      </div>
       <div class="panel"><h2>Per-skill activity</h2><div id="skills"><div class="empty">no tool calls yet</div></div></div>
     </div>
     <div class="grid-stack">
@@ -1044,7 +1060,24 @@ export function renderDashboardHtml(session: string): string {
       return '<div class="fail-row"><div class="fr-sum">' + escape(f.summary) + '</div><div class="fr-meta">' + escape(f.source) + (tm ? ' . ' + tm : '') + '</div></div>';
     }).join("");
   }
-  function renderLive() { renderAgents(); renderFilters(); renderStream(); loadBudget(); renderPlan(); renderMap(); renderWork(); renderMemKpi(); loadLiveInsight(); loadFailures(); }
+  async function loadMessages() {
+    const r = await fetch("/api/messages?session=" + encodeURIComponent(current)).then((x) => x.json()).catch(() => null);
+    const list = $("msg-list"); if (!list) return;
+    const msgs = r && r.messages ? r.messages : [];
+    const badge = $("msg-pending"); if (badge) badge.textContent = String(r && r.pending ? r.pending : 0);
+    list.innerHTML = msgs.slice(-6).reverse().map((m) => {
+      const tm = m.ts ? new Date(m.ts).toLocaleTimeString([], { hour12: false }) : "";
+      return '<div class="msg-row' + (m.delivered ? '' : ' pending') + '">' + escape(m.text) + '<div class="ms-meta">' + (m.delivered ? 'delivered' : 'pending') + (tm ? ' . ' + tm : '') + '</div></div>';
+    }).join("");
+  }
+  const msgSend = $("msg-send");
+  if (msgSend) msgSend.onclick = async () => {
+    const ta = $("msg-text"); const text = (ta.value || "").trim();
+    if (!text) return;
+    await fetch("/api/message?session=" + encodeURIComponent(current), { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ text }) }).catch(() => {});
+    ta.value = ""; toast("message queued for the agent"); loadMessages();
+  };
+  function renderLive() { renderAgents(); renderFilters(); renderStream(); loadBudget(); renderPlan(); renderMap(); renderWork(); renderMemKpi(); loadLiveInsight(); loadFailures(); loadMessages(); }
 
   // PROJECT TAB
   async function loadProject() {

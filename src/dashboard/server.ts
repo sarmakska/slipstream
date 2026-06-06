@@ -36,6 +36,9 @@ import {
   listMemories,
   loadConversation,
   resumeBrief,
+  readInbox,
+  queueMessage,
+  pendingMessages,
   type ObservationKind
 } from "../memory/index.js";
 import { budget, BYTES_PER_TOKEN } from "../context/budget.js";
@@ -436,6 +439,30 @@ export class DashboardServer {
         recent,
         counts: { sessions: sessions.length, observations: obs.length, memories: memories.length }
       }));
+      return;
+    }
+    // Message outbox: leave a message for the working agent from the dashboard.
+    // POST queues it; the UserPromptSubmit hook delivers pending messages to the
+    // agent on its next turn. GET lists the messages and their delivery state.
+    if (url.pathname === "/api/message" && req.method === "POST") {
+      const session = await this.resolveSession(url.searchParams.get("session") ?? undefined);
+      const body = await this.readJsonBody(req);
+      const text = typeof body.text === "string" ? body.text : "";
+      if (!text.trim()) {
+        res.writeHead(400, { "content-type": "application/json" });
+        res.end(JSON.stringify({ error: "a message needs non-empty text" }));
+        return;
+      }
+      const msg = await queueMessage(this.opts.projectRoot, session, text, new Date().toISOString());
+      res.writeHead(200, { "content-type": "application/json" });
+      res.end(JSON.stringify({ queued: msg }));
+      return;
+    }
+    if (url.pathname === "/api/messages") {
+      const session = await this.resolveSession(url.searchParams.get("session") ?? undefined);
+      const messages = await readInbox(this.opts.projectRoot, session);
+      res.writeHead(200, { "content-type": "application/json" });
+      res.end(JSON.stringify({ session, messages, pending: pendingMessages(messages).length }));
       return;
     }
     // Failures: where the agent struggled in this session, errors, denials and

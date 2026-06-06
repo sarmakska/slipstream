@@ -7,10 +7,12 @@
 // a map already exists, so it does not nag on a fresh checkout.
 
 import { stat } from "node:fs/promises";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { readPayload, sessionId, emit, withLatencyGuard } from "./emit.mjs";
 
 const cwd = process.cwd();
+const here = dirname(fileURLToPath(import.meta.url));
 
 await withLatencyGuard("user-prompt-submit", async () => {
 const payload = await readPayload();
@@ -38,6 +40,21 @@ const hasMemory = await fileExists(
   join(cwd, ".claude", "slipstream", "memory", "MEMORY.md")
 );
 
+// Deliver any messages left for the agent on the dashboard. They were queued
+// locally; the agent sees them now, on this turn. Drained so each is delivered
+// once.
+let messageBlock = "";
+try {
+  const memory = await import(pathToFileURL(join(here, "..", "dist", "memory", "index.js")).href);
+  const messages = await memory.drainMessages(cwd, String(session));
+  if (messages.length) {
+    messageBlock = "Messages left for you on the slipstream dashboard:\n" +
+      messages.map((m) => `- ${m}`).join("\n");
+  }
+} catch {
+  // No dist or no inbox: no messages to deliver.
+}
+
 const hints = [];
 if (hasMemory) {
   hints.push(
@@ -51,14 +68,17 @@ if (hasMap) {
   );
 }
 
-if (hints.length === 0) {
+const parts = [];
+if (messageBlock) parts.push(messageBlock);
+if (hints.length > 0) parts.push("slipstream reminder: " + hints.join(" "));
+if (parts.length === 0) {
   return;
 }
 
 const output = {
   hookSpecificOutput: {
     hookEventName: "UserPromptSubmit",
-    additionalContext: "slipstream reminder: " + hints.join(" ")
+    additionalContext: parts.join("\n\n")
   }
 };
 
