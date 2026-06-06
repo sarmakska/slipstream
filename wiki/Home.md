@@ -2,47 +2,53 @@
 
 > slipstream is not affiliated with or endorsed by Anthropic. Claude and Claude Code are trademarks of Anthropic, referenced here only to describe compatibility.
 
-slipstream is a Claude Code plugin. You install it into Claude Code in VS Code and it makes Claude work through precise tools instead of whole-file reads, keeps context alive across compaction, ships a guardrailed skill library for production sites on Cloudflare, Supabase, Vercel and Resend, and stands up a live local dashboard so you can watch the agents work.
+slipstream is the local memory and observability layer for Claude Code. It makes Claude remember across sessions, read far fewer tokens by pulling scoped slices instead of whole files, and shows you everything it did in a local dashboard. It installs as a Claude Code plugin and also runs as an MCP server in Cursor, Windsurf, Antigravity, VS Code and JetBrains. Everything is local, gitignored, and never leaves your machine.
 
-It is not a CLI you run as a product. There is a small helper binary the plugin calls from its hooks, its slash commands and a bundled MCP server, but you never invoke it directly.
+## What you get
 
-## What you feel on day one
-
-1. **Claude works through precise tools.** A bundled MCP server exposes `sp_map`, `sp_symbol`, `sp_lines` and `sp_search`, so Claude pulls one declaration instead of opening the whole file. See [MCP tools](MCP-Tools) and [Token efficiency](Token-Efficiency).
-2. **Memory builds itself, and you can search it.** Every turn is captured as a compact observation and made semantically searchable through a three-layer search (`sp_search_memory` → `sp_timeline` → `sp_observations`), so past work is recoverable without anyone writing it down. See [Observation memory and semantic search](Observation-Memory).
-3. **Context survives compaction.** A `PreCompact` hook writes a structured digest before Claude Code trims the conversation; the next session reloads it. See [Lossless compaction](Lossless-Compaction).
-4. **You watch the agents in a dashboard.** Session start boots a `127.0.0.1` server and prints the URL into chat; a Memory search panel queries your project's observations. See [Live agent dashboard](Live-Agent-Dashboard).
-5. **You see the budget in the statusline.** `cp | ctx 12% ok | mem 4 | obs 37 | skill scoped-read`. See [Statusline](Statusline).
+1. **Memory across sessions.** Every turn is folded into a local observation and each session is distilled into a durable summary automatically, so the next session starts knowing what the last one did. See [Memory System](Memory-System) and [Observation Memory](Observation-Memory).
+2. **Cold start is never cold.** SessionStart injects a knowledge feed: what the project is, how it is organised, the most-connected files to read first, recent asks and durable memory. See [Hooks](Hooks).
+3. **~96% fewer tokens per read, reproducible.** Claude pulls one symbol or line range through the scoped map instead of the whole file. Run `pnpm benchmark` to regenerate the numbers. See [Token Efficiency](Token-Efficiency) and [MCP Tools](MCP-Tools).
+4. **Multiple tabs coordinate.** Open several sessions on one project and each posts what it is working on to a shared bus; every session sees the others at its next turn. Turn-boundary coordination, not live messaging.
+5. **A local dashboard.** Six focused views on `127.0.0.1`: Overview, Live activity, the agents office, Sessions by day, what Claude remembers, and an interactive code map. See [Live Agent Dashboard](Live-Agent-Dashboard).
+6. **Skills that steer the work.** 75 shipped skills, including a deliberate-engineering methodology set and a premium web-design track. See [Skill Catalogue](Skill-Catalogue).
 
 ## System diagram
 
 ```mermaid
-%%{init: {'theme':'base','themeVariables':{'primaryColor':'#0d1117','primaryTextColor':'#f5f7fa','primaryBorderColor':'#38bdf8','lineColor':'#22d3ee','fontFamily':'monospace'}}}%%
 flowchart TD
-  subgraph CC[Claude Code in VS Code]
-    Hooks[Hooks incl. PreCompact]
-    Cmds[Slash commands]
-    Skills[63 agent skills]
-    Agents[Subagents]
+  subgraph Editor[Claude Code or MCP editor]
+    Hooks[Lifecycle hooks]
+    Skills[75 skills]
     SL[Statusline]
   end
-  CC --> MCP[Bundled MCP server sp_*]
-  Hooks --> Helper[slipstream helper]
-  Cmds --> Helper
-  Agents --> MCP
-  MCP --> Map[Project map]
-  Helper --> Map
-  MCP --> Mem[Persistent memory]
-  Helper --> Mem
-  Hooks -->|PreCompact| Digest[Session digest]
-  Digest --> Mem
-  Hooks --> Log[(Event log)]
-  Log --> Server[Local SSE server 127.0.0.1]
-  Server --> UI[Live dashboard]
-  SL --> Budget[Context budget]
-  Map -->|read index, pull one slice| Tokens[Fewer tokens per read]
-  Mem -->|reloaded at session start| Survive[Context survives compaction]
+  Editor --> MCP[MCP server: sp_map, sp_symbol, sp_lines, sp_search]
+  MCP --> Store[(.claude/slipstream: observations, conversations, memory, bus)]
+  Hooks --> Store
+  Hooks -->|knowledge feed and recall| Editor
+  Store --> Dash[Local dashboard 127.0.0.1]
 ```
+
+## The session loop
+
+```mermaid
+sequenceDiagram
+  participant U as You
+  participant C as Claude
+  participant S as slipstream
+  S->>C: SessionStart, project knowledge, resume, other tabs
+  U->>C: ask
+  C->>S: scoped read, around 96% fewer tokens
+  C->>U: answer
+  C->>S: Stop, fold into memory, distil summary, post status
+  Note over S: next session starts already knowing this
+```
+
+## Honest limits
+
+- Separate chats cannot message each other mid-turn; coordination happens at turn boundaries through shared memory.
+- The ~96% figure is per-read, not end-to-end; real savings depend on how often the agent re-reads.
+- Capture is going forward from install; it does not reconstruct history that happened before it.
 
 ## Navigation
 
@@ -50,34 +56,23 @@ flowchart TD
 |---|---|
 | [Install in VS Code](Install-in-VS-Code) | Marketplace add, install, first run, doctor |
 | [MCP tools](MCP-Tools) | The bundled server and every `sp_` tool |
-| [Observation memory and semantic search](Observation-Memory) | Self-building memory, the local embedding, three-layer search, lesson distillation |
-| [Cross-IDE support](Cross-IDE-Support) | The dashboard, budget gauge and tools in Cursor, Windsurf, Antigravity, VS Code |
-| [Lossless compaction](Lossless-Compaction) | The PreCompact digest and the reload |
+| [Observation memory](Observation-Memory) | Self-building memory, the local embedding, three-layer search, lesson distillation |
+| [Memory system](Memory-System) | The file-based store, summaries, instincts, health |
 | [Memory recall](Memory-Recall) | Signal-ranked relevant recall, not load-everything |
-| [Live agent dashboard](Live-Agent-Dashboard) | Hooks, event log, server, UI, replay |
+| [Lossless compaction](Lossless-Compaction) | The PreCompact digest and the reload |
+| [Cross-IDE support](Cross-IDE-Support) | Tools and dashboard in Cursor, Windsurf, Antigravity, VS Code, JetBrains |
+| [Live agent dashboard](Live-Agent-Dashboard) | The six views, the API, the session loop |
+| [Token efficiency](Token-Efficiency) | The reproducible before/after numbers |
 | [Statusline](Statusline) | The status bar line and how to enable it |
-| [Output style](Output-Style) | The terse, token-lean style |
 | [Subagents](Subagents) | sp-shipper, sp-schema, sp-reviewer |
-| [Token efficiency](Token-Efficiency) | The worked before/after numbers |
 | [Architecture](Architecture) | Repo shape, modules, the data path |
-| [Memory system](Memory-System) | The file-based store and the index |
 | [Skill engine](Skill-Engine) | The skill contract and loader |
-| [Skill catalogue](Skill-Catalogue) | The 63 skills by category |
+| [Skill catalogue](Skill-Catalogue) | The 75 skills by category |
 | [Writing a skill](Writing-a-Skill) | Author a skill that passes validation |
 | [Hooks](Hooks) | Every wired hook and what it emits |
-| [Configuration and tuning](Configuration-and-Tuning) | Every knob and env var |
 | [Data formats](Data-Formats) | Map JSON, memory frontmatter, the event log |
 | [Performance and benchmarks](Performance-and-Benchmarks) | Real numbers from this machine |
-| [Design decisions](Design-Decisions) | Choices made and alternatives rejected |
 | [Security model](Security-Model) | Local-only, redaction, what to trust |
-| [Testing strategy](Testing-Strategy) | What the 120 tests cover and why |
-| [Examples and recipes](Examples-and-Recipes) | Copy-paste flows |
-| [Comparisons](Comparisons) | Versus the obvious alternatives |
-| [Integrations](Integrations) | Cloudflare, Supabase, Vercel, Resend |
-| [Contributing](Contributing) | Build, test, write an extension |
+| [Testing strategy](Testing-Strategy) | What the 321 tests cover and why |
 | [FAQ](FAQ) | Common questions |
 | [Troubleshooting](Troubleshooting) | Symptoms and fixes |
-| [Roadmap and limitations](Roadmap-and-Limitations) | What I will and will not add |
-
----
-SarmaLinux . sarmalinux.com . [Repository](https://github.com/sarmakska/slipstream)

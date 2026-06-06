@@ -23,6 +23,42 @@ A long Claude Code session dies one of two ways: it reads whole files until the 
 - **A local dashboard that shows the real work.** Nine views on `127.0.0.1`, fed by your actual sessions: what was said and done, the full conversation, where Claude struggled, token and dollar savings, distilled lessons, recurring instincts, and an interactive code-dependency graph.
 - **Skills that make Claude work deliberately.** 75 shipped skills, including a methodology set (`using-slipstream`, `test-driven-development`, `verification-before-completion`, code review, `finishing-a-branch`) and a premium web-design track.
 
+## How it fits together
+
+```mermaid
+flowchart LR
+  subgraph Editor["Your editor"]
+    CC["Claude Code / Cursor / Windsurf / VS Code / JetBrains"]
+  end
+  subgraph SS["slipstream (local)"]
+    H["Lifecycle hooks"]
+    MCP["MCP server: sp_map, sp_symbol, sp_lines, sp_search"]
+    ST[(".claude/slipstream\nobservations · conversations · memory · bus")]
+    DASH["Local dashboard 127.0.0.1"]
+  end
+  CC -->|scoped reads| MCP --> ST
+  CC -->|session events| H --> ST
+  H -->|knowledge feed + recall| CC
+  ST --> DASH
+```
+
+Everything in the dashed box is on your machine. No cloud, no telemetry, no account.
+
+## The session loop
+
+```mermaid
+sequenceDiagram
+  participant U as You
+  participant C as Claude
+  participant S as slipstream
+  S->>C: SessionStart, inject project knowledge, resume, other tabs
+  U->>C: ask
+  C->>S: scoped read (sp_symbol / sp_lines), ~96% fewer tokens
+  C->>U: answer
+  C->>S: Stop, fold turn into memory, distil summary, post status
+  Note over S: next session starts already knowing all of this
+```
+
 ## Install
 
 As a Claude Code plugin, the hooks, MCP server, skills, statusline and dashboard all wire up automatically:
@@ -76,18 +112,6 @@ pnpm test          # the suite
 pnpm benchmark     # reproduce the token-savings table
 pnpm build         # server + dashboard
 ```
-
-## Acknowledgements
-
-slipstream's design was inspired by several excellent open-source projects. The implementations here are original, but credit is due for the ideas:
-
-- **[superpowers](https://github.com/obra/superpowers)** by obra, for the deliberate-engineering skill methodology that shaped slipstream's own skill suite.
-- **[pixel-agents](https://github.com/pixel-agents-hq/pixel-agents)**, for the idea of watching agents work as characters, which inspired the agents office.
-- **[ruflo](https://github.com/ruvnet/ruflo)** by ruvnet, for self-learning memory and multi-agent coordination ideas.
-- **[graphify](https://github.com/safishamsi/graphify)**, for the codebase knowledge-graph visualisation that inspired the code map.
-- **[ECC](https://github.com/affaan-m/ECC)**, for the harness-native operator and instinct ideas.
-
-Each is its own project under its own licence; slipstream does not bundle their code or assets.
 
 ## License
 
