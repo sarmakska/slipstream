@@ -14,6 +14,7 @@ import {
 import {
   addMemory,
   listMemories,
+  memoryHealth,
   recallMemories,
   pruneMemory,
   regenerateIndex,
@@ -93,6 +94,7 @@ Usage:
   slipstream memory add --type T --desc "..." --body "..." [--tags a,b] [--root .]
   slipstream memory recall "query" [--root .] [--limit 5]
   slipstream memory list [--root .]
+  slipstream memory doctor [--root .]
   slipstream memory prune <name> [--root .]
   slipstream memory index [--root .]
   slipstream memory search "query" [--kind K] [--session S] [--since ISO] [--limit N] [--root .]
@@ -256,6 +258,15 @@ async function cmdMemory(args: string[]): Promise<number> {
       console.log(`${all.length} memories in ${memoryDir(root)}`);
       for (const m of all) console.log(`  ${m.name} [${m.type}] ${m.description}`);
       return 0;
+    }
+    case "doctor": {
+      const all = await listMemories(root);
+      const h = memoryHealth(all, Date.now());
+      console.log(h.note);
+      const types = Object.entries(h.byType).sort((a, b) => b[1] - a[1]);
+      if (types.length) console.log("by type: " + types.map(([t, n]) => `${t} ${n}`).join(", "));
+      // Exit non-zero when the store needs attention, so a script can gate on it.
+      return h.duplicates > 0 || h.stale > 0 ? 1 : 0;
     }
     case "prune": {
       const name = rest.find((a) => !a.startsWith("--"));
