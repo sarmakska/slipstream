@@ -306,6 +306,24 @@ export function renderDashboardHtml(session: string): string {
   .ib-bullets:empty{display:none}
   .ib-bullets li{margin:2px 0}
 
+  /* FLOW (said-to-did) */
+  .flow-lane{border:1px solid var(--line);border-radius:12px;margin-bottom:14px;background:rgba(13,17,23,0.5);overflow:hidden}
+  .flow-said{display:flex;gap:12px;align-items:flex-start;padding:13px 16px;border-left:3px solid var(--sky);background:linear-gradient(180deg,rgba(56,189,248,0.08),transparent)}
+  .flow-said .who{font-size:9px;text-transform:uppercase;letter-spacing:0.14em;color:var(--sky);font-weight:700;white-space:nowrap;padding-top:3px}
+  .flow-said .what{color:var(--fg);font-size:14px;line-height:1.5;flex:1}
+  .flow-said .time{color:var(--muted-2);font-size:10px;white-space:nowrap;padding-top:3px;font-variant-numeric:tabular-nums}
+  .flow-opening .flow-said{border-left-color:var(--muted-2);background:linear-gradient(180deg,rgba(139,155,180,0.06),transparent)}
+  .flow-opening .who{color:var(--muted)}
+  .flow-did{padding:8px 16px 13px}
+  .flow-summary{color:var(--emerald);font-size:12px;margin:2px 0 10px;font-style:italic}
+  .flow-actions{display:flex;flex-direction:column}
+  .flow-act{display:grid;grid-template-columns:74px 1fr auto;gap:10px;align-items:center;font-size:12px;padding:4px 0;border-bottom:1px solid rgba(26,34,48,0.55)}
+  .flow-act:last-child{border-bottom:0}
+  .flow-act .tool{color:var(--cyan);font-size:9px;text-transform:uppercase;letter-spacing:0.06em;font-weight:600}
+  .flow-act .lab{color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .flow-act .ag{color:var(--violet);font-size:9px;white-space:nowrap}
+  .flow-files{margin-top:9px;border-top:1px solid var(--line);padding-top:9px}
+
   /* MODAL */
   .modal-bg{position:fixed;inset:0;background:rgba(5,6,10,0.7);backdrop-filter:blur(6px);z-index:50;display:none;align-items:center;justify-content:center;padding:20px}
   .modal-bg.on{display:flex}
@@ -349,6 +367,7 @@ export function renderDashboardHtml(session: string): string {
 
 <nav class="tabs" id="tabs">
   <button class="tab on" data-tab="live">Live</button>
+  <button class="tab" data-tab="flow">Flow</button>
   <button class="tab" data-tab="project">Project <span class="badge" id="tb-obs">0</span></button>
   <button class="tab" data-tab="journal">Journal</button>
   <button class="tab" data-tab="sessions">Sessions <span class="badge" id="tb-sess">0</span></button>
@@ -401,6 +420,15 @@ export function renderDashboardHtml(session: string): string {
       <div class="panel"><h2>Mind map</h2><div class="map-wrap"><svg id="map" viewBox="0 0 360 200" preserveAspectRatio="xMidYMid meet"></svg></div></div>
       <div class="panel"><h2>Session work</h2><div id="work"><div class="empty">no work yet</div></div></div>
     </div>
+  </div>
+</div>
+
+<!-- FLOW -->
+<div class="view" id="view-flow">
+  <div class="panel">
+    <h2>Conversation flow <span class="badge" id="flow-count">0</span></h2>
+    <div class="note" style="margin-top:0;margin-bottom:12px">What you said, and what the agent did about it. One lane per prompt, read top to bottom as the story of this session.</div>
+    <div id="flow"><div class="empty">no conversation yet for this session</div></div>
   </div>
 </div>
 
@@ -585,10 +613,44 @@ export function renderDashboardHtml(session: string): string {
       currentTab = target;
       for (const x of document.querySelectorAll(".tab")) x.classList.toggle("on", x.dataset.tab === target);
       for (const v of document.querySelectorAll(".view")) v.classList.toggle("on", v.id === "view-" + target);
+      if (target === "flow") loadFlow();
       if (target === "project") loadProject();
       if (target === "journal") loadJournal(currentDate);
       if (target === "sessions") loadSessionsTable();
     });
+  }
+
+  // FLOW TAB: the said-to-did story for the current session.
+  async function loadFlow() {
+    const s = await fetch("/api/story?session=" + encodeURIComponent(current)).then((r) => r.json()).catch(() => null);
+    const box = $("flow");
+    if (!s || !s.lanes || s.lanes.length === 0) {
+      box.innerHTML = '<div class="empty">no conversation yet for this session</div>';
+      $("flow-count").textContent = "0";
+      return;
+    }
+    $("flow-count").textContent = s.promptCount + " prompt" + (s.promptCount === 1 ? "" : "s") + " . " + s.toolCount + " action" + (s.toolCount === 1 ? "" : "s");
+    box.innerHTML = "";
+    for (const lane of s.lanes) {
+      const el = document.createElement("div");
+      el.className = "flow-lane" + (lane.opening ? " flow-opening" : "");
+      const t = lane.ts ? new Date(lane.ts).toLocaleTimeString([], { hour12: false }) : "";
+      const who = lane.opening ? "start" : "you said";
+      const said = lane.opening ? "Session opened" : escape(lane.prompt);
+      let actions = "";
+      for (const a of (lane.actions || [])) {
+        const ag = a.agent && a.agent !== "main" ? '<span class="ag">' + escape(a.agent) + '</span>' : '<span></span>';
+        actions += '<div class="flow-act"><span class="tool">' + escape(a.tool || a.kind) + '</span><span class="lab" title="' + escape(a.label) + '">' + escape(a.label) + '</span>' + ag + '</div>';
+      }
+      const files = (lane.files || []).map((f) => '<span class="chip">' + escape(f.split("/").slice(-2).join("/")) + '</span>').join("");
+      el.innerHTML =
+        '<div class="flow-said"><span class="who">' + who + '</span><span class="what">' + said + '</span><span class="time">' + t + '</span></div>' +
+        '<div class="flow-did"><div class="flow-summary">' + escape(lane.summary) + '</div>' +
+        (actions ? '<div class="flow-actions">' + actions + '</div>' : '<div class="empty">no actions yet</div>') +
+        (files ? '<div class="flow-files">' + files + '</div>' : '') +
+        '</div>';
+      box.appendChild(el);
+    }
   }
 
   async function loadSessions() {
@@ -994,7 +1056,8 @@ export function renderDashboardHtml(session: string): string {
 
   // ACTIONS
   $("refresh-btn").onclick = () => {
-    if (currentTab === "project") loadProject();
+    if (currentTab === "flow") loadFlow();
+    else if (currentTab === "project") loadProject();
     else if (currentTab === "journal") loadJournal(currentDate);
     else if (currentTab === "sessions") loadSessionsTable();
     else { loadSavings(); loadBudget(); loadLiveInsight(); }
@@ -1016,6 +1079,7 @@ export function renderDashboardHtml(session: string): string {
   function connect() {
     if (es) es.close();
     state = null; selected = null; seenEntryIds.clear(); renderLive();
+    if (currentTab === "flow") loadFlow();
     setConn("warn");
     es = new EventSource("/api/stream?session=" + encodeURIComponent(current));
     es.addEventListener("snapshot", (ev) => {
