@@ -258,8 +258,19 @@ export class DashboardServer {
     }
     if (url.pathname === "/api/sessions") {
       const sessions = await listSessions(this.opts.projectRoot);
+      // Per-session last activity and observation count, so the UI can group
+      // sessions by day with a count.
+      const obs = await loadObservations(this.opts.projectRoot).catch(() => [] as Awaited<ReturnType<typeof loadObservations>>);
+      const info = new Map<string, { session: string; lastTs: string; observations: number }>();
+      for (const s of sessions) info.set(s, { session: s, lastTs: "", observations: 0 });
+      for (const o of obs) {
+        const row = info.get(o.session);
+        if (!row) continue;
+        row.observations += 1;
+        if (o.ts > row.lastTs) row.lastTs = o.ts;
+      }
       res.writeHead(200, { "content-type": "application/json" });
-      res.end(JSON.stringify({ sessions }));
+      res.end(JSON.stringify({ sessions, info: [...info.values()] }));
       return;
     }
     if (url.pathname === "/api/state") {

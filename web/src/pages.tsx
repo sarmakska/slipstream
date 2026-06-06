@@ -214,24 +214,38 @@ export function SessionsPage() {
   const { session, setSession } = useSession();
   const r = useFetch(() => api.sessions(), []);
   const [open, setOpen] = useState<string | null>(null);
+  // Group sessions by the day they were last active.
+  const info = r?.info ?? (r?.sessions ?? []).map((s) => ({ session: s, lastTs: "", observations: 0 }));
+  const byDay = new Map<string, typeof info>();
+  for (const i of info) {
+    const day = i.lastTs ? i.lastTs.slice(0, 10) : "undated";
+    if (!byDay.has(day)) byDay.set(day, []);
+    byDay.get(day)!.push(i);
+  }
+  const days = [...byDay.keys()].sort((a, b) => (a < b ? 1 : -1));
   return (
     <>
       <div className="card">
-        <h2>All sessions <span className="badge">{r?.sessions.length ?? 0}</span></h2>
-        <div className="empty" style={{ marginTop: 0 }}>Click a session to read what happened in it.</div>
-        <table>
-          <thead><tr><th>id</th><th>status</th><th /></tr></thead>
-          <tbody>
-            {(r?.sessions ?? []).map((s) => (
-              <tr key={s} style={{ cursor: "pointer" }} onClick={() => { setSession(s); setOpen(open === s ? null : s); }}>
-                <td style={{ color: open === s ? "var(--emerald)" : "var(--fg)" }}>{s}</td>
-                <td style={{ color: s === session ? "var(--emerald)" : "var(--muted)" }}>{s === session ? "active" : "past"}</td>
-                <td style={{ color: "var(--muted-2)", fontSize: 11 }}>{open === s ? "hide" : "view detail"}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <h2>Sessions by day <span className="badge">{info.length}</span></h2>
+        <div className="empty" style={{ marginTop: 0 }}>Grouped by the day they ran. Click a session to read what happened in it.</div>
       </div>
+      {days.map((day) => {
+        const rows = byDay.get(day)!;
+        const obs = rows.reduce((n, x) => n + x.observations, 0);
+        return (
+          <div className="card" key={day}>
+            <h2>{day === "undated" ? "Undated" : day} <span className="badge">{rows.length} session{rows.length === 1 ? "" : "s"} · {obs} observations</span></h2>
+            {rows.map((i) => (
+              <div className="row" key={i.session} style={{ cursor: "pointer" }} onClick={() => { setSession(i.session); setOpen(open === i.session ? null : i.session); }}>
+                <div className="t" style={{ color: open === i.session ? "var(--emerald)" : "var(--fg)" }}>
+                  {i.session}{i.session === session ? "  · active" : ""}
+                </div>
+                <div className="s">{i.observations} observations · {open === i.session ? "hide" : "view detail"}</div>
+              </div>
+            ))}
+          </div>
+        );
+      })}
       {open && <SessionDetail session={open} />}
     </>
   );

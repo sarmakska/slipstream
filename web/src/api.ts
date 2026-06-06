@@ -40,7 +40,7 @@ export interface Failures { failures: { ts: string; source: string; summary: str
 export const api = {
   overview: () => get<Overview>("/api/overview"),
   insights: (tab: string, session?: string) => get<Insight>(`/api/insights/${tab}${session ? `?session=${encodeURIComponent(session)}` : ""}`),
-  sessions: () => get<{ sessions: string[] }>("/api/sessions"),
+  sessions: () => get<{ sessions: string[]; info?: { session: string; lastTs: string; observations: number }[] }>("/api/sessions"),
   story: (s: string) => get<Story>(`/api/story?session=${encodeURIComponent(s)}`),
   conversation: (s: string) => get<Conversation>(`/api/conversation?session=${encodeURIComponent(s)}`),
   graph: () => get<GraphData>("/api/graph"),
