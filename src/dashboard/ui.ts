@@ -457,6 +457,7 @@ export function renderDashboardHtml(session: string): string {
     <div class="hero-name" id="ov-name">slipstream</div>
     <div class="hero-desc" id="ov-desc">Reading the project...</div>
     <div class="hero-stats" id="ov-stats"></div>
+    <a class="chip-btn" id="ov-brief" href="/api/brief" style="margin-top:14px;display:inline-block;text-transform:none;letter-spacing:0">download full project brief</a>
   </section>
   <section class="resume" id="resume-card" style="display:none">
     <div class="ib-label">Where you left off</div>

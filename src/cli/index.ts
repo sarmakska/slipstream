@@ -56,6 +56,7 @@ import {
 } from "../context/index.js";
 import { buildMindMap, mindMapToMermaid } from "../dashboard/model.js";
 import { renderArtifact } from "../dashboard/artifact.js";
+import { assembleBrief } from "../dashboard/brief.js";
 import {
   appendEvent,
   readLog,
@@ -105,6 +106,7 @@ Usage:
   slipstream savings [--root .]
   slipstream mindmap [root] [--mermaid] [--html out.html]
   slipstream status [root] [--bytes N]
+  slipstream brief [root] [--out file.md]
   slipstream dashboard start [--root .] [--session S] [--open] [--foreground] [--watch-map]
   slipstream dashboard emit --kind K --label "..." [--root .] [--session S] [--agent A] [--bytes N]
   slipstream dashboard replay [--root .] [--session S]
@@ -359,6 +361,28 @@ async function cmdMemory(args: string[]): Promise<number> {
 async function cmdSavings(args: string[]): Promise<number> {
   const root = getFlag(args, "root") ?? ".";
   console.log(renderSavings(summarizeSavings(await loadSavings(root))));
+  return 0;
+}
+
+async function cmdBrief(args: string[]): Promise<number> {
+  const root = args[0] && !args[0].startsWith("--") ? args[0] : getFlag(args, "root") ?? ".";
+  let name = "project";
+  let version = "0.0.0";
+  try {
+    const pkg = JSON.parse(await readFile(resolve(root, "package.json"), "utf8")) as { name?: string; version?: string };
+    name = pkg.name ?? name;
+    version = pkg.version ?? version;
+  } catch {
+    // No package.json: keep the defaults.
+  }
+  const md = await assembleBrief(root, name, version, new Date().toISOString());
+  const out = getFlag(args, "out");
+  if (out) {
+    await writeFile(resolve(out), md, "utf8");
+    console.log(`wrote project brief to ${out}`);
+  } else {
+    process.stdout.write(md);
+  }
   return 0;
 }
 
@@ -765,6 +789,8 @@ async function main(): Promise<number> {
       return cmdMindmap(rest);
     case "status":
       return cmdStatus(rest);
+    case "brief":
+      return cmdBrief(rest);
     case "dashboard":
       return cmdDashboard(rest);
     case "export":

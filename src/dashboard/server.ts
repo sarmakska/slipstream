@@ -64,6 +64,7 @@ import { storyFlow } from "./story.js";
 import { extractFailures } from "./failures.js";
 import { sessionReport } from "./report.js";
 import { buildGraph } from "./graph.js";
+import { assembleBrief } from "./brief.js";
 import { agentMood } from "./presence.js";
 import { summariseMap, narrateOverview } from "./overview.js";
 import { generateMap } from "../map/index.js";
@@ -552,6 +553,24 @@ export class DashboardServer {
       const conv = await loadConversation(this.opts.projectRoot, session);
       res.writeHead(200, { "content-type": "application/json" });
       res.end(JSON.stringify(conv ?? { session, exchanges: [], turnCount: 0 }));
+      return;
+    }
+    // Project brief: the whole project's knowledge in one Markdown document, so
+    // someone or a fresh session starting later can pick it up cold. Downloaded.
+    if (url.pathname === "/api/brief") {
+      const root = this.opts.projectRoot;
+      let name = "project";
+      try {
+        name = (JSON.parse(readFileSync(pathJoin(root, "package.json"), "utf8")) as { name?: string }).name ?? name;
+      } catch {
+        // No package.json: keep the default name.
+      }
+      const md = await assembleBrief(root, name, SERVER_VERSION, new Date().toISOString());
+      res.writeHead(200, {
+        "content-type": "text/markdown; charset=utf-8",
+        "content-disposition": `attachment; filename="${name}-brief.md"`
+      });
+      res.end(md);
       return;
     }
     // A shareable Markdown report of a session, served as a download.
