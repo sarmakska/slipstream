@@ -293,6 +293,19 @@ export function renderDashboardHtml(session: string): string {
   .empty{color:var(--muted);padding:8px 0;font-size:11px;font-style:italic}
   .note{color:var(--muted-2);font-size:10px;margin-top:8px;line-height:1.5}
 
+  /* INSIGHT BAND */
+  .insight-band{
+    border:1px solid var(--line);
+    background:linear-gradient(180deg, rgba(52,211,153,0.06), rgba(13,17,23,0.7));
+    border-left:3px solid var(--emerald);
+    border-radius:12px;padding:18px 22px 14px;margin-bottom:16px;
+  }
+  .ib-label{font-size:10px;text-transform:uppercase;letter-spacing:0.16em;color:var(--emerald);font-weight:600;margin-bottom:8px}
+  .ib-paragraph{font-size:16px;line-height:1.55;color:var(--fg);margin:0 0 10px}
+  .ib-bullets{margin:0;padding-left:18px;font-size:13px;color:var(--muted);line-height:1.6}
+  .ib-bullets:empty{display:none}
+  .ib-bullets li{margin:2px 0}
+
   /* MODAL */
   .modal-bg{position:fixed;inset:0;background:rgba(5,6,10,0.7);backdrop-filter:blur(6px);z-index:50;display:none;align-items:center;justify-content:center;padding:20px}
   .modal-bg.on{display:flex}
@@ -344,6 +357,11 @@ export function renderDashboardHtml(session: string): string {
 
 <!-- LIVE -->
 <div class="view on" id="view-live">
+  <section class="insight-band">
+    <div class="ib-label">Insights</div>
+    <p class="ib-paragraph" id="ib-live-p">Reading the session...</p>
+    <ul class="ib-bullets" id="ib-live-b"></ul>
+  </section>
   <div class="kpis">
     <div class="kpi" id="kpi-ctx"><div class="lbl">context</div><div class="val" id="kpi-ctx-val">0%</div><div class="sub" id="kpi-ctx-sub">0 / 200k tokens</div><svg class="spark" id="kpi-ctx-spark" viewBox="0 0 64 22" preserveAspectRatio="none"></svg></div>
     <div class="kpi" id="kpi-opt"><div class="lbl">optimised</div><div class="val" id="kpi-opt-val">0%</div><div class="sub" id="kpi-opt-sub">scoped vs whole-file</div><svg class="spark" id="kpi-opt-spark" viewBox="0 0 64 22" preserveAspectRatio="none"></svg></div>
@@ -388,6 +406,11 @@ export function renderDashboardHtml(session: string): string {
 
 <!-- PROJECT -->
 <div class="view" id="view-project">
+  <section class="insight-band">
+    <div class="ib-label">Insights</div>
+    <p class="ib-paragraph" id="ib-project-p">Reading the project...</p>
+    <ul class="ib-bullets" id="ib-project-b"></ul>
+  </section>
   <div class="kpis" id="proj-kpis">
     <div class="kpi"><div class="lbl">sessions</div><div class="val" id="p-sess">0</div><div class="sub">total recorded</div></div>
     <div class="kpi"><div class="lbl">observations</div><div class="val" id="p-obs">0</div><div class="sub" id="p-obs-sub">across project</div></div>
@@ -431,6 +454,11 @@ export function renderDashboardHtml(session: string): string {
 
 <!-- JOURNAL -->
 <div class="view" id="view-journal">
+  <section class="insight-band">
+    <div class="ib-label">Insights</div>
+    <p class="ib-paragraph" id="ib-journal-p">Reading the day...</p>
+    <ul class="ib-bullets" id="ib-journal-b"></ul>
+  </section>
   <div class="journal-nav">
     <button class="nav-btn" id="day-prev">&lt;&lt; prev</button>
     <input type="date" id="day-pick" />
@@ -457,6 +485,11 @@ export function renderDashboardHtml(session: string): string {
 
 <!-- SESSIONS -->
 <div class="view" id="view-sessions">
+  <section class="insight-band">
+    <div class="ib-label">Insights</div>
+    <p class="ib-paragraph" id="ib-sessions-p">Reading sessions...</p>
+    <ul class="ib-bullets" id="ib-sessions-b"></ul>
+  </section>
   <div class="panel">
     <h2>All sessions <span class="badge" id="all-sess-count">0</span></h2>
     <table class="sess">
@@ -516,6 +549,20 @@ export function renderDashboardHtml(session: string): string {
   const formatNum = (n) => n == null ? "0" : Number(n).toLocaleString("en-GB");
   const formatShort = (n) => n == null ? "0" : (n >= 1e6 ? (n/1e6).toFixed(1)+"M" : n >= 1e3 ? Math.round(n/1e3)+"k" : String(n));
   const toast = (msg) => { const t = $("toast"); t.textContent = msg; t.classList.add("on"); setTimeout(() => t.classList.remove("on"), 1800); };
+
+  // INSIGHT BAND: render {paragraph, bullets} into a tab's band.
+  function renderInsight(prefix, ins) {
+    const p = $(prefix + "-p"), b = $(prefix + "-b");
+    if (!p || !b) return;
+    if (!ins || !ins.paragraph) { b.innerHTML = ""; return; }
+    p.textContent = ins.paragraph;
+    b.innerHTML = (ins.bullets || []).map((x) => '<li>' + escape(x) + '</li>').join("");
+  }
+  async function loadInsight(tab, prefix, qs) {
+    const ins = await fetch("/api/insights/" + tab + (qs || "")).then((r) => r.json()).catch(() => null);
+    renderInsight(prefix, ins);
+  }
+  function loadLiveInsight() { return loadInsight("live", "ib-live", "?session=" + encodeURIComponent(current)); }
 
   let current = ${JSON.stringify(session)};
   let selected = null;
@@ -733,10 +780,11 @@ export function renderDashboardHtml(session: string): string {
     const n = state.observationCount ?? state.observations?.length ?? 0;
     $("kpi-mem-val").textContent = formatNum(n); pushSpark("mem", n); drawSpark("kpi-mem-spark", sparkHistory.mem, "#a78bfa");
   }
-  function renderLive() { renderAgents(); renderFilters(); renderStream(); loadBudget(); renderPlan(); renderMap(); renderWork(); renderMemKpi(); }
+  function renderLive() { renderAgents(); renderFilters(); renderStream(); loadBudget(); renderPlan(); renderMap(); renderWork(); renderMemKpi(); loadLiveInsight(); }
 
   // PROJECT TAB
   async function loadProject() {
+    loadInsight("project", "ib-project");
     const s = await fetch("/api/project/summary").then(r => r.json()).catch(() => null);
     if (!s) return;
     $("p-sess").textContent = formatNum(s.sessions);
@@ -839,6 +887,7 @@ export function renderDashboardHtml(session: string): string {
   // JOURNAL TAB
   async function loadJournal(date) {
     currentDate = date;
+    loadInsight("journal", "ib-journal", "?date=" + encodeURIComponent(date));
     $("day-pick").value = date;
     const d = new Date(date + "T00:00:00Z");
     $("day-title").textContent = d.toLocaleDateString("en-GB", { weekday:"long", day:"numeric", month:"long", year:"numeric" });
@@ -882,6 +931,7 @@ export function renderDashboardHtml(session: string): string {
 
   // SESSIONS TAB
   async function loadSessionsTable() {
+    loadInsight("sessions", "ib-sessions");
     const r = await fetch("/api/sessions").then(x => x.json()).catch(() => ({ sessions: [] }));
     $("all-sess-count").textContent = String(r.sessions.length);
     const tb = $("sessions-tbody"); tb.innerHTML = "";
@@ -947,7 +997,7 @@ export function renderDashboardHtml(session: string): string {
     if (currentTab === "project") loadProject();
     else if (currentTab === "journal") loadJournal(currentDate);
     else if (currentTab === "sessions") loadSessionsTable();
-    else { loadSavings(); loadBudget(); }
+    else { loadSavings(); loadBudget(); loadLiveInsight(); }
     toast("refreshed");
   };
   $("pause-btn").onclick = () => { paused = !paused; $("pause-label").textContent = paused ? "resume" : "pause"; $("pause-btn").classList.toggle("active", paused); setConn(paused ? "warn" : "live"); };
