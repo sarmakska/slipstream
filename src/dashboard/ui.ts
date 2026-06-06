@@ -306,6 +306,21 @@ export function renderDashboardHtml(session: string): string {
   .ib-bullets:empty{display:none}
   .ib-bullets li{margin:2px 0}
 
+  /* OVERVIEW hero + areas */
+  .hero{border:1px solid var(--line);border-left:3px solid var(--emerald);border-radius:14px;background:linear-gradient(135deg,rgba(52,211,153,0.09),rgba(13,17,23,0.55));padding:22px 24px;margin-bottom:16px}
+  .hero-name{font-size:26px;font-weight:800;letter-spacing:-0.02em;color:var(--fg)}
+  .hero-desc{color:var(--muted);font-size:14px;line-height:1.6;margin-top:8px;max-width:780px}
+  .hero-stats{display:flex;gap:26px;margin-top:18px;flex-wrap:wrap}
+  .hero-stats .hs{display:flex;flex-direction:column;gap:2px}
+  .hero-stats .hs .v{font-size:20px;font-weight:700;color:var(--emerald);font-variant-numeric:tabular-nums}
+  .hero-stats .hs .l{font-size:9px;text-transform:uppercase;letter-spacing:0.12em;color:var(--muted)}
+  .area-row{border:1px solid var(--line);border-radius:9px;padding:10px 12px;margin-bottom:7px;background:rgba(13,17,23,0.5);transition:border-color .15s}
+  .area-row:hover{border-color:var(--line-2)}
+  .area-row .ar-top{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+  .area-row .ar-name{color:var(--cyan);font-size:12px;font-weight:600}
+  .area-row .ar-stat{color:var(--muted-2);font-size:10px;white-space:nowrap;font-variant-numeric:tabular-nums}
+  .area-row .ar-role{color:var(--muted);font-size:11px;line-height:1.5;margin-top:3px}
+
   /* FLOW (said-to-did) */
   .flow-lane{border:1px solid var(--line);border-radius:12px;margin-bottom:14px;background:rgba(13,17,23,0.5);overflow:hidden}
   .flow-said{display:flex;gap:12px;align-items:flex-start;padding:13px 16px;border-left:3px solid var(--sky);background:linear-gradient(180deg,rgba(56,189,248,0.08),transparent)}
@@ -372,7 +387,8 @@ export function renderDashboardHtml(session: string): string {
 </header>
 
 <nav class="tabs" id="tabs">
-  <button class="tab on" data-tab="live">Live</button>
+  <button class="tab on" data-tab="overview">Overview</button>
+  <button class="tab" data-tab="live">Live</button>
   <button class="tab" data-tab="flow">Flow</button>
   <button class="tab" data-tab="project">Project <span class="badge" id="tb-obs">0</span></button>
   <button class="tab" data-tab="journal">Journal</button>
@@ -380,8 +396,30 @@ export function renderDashboardHtml(session: string): string {
   <button class="tab" data-tab="memory">Memory</button>
 </nav>
 
+<!-- OVERVIEW -->
+<div class="view on" id="view-overview">
+  <section class="hero">
+    <div class="hero-name" id="ov-name">slipstream</div>
+    <div class="hero-desc" id="ov-desc">Reading the project...</div>
+    <div class="hero-stats" id="ov-stats"></div>
+  </section>
+  <div class="grid-2">
+    <div class="panel">
+      <h2>What has been built</h2>
+      <p class="ib-paragraph" id="ov-summary" style="font-size:14px">Reading the observation memory...</p>
+      <div class="ib-label" style="margin-top:12px">Most recent work</div>
+      <div id="ov-recent"><div class="empty">no recent activity yet</div></div>
+    </div>
+    <div class="panel">
+      <h2>How the project is organised <span class="badge" id="ov-area-count">0</span></h2>
+      <div class="note" style="margin-top:0;margin-bottom:10px">Read from the live code map. Each area is a part of the codebase and what it does.</div>
+      <div id="ov-areas"><div class="empty">mapping the project...</div></div>
+    </div>
+  </div>
+</div>
+
 <!-- LIVE -->
-<div class="view on" id="view-live">
+<div class="view" id="view-live">
   <section class="insight-band">
     <div class="ib-label">Insights</div>
     <p class="ib-paragraph" id="ib-live-p">Reading the session...</p>
@@ -620,7 +658,7 @@ export function renderDashboardHtml(session: string): string {
   let state = null;
   let es = null;
   let paused = false;
-  let currentTab = "live";
+  let currentTab = "overview";
   let currentDate = new Date().toISOString().slice(0, 10);
   let msearchKind = "";
   const startedAtRef = { t: Date.now() };
@@ -636,12 +674,47 @@ export function renderDashboardHtml(session: string): string {
       currentTab = target;
       for (const x of document.querySelectorAll(".tab")) x.classList.toggle("on", x.dataset.tab === target);
       for (const v of document.querySelectorAll(".view")) v.classList.toggle("on", v.id === "view-" + target);
+      if (target === "overview") loadOverview();
       if (target === "flow") loadFlow();
       if (target === "memory") loadMemoryOverview();
       if (target === "project") loadProject();
       if (target === "journal") loadJournal(currentDate);
       if (target === "sessions") loadSessionsTable();
     });
+  }
+
+  // OVERVIEW TAB: the landing answer to what this project is and what was built.
+  function hs(v, l) { return '<div class="hs"><span class="v">' + escape(String(v)) + '</span><span class="l">' + escape(l) + '</span></div>'; }
+  async function loadOverview() {
+    const r = await fetch("/api/overview").then((x) => x.json()).catch(() => null);
+    if (!r) return;
+    if (r.identity) {
+      $("ov-name").textContent = r.identity.name + (r.identity.version ? "  v" + r.identity.version : "");
+      $("ov-desc").textContent = r.identity.description || "A local-first memory and observability layer for AI coding agents.";
+    }
+    const c = r.counts || { sessions: 0, observations: 0, memories: 0 };
+    if (r.map) {
+      $("ov-stats").innerHTML =
+        hs(formatNum(r.map.fileCount), "source files") +
+        hs(formatNum(r.map.symbolCount), "exported symbols") +
+        hs(r.map.kib + " KiB", "of source") +
+        hs(formatNum(c.sessions), "sessions") +
+        hs(formatNum(c.observations), "observations") +
+        hs(formatNum(c.memories), "memories");
+      const areas = r.map.areas || [];
+      $("ov-area-count").textContent = String(areas.length);
+      $("ov-areas").innerHTML = areas.length
+        ? areas.map((a) => '<div class="area-row"><div class="ar-top"><span class="ar-name">' + escape(a.area) + '</span><span class="ar-stat">' + a.files + ' files . ' + a.symbols + ' symbols . ' + a.lines + ' lines</span></div><div class="ar-role">' + escape(a.role) + '</div></div>').join("")
+        : '<div class="empty">no map available</div>';
+    }
+    if (r.summary && r.summary.paragraph) $("ov-summary").textContent = r.summary.paragraph;
+    const rec = $("ov-recent");
+    if (r.recent && r.recent.lanes && r.recent.lanes.length) {
+      rec.innerHTML = r.recent.lanes.slice(-5).reverse().map((l) =>
+        '<div class="mem-item"><div class="mname">' + (l.opening ? "Session opened" : escape(l.prompt)) + '</div><div class="mexc">' + escape(l.summary) + '</div></div>').join("");
+    } else {
+      rec.innerHTML = '<div class="empty">no recent activity yet</div>';
+    }
   }
 
   // MEMORY TAB: what survives a lost session, readable by you and by Claude.
@@ -1101,7 +1174,8 @@ export function renderDashboardHtml(session: string): string {
 
   // ACTIONS
   $("refresh-btn").onclick = () => {
-    if (currentTab === "flow") loadFlow();
+    if (currentTab === "overview") loadOverview();
+    else if (currentTab === "flow") loadFlow();
     else if (currentTab === "memory") loadMemoryOverview();
     else if (currentTab === "project") loadProject();
     else if (currentTab === "journal") loadJournal(currentDate);
@@ -1141,6 +1215,7 @@ export function renderDashboardHtml(session: string): string {
   // Boot
   fetch("/api/health").then(r => r.json()).then(h => { if (h.version) $("ver").textContent = "v" + h.version; }).catch(() => {});
   loadSessions().then(connect);
+  loadOverview();
 </script>
 </body>
 </html>

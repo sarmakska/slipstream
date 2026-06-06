@@ -51,6 +51,8 @@ import {
   sessionsInsights
 } from "./insights.js";
 import { storyFlow } from "./story.js";
+import { summariseMap } from "./overview.js";
+import { generateMap } from "../map/index.js";
 
 /**
  * Resolved at module load. Read from the bundled package.json so /api/health
@@ -371,6 +373,55 @@ export class DashboardServer {
       const insight = sessionsInsights(obs, sessions);
       res.writeHead(200, { "content-type": "application/json" });
       res.end(JSON.stringify(insight));
+      return;
+    }
+    // Overview: the landing answer to "what is this project, what has been
+    // built, and how is it organised". Identity from package.json, a plain
+    // English architecture summary from the scoped code map, the built-so-far
+    // sentence from the observation store, and the most recent session story.
+    if (url.pathname === "/api/overview") {
+      const root = this.opts.projectRoot;
+      const [mapRes, obs, sessions, savings, memories] = await Promise.all([
+        generateMap(root).catch(() => null),
+        loadObservations(root).catch(() => [] as Awaited<ReturnType<typeof loadObservations>>),
+        listSessions(root).catch(() => [] as string[]),
+        loadSavings(root).then(summarizeSavings).catch(() => ({ scopedReads: 0, savedTokens: 0, pct: 0 })),
+        listMemories(root).catch(() => [])
+      ]);
+      let identity = { name: "this project", version: SERVER_VERSION, description: "" };
+      try {
+        const pkg = JSON.parse(readFileSync(pathJoin(root, "package.json"), "utf8")) as {
+          name?: string; version?: string; description?: string;
+        };
+        identity = {
+          name: pkg.name ?? identity.name,
+          version: pkg.version ?? SERVER_VERSION,
+          description: pkg.description ?? ""
+        };
+      } catch {
+        // No package.json: keep the fallback identity.
+      }
+      const summary = projectInsights({
+        observations: obs,
+        sessionCount: sessions.length,
+        memoryCount: memories.length,
+        optPct: savings.pct,
+        savedTokens: savings.savedTokens,
+        scopedReads: savings.scopedReads
+      });
+      let recent: ReturnType<typeof storyFlow> | null = null;
+      if (sessions.length > 0) {
+        const events = await readLog(root, sessions[0]!).catch(() => []);
+        recent = storyFlow(events);
+      }
+      res.writeHead(200, { "content-type": "application/json" });
+      res.end(JSON.stringify({
+        identity,
+        map: mapRes ? summariseMap(mapRes) : null,
+        summary,
+        recent,
+        counts: { sessions: sessions.length, observations: obs.length, memories: memories.length }
+      }));
       return;
     }
     // The said-to-did story for one session: lanes of "you said X, the agent
