@@ -41,6 +41,7 @@ import {
   pendingMessages,
   listConversations,
   searchConversations,
+  deriveInstincts,
   type ObservationKind
 } from "../memory/index.js";
 import { budget, BYTES_PER_TOKEN } from "../context/budget.js";
@@ -239,6 +240,15 @@ export class DashboardServer {
         : [];
       res.writeHead(200, { "content-type": "application/json" });
       res.end(JSON.stringify({ hits }));
+      return;
+    }
+    // Instincts: patterns slipstream noticed recurring across sessions, the
+    // self-learning signal. Hot files and recurring topics, confidence-scored.
+    if (url.pathname === "/api/instincts") {
+      const obs = await loadObservations(this.opts.projectRoot).catch(() => [] as Awaited<ReturnType<typeof loadObservations>>);
+      const limit = Math.min(50, Math.max(1, Number(url.searchParams.get("limit")) || 12));
+      res.writeHead(200, { "content-type": "application/json" });
+      res.end(JSON.stringify({ instincts: deriveInstincts(obs).slice(0, limit) }));
       return;
     }
     // Conversation search: find the exchange where a topic was discussed across

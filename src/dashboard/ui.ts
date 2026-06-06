@@ -664,6 +664,8 @@ export function renderDashboardHtml(session: string): string {
         <div id="mem-durable"><div class="empty">no durable memories yet</div></div>
       </div>
     </div>
+    <div class="ib-label" style="margin-top:14px">Instincts, patterns slipstream noticed</div>
+    <div id="mem-instincts"><div class="empty">no recurring patterns across sessions yet</div></div>
     <div class="ib-label" style="margin-top:14px">Lessons learned across sessions</div>
     <div id="mem-lessons"><div class="empty">collecting lessons; they appear once topics recur</div></div>
     <div class="note">This is what the next session reloads after a lost or compacted session. Readable by you here and by Claude Code on the next start.</div>
@@ -826,6 +828,17 @@ export function renderDashboardHtml(session: string): string {
     ls.innerHTML = (r.lessons && r.lessons.length)
       ? r.lessons.map((l) => card(l.title || l.topic || "lesson", l.summary || l.body || "", l.count ? l.count + " observations" : "")).join("")
       : '<div class="empty">collecting lessons; they appear once topics recur</div>';
+    loadInstincts();
+  }
+  async function loadInstincts() {
+    const box = $("mem-instincts"); if (!box) return;
+    const r = await fetch("/api/instincts").then((x) => x.json()).catch(() => null);
+    const ins = r && r.instincts ? r.instincts : [];
+    if (!ins.length) { box.innerHTML = '<div class="empty">no recurring patterns across sessions yet</div>'; return; }
+    box.innerHTML = ins.map((i) => {
+      const pct = Math.round((i.confidence || 0) * 100);
+      return '<div class="mem-item"><div class="mname">' + escape(i.subject) + ' <span style="color:var(--muted-2)">. ' + pct + '% confidence</span></div><div class="mexc">' + escape(i.note) + '</div></div>';
+    }).join("");
   }
 
   // CONVERSATION TAB: the full recorded chat for the current session.
