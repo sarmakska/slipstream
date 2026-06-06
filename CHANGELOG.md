@@ -5,6 +5,11 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.24.0] - 2026-06-06
+
+### Added
+- **Reproducible token-savings benchmark.** A checked-in script (`scripts/benchmark-token-savings.mjs`, also `pnpm benchmark`) measures whole-file reads versus scoped symbol reads through the project map on real files and emits a Markdown table, so the savings claim is a number anyone can regenerate. The scoped figure averages across every symbol in a file, the honest typical read, and the output states plainly that this is per-read, not end-to-end, efficiency. New `src/map/benchmark.ts`, three tests.
+
 ## [0.23.0] - 2026-06-06
 
 ### Added
