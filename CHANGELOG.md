@@ -5,6 +5,11 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.18.0] - 2026-06-06
+
+### Added
+- **Instincts, the self-learning signal.** slipstream notices what recurs across sessions and promotes it to a ranked, confidence-scored instinct: hot files touched repeatedly and topics that keep coming up. Deterministic, no LLM, just counting what keeps happening, so the project gets sharper with every run. Shown on the Memory tab. New `src/memory/instincts.ts`, five tests, served by `/api/instincts`.
+
 ## [0.17.0] - 2026-06-06
 
 ### Added
