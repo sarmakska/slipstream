@@ -39,6 +39,25 @@ describe("searchConversations", () => {
     expect(hits[0]!.ask).toBe("the token budget gauge");
   });
 
+  it("ranks a whole-word hit above an incidental substring", () => {
+    const hits = searchConversations([
+      conv("s", ["rename the author column", "wire up the auth flow"])
+    ], "auth");
+    // "auth" is a whole word in the second ask but only a substring of
+    // "author" in the first, so the real word hit must rank first.
+    expect(hits[0]!.ask).toBe("wire up the auth flow");
+    expect(hits).toHaveLength(2);
+    expect(hits[0]!.score).toBeGreaterThan(hits[1]!.score);
+  });
+
+  it("still surfaces a substring-only match", () => {
+    const hits = searchConversations([
+      conv("s", ["refactor the authenticator module"])
+    ], "auth");
+    expect(hits).toHaveLength(1);
+    expect(hits[0]!.score).toBeLessThan(1);
+  });
+
   it("respects the limit", () => {
     const asks = Array.from({ length: 10 }, (_, i) => `auth task ${i}`);
     const hits = searchConversations([conv("s", asks)], "auth", 3);
