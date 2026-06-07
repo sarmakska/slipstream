@@ -13,3 +13,5 @@ coverage/
 .claude/slipstream/
 **/.claude/slipstream/
 *.tsbuildinfo
+.scratch/
+.vscode/
