@@ -86,6 +86,20 @@ node dist/cli/index.js memory lessons --min 3
 # - Recurring work on "webhook": 6 observations across 3 sessions, mostly edit; files: src/payments/webhook.ts. [obs 1, 2, 5, …]
 ```
 
+## Conversation search: when did we talk about X
+
+Observation search answers "what did we *do*". A second, complementary search answers "when did we *talk* about X" over the full captured chat, not just the work summaries. It is deliberately separate and deliberately simple: a pure, deterministic lexical match (`searchConversations` in `src/memory/conversation-search.ts`) that the dashboard exposes at `/api/search/conversation`, with no embedding and no index to keep warm.
+
+The score is the fraction of query words present in each exchange's ask and summary, plus a small bonus when the exact phrase appears. The one piece of real judgement is in *how* a word counts:
+
+| Match | Weight | Example for query `auth` |
+|---|---|---|
+| whole word | 1.0 | "wire up the **auth** flow" |
+| incidental substring | 0.4 | "rename the **auth**or column" |
+| absent | 0 | "fix the billing bug" |
+
+A whole-word hit always outranks an exchange where the term only appears inside a larger word, so searching `auth` surfaces the authentication work above an incidental "author", while the substring match is still kept rather than dropped. This preserves recall while sharpening relevance, and the ranking is pinned by tests (`tests/conversation-search.test.ts`).
+
 ## Citations
 
 Every observation has a stable project-wide id. That id is the citation handle: reference `#1` in a discussion and anyone can fetch the full record with `sp_observations` or open `http://127.0.0.1:<port>/api/observation/1` while the dashboard runs.

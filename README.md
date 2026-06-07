@@ -7,7 +7,7 @@
 <p align="center">
 <a href="https://github.com/sarmakska/slipstream/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/sarmakska/slipstream/actions/workflows/ci.yml/badge.svg"></a>
 <a href="https://github.com/sarmakska/slipstream/releases"><img alt="Version" src="https://img.shields.io/github/package-json/v/sarmakska/slipstream"></a>
-<img alt="Tests" src="https://img.shields.io/badge/tests-320%20passing-brightgreen">
+<img alt="Tests" src="https://img.shields.io/badge/tests-323%20passing-brightgreen">
 <img alt="Node" src="https://img.shields.io/badge/node-%3E%3D20-brightgreen">
 <a href="./LICENSE"><img alt="License: MIT" src="https://img.shields.io/github/license/sarmakska/slipstream"></a>
 </p>
@@ -20,7 +20,7 @@ A long Claude Code session dies one of two ways: it reads whole files until the 
 - **Cold start is never cold.** On every session start slipstream injects a freshly built knowledge feed: what the project is, how it is organised, the most-connected files to read first, what was recently asked, and what is remembered. Claude opens oriented instead of blank.
 - **~95% fewer tokens per read, and it is reproducible.** Instead of opening whole files, Claude pulls one symbol or one line range through the scoped map. `pnpm benchmark` measures it on real files and prints a table you can regenerate. This is per-read efficiency, not end-to-end; the script says so plainly.
 - **Multiple tabs coordinate.** Open several Claude Code sessions on one project and each posts what it is working on to a shared local bus; every session sees the others at its next turn and builds on their work instead of duplicating it. This is turn-boundary coordination, not live mid-turn messaging, which the platform does not allow.
-- **A local dashboard that shows the real work.** Nine views on `127.0.0.1`, fed by your actual sessions: what was said and done, the full conversation, where Claude struggled, token and dollar savings, distilled lessons, recurring instincts, and an interactive code-dependency graph.
+- **A local dashboard that shows the real work.** Six focused views on `127.0.0.1`, fed by your actual sessions: what was said and done, the full conversation, where Claude struggled, token and dollar savings, distilled lessons, recurring instincts, and an interactive code-dependency graph.
 - **Skills that make Claude work deliberately.** 75 shipped skills, including a methodology set (`using-slipstream`, `test-driven-development`, `verification-before-completion`, code review, `finishing-a-branch`) and a premium web-design track.
 
 ## How it fits together
@@ -110,7 +110,7 @@ The `sp_*` MCP tools (`sp_map`, `sp_symbol`, `sp_lines`, `sp_search`) are how Cl
 
 ## Quality
 
-320 tests, lint clean, plugin-validate clean, CI green on every release. Local-only, no telemetry, no account, MIT.
+323 tests, lint clean, plugin-validate clean, CI green on every release. Local-only, no telemetry, no account, MIT.
 
 ```
 pnpm test          # the suite
