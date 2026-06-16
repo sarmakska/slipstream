@@ -31,9 +31,10 @@ export interface MemoryOverview {
   health: { note: string } | null;
   digests: { session: string; excerpt: string; updated: string | null }[];
   durable: { name: string; description: string; updated: string | null }[];
-  lessons: { title?: string; topic?: string; summary?: string; body?: string; count?: number }[];
+  lessons: { title?: string; topic?: string; summary?: string; body?: string; count?: number; sessions?: number; files?: string[]; dominantKind?: string }[];
   counts: { memories: number };
 }
+export interface Instinct { kind?: string; subject: string; note: string; confidence: number; observations?: number; sessions?: number; }
 export interface Presence { agents: { id: string; mood: string; verb: string; status: string }[]; }
 export interface Failures { failures: { ts: string; source: string; summary: string }[]; }
 export type AgentMood = "typing" | "reading" | "running" | "delegating" | "thinking" | "waiting";
@@ -52,7 +53,7 @@ export const api = {
   sessionDigest: (s: string) => get<SessionDigest>(`/api/session-digest?session=${encodeURIComponent(s)}`),
   resume: (s: string) => get<Resume>(`/api/resume?session=${encodeURIComponent(s)}`),
   memory: () => get<MemoryOverview>("/api/memory/overview"),
-  instincts: () => get<{ instincts: { subject: string; note: string; confidence: number }[] }>("/api/instincts"),
+  instincts: () => get<{ instincts: Instinct[] }>("/api/instincts"),
   presence: (s: string) => get<Presence>(`/api/presence?session=${encodeURIComponent(s)}`),
   failures: (s: string) => get<Failures>(`/api/failures?session=${encodeURIComponent(s)}`),
   projectSummary: () => get<Record<string, unknown>>("/api/project/summary"),
