@@ -7,8 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **The Office — a live pixel scene of who is doing what.** The home view is now an animated office: every open chat window is a character at a desk, animated by what it is doing right now (typing, reading, running, thinking), with a speech bubble showing the live file, glowing monitors, and tokens-saved as the hero figure. Click a character to read its session story. Canvas 2D renderer, original slipstream code; character sprites are the CC0 MetroCity pack (credited in `web/public/assets/characters/CREDITS.md`). The bus now carries each session's last tool so the scene can show the right animation.
+
 ### Changed
-- **Dashboard redesigned around four focused views.** Pulse (a command-center home with a Do-Next card, live agents, and headline stats), digest-first Sessions, a Memory view with a Hindsight panel, and the code Map. The old sprawl of part-wired views is gone; the dashboard now answers what the project is, what to do next, and what was learned.
+- **Dashboard redesigned around four focused views.** The office (live pixel scene), digest-first Sessions, a Memory view with a Hindsight panel, and the code Map. The old sprawl of part-wired views is gone; the dashboard now answers who is working, what just happened, and what was learned.
 - **Sessions read as one paragraph.** Each session is synthesised into a single readable digest with headline counts, and expands into a tight timeline on demand instead of dumping every prompt and tool call. New deterministic `sessionDigest` synthesiser and `/api/session-digest`.
 - **One dashboard, not two.** The legacy inline HTML dashboard is retired; the React app is the single UI, with a small "run the build" fallback when the bundle is absent.
 

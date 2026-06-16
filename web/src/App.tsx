@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { Link, Route, Switch, useLocation } from "wouter";
 import { api } from "./api";
-import { PulsePage } from "./pulse";
+import { OfficePage } from "./office";
 import { SessionsPage } from "./sessions";
 import { MemoryPage } from "./memory";
 import { CodeGraphView } from "./CodeGraph";
@@ -21,7 +21,7 @@ export const useSession = (): SessionCtx => useContext(Ctx);
 
 const NAV: { section: string; items: { path: string; label: string }[] }[] = [
   { section: "Now", items: [
-    { path: "/", label: "Pulse" },
+    { path: "/", label: "The office" },
     { path: "/sessions", label: "Sessions" }
   ] },
   { section: "Knowledge", items: [
@@ -73,7 +73,7 @@ export function App() {
           </div>
           <main className="content">
             <Switch>
-              <Route path="/" component={PulsePage} />
+              <Route path="/" component={OfficePage} />
               <Route path="/sessions" component={SessionsPage} />
               <Route path="/memory" component={MemoryPage} />
               <Route path="/map" component={MapPage} />
