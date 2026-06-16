@@ -54,6 +54,15 @@ try {
   }
   // Cross-tab coordination: what other open sessions are working on right now.
   busBlock = memory.renderBus(await memory.loadBus(cwd), String(session));
+  // Live presence: post a heartbeat at turn start so this agent appears on the
+  // dashboard the instant it begins working, not only after it stops. The new
+  // prompt is its current focus; files fill in as tools touch them.
+  if (prompt.trim()) {
+    await memory.postStatus(
+      cwd,
+      memory.heartbeatEntry(String(session), prompt, [], new Date().toISOString())
+    );
+  }
 } catch {
   // No dist, inbox or bus: nothing extra to inject.
 }

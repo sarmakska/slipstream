@@ -552,9 +552,12 @@ export class DashboardServer {
       const latest = new Map<string, { session: string; ts: string; thread: string; files: string[] }>();
       for (const e of bus) latest.set(e.session, e);
       const nowMs = Date.now();
+      // Heartbeats are posted at turn start and on every file tool, so an active
+      // agent refreshes within seconds. A 3-minute window therefore means
+      // genuinely-active, not "ran at some point in the last ten minutes".
       const agents = [...latest.values()].map((e) => {
-        const ageMin = e.ts ? Math.round((nowMs - new Date(e.ts).getTime()) / 60000) : 9999;
-        return { session: e.session, thread: e.thread, files: e.files, ts: e.ts, active: ageMin <= 10, ageMin };
+        const ageSec = e.ts ? Math.round((nowMs - new Date(e.ts).getTime()) / 1000) : 999999;
+        return { session: e.session, thread: e.thread, files: e.files, ts: e.ts, active: ageSec <= 180, ageMin: Math.round(ageSec / 60) };
       }).sort((a, b) => (a.ts < b.ts ? 1 : -1));
       res.writeHead(200, { "content-type": "application/json" });
       res.end(JSON.stringify({ agents }));
