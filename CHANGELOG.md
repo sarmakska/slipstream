@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - **Live presence now reflects work as it happens.** The cross-tab bus was only written when a turn ended, so an active agent showed nothing. A heartbeat is now posted at turn start and refreshed as files are touched, and the active window is recency-based, so agents appear the instant they start working.
+- **Multi-window coordination is now accurate.** With frequent heartbeats, the coordination note injected into each session only lists tabs active within the last 20 minutes, so two open windows see each other's current work and a tab closed hours ago no longer shows as a live collaborator.
 
 ## [1.0.0] - 2026-06-06
 
