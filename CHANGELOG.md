@@ -5,6 +5,16 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+- **Dashboard redesigned around four focused views.** Pulse (a command-center home with a Do-Next card, live agents, and headline stats), digest-first Sessions, a Memory view with a Hindsight panel, and the code Map. The old sprawl of part-wired views is gone; the dashboard now answers what the project is, what to do next, and what was learned.
+- **Sessions read as one paragraph.** Each session is synthesised into a single readable digest with headline counts, and expands into a tight timeline on demand instead of dumping every prompt and tool call. New deterministic `sessionDigest` synthesiser and `/api/session-digest`.
+- **One dashboard, not two.** The legacy inline HTML dashboard is retired; the React app is the single UI, with a small "run the build" fallback when the bundle is absent.
+
+### Fixed
+- **Live presence now reflects work as it happens.** The cross-tab bus was only written when a turn ended, so an active agent showed nothing. A heartbeat is now posted at turn start and refreshed as files are touched, and the active window is recency-based, so agents appear the instant they start working.
+
 ## [1.0.0] - 2026-06-06
 
 ### Added
