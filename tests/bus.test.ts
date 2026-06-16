@@ -89,4 +89,16 @@ describe("heartbeatEntry", () => {
     expect(e.thread).toHaveLength(120);
     expect(e.files).toHaveLength(8);
   });
+
+  it("carries the tool when given, and round-trips through the bus", () => {
+    const e = heartbeatEntry("s", "editing", ["a.ts"], "t3", "Edit");
+    expect(e.tool).toBe("Edit");
+    const parsed = parseBus([JSON.stringify(e)].join("\n"));
+    expect(parsed[0]!.tool).toBe("Edit");
+  });
+
+  it("omits the tool entirely when not given", () => {
+    const e = heartbeatEntry("s", "thinking", [], "t4");
+    expect("tool" in e).toBe(false);
+  });
 });

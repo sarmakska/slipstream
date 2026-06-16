@@ -36,7 +36,8 @@ export interface MemoryOverview {
 }
 export interface Presence { agents: { id: string; mood: string; verb: string; status: string }[]; }
 export interface Failures { failures: { ts: string; source: string; summary: string }[]; }
-export interface Agent { session: string; thread: string; files: string[]; ts: string; active: boolean; ageMin: number; }
+export type AgentMood = "typing" | "reading" | "running" | "delegating" | "thinking" | "waiting";
+export interface Agent { session: string; thread: string; files: string[]; tool: string; ts: string; active: boolean; ageMin: number; mood: AgentMood; verb: string; }
 export interface SessionDigest { session: string; paragraph: string; stats: { prompts: number; tools: number; files: number; exchanges: number }; }
 
 export const api = {

@@ -550,7 +550,7 @@ export class DashboardServer {
     // it is working on, so multiple open tabs appear together in one room.
     if (url.pathname === "/api/agents") {
       const bus = await loadBus(this.opts.projectRoot);
-      const latest = new Map<string, { session: string; ts: string; thread: string; files: string[] }>();
+      const latest = new Map<string, { session: string; ts: string; thread: string; files: string[]; tool?: string }>();
       for (const e of bus) latest.set(e.session, e);
       const nowMs = Date.now();
       // Heartbeats are posted at turn start and on every file tool, so an active
@@ -558,7 +558,11 @@ export class DashboardServer {
       // genuinely-active, not "ran at some point in the last ten minutes".
       const agents = [...latest.values()].map((e) => {
         const ageSec = e.ts ? Math.round((nowMs - new Date(e.ts).getTime()) / 1000) : 999999;
-        return { session: e.session, thread: e.thread, files: e.files, ts: e.ts, active: ageSec <= 180, ageMin: Math.round(ageSec / 60) };
+        const active = ageSec <= 180;
+        // Derive what the agent is doing now from its last tool, so the office
+        // can animate the character (typing / reading / running / thinking).
+        const { mood, verb } = agentMood(active ? "running" : "waiting", e.tool ?? "");
+        return { session: e.session, thread: e.thread, files: e.files, tool: e.tool ?? "", ts: e.ts, active, ageMin: Math.round(ageSec / 60), mood, verb };
       }).sort((a, b) => (a.ts < b.ts ? 1 : -1));
       res.writeHead(200, { "content-type": "application/json" });
       res.end(JSON.stringify({ agents }));

@@ -19,6 +19,8 @@ export interface BusEntry {
   thread: string;
   /** Files it has in flight. */
   files: string[];
+  /** The last tool it used, so the dashboard can show what it is doing now. */
+  tool?: string;
 }
 
 export function parseBus(jsonl: string): BusEntry[] {
@@ -28,7 +30,11 @@ export function parseBus(jsonl: string): BusEntry[] {
     if (!t) continue;
     try {
       const r = JSON.parse(t) as Partial<BusEntry>;
-      if (r.session) out.push({ session: r.session, ts: r.ts ?? "", thread: r.thread ?? "", files: Array.isArray(r.files) ? r.files : [] });
+      if (r.session) {
+        const entry: BusEntry = { session: r.session, ts: r.ts ?? "", thread: r.thread ?? "", files: Array.isArray(r.files) ? r.files : [] };
+        if (typeof r.tool === "string" && r.tool) entry.tool = r.tool;
+        out.push(entry);
+      }
     } catch {
       continue;
     }
@@ -124,7 +130,7 @@ export async function loadBus(root: string): Promise<BusEntry[]> {
  * working instead of only after it stops. The thread is the current focus
  * (trimmed), files are de-duplicated and capped so the entry stays small.
  */
-export function heartbeatEntry(session: string, thread: string, files: string[], ts: string): BusEntry {
+export function heartbeatEntry(session: string, thread: string, files: string[], ts: string, tool?: string): BusEntry {
   const seen = new Set<string>();
   const cleanFiles: string[] = [];
   for (const f of files) {
@@ -134,10 +140,13 @@ export function heartbeatEntry(session: string, thread: string, files: string[],
     cleanFiles.push(t);
     if (cleanFiles.length >= 8) break;
   }
-  return {
+  const entry: BusEntry = {
     session: String(session),
     ts,
     thread: (thread ?? "").trim().replace(/\s+/g, " ").slice(0, 120),
     files: cleanFiles
   };
+  const t = (tool ?? "").trim();
+  if (t) entry.tool = t;
+  return entry;
 }

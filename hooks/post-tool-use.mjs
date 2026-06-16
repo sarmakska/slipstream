@@ -51,7 +51,7 @@ await withLatencyGuard("post-tool-use", async () => {
       const files = [...(mine?.files ?? []), target];
       await memory.postStatus(
         process.cwd(),
-        memory.heartbeatEntry(String(session), thread, files, new Date().toISOString())
+        memory.heartbeatEntry(String(session), thread, files, new Date().toISOString(), toolName)
       );
     } catch {
       // No dist build, or bus write failed: never break the session.
