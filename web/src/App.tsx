@@ -1,14 +1,15 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { Link, Route, Switch, useLocation } from "wouter";
 import { api } from "./api";
-import { OverviewPage, LivePage, SessionsPage, MemoryPage } from "./pages";
+import { PulsePage } from "./pulse";
+import { SessionsPage } from "./sessions";
+import { MemoryPage } from "./memory";
 import { CodeGraphView } from "./CodeGraph";
-import { Office } from "./Office";
 
-function CodeGraphPage() {
+function MapPage() {
   return (
     <div className="card">
-      <h2>Code dependency graph</h2>
+      <h2>Code dependency map</h2>
       <CodeGraphView />
     </div>
   );
@@ -20,14 +21,12 @@ export const useSession = (): SessionCtx => useContext(Ctx);
 
 const NAV: { section: string; items: { path: string; label: string }[] }[] = [
   { section: "Now", items: [
-    { path: "/", label: "Overview" },
-    { path: "/live", label: "Live activity" },
-    { path: "/office", label: "Agents office" }
+    { path: "/", label: "Pulse" },
+    { path: "/sessions", label: "Sessions" }
   ] },
-  { section: "Memory", items: [
-    { path: "/sessions", label: "Sessions" },
-    { path: "/memory", label: "What Claude remembers" },
-    { path: "/code", label: "Code map" }
+  { section: "Knowledge", items: [
+    { path: "/memory", label: "What is learned" },
+    { path: "/map", label: "Code map" }
   ] }
 ];
 
@@ -74,12 +73,10 @@ export function App() {
           </div>
           <main className="content">
             <Switch>
-              <Route path="/" component={OverviewPage} />
-              <Route path="/live" component={LivePage} />
-              <Route path="/office" component={Office} />
+              <Route path="/" component={PulsePage} />
               <Route path="/sessions" component={SessionsPage} />
               <Route path="/memory" component={MemoryPage} />
-              <Route path="/code" component={CodeGraphPage} />
+              <Route path="/map" component={MapPage} />
             </Switch>
           </main>
         </div>

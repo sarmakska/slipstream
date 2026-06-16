@@ -36,6 +36,8 @@ export interface MemoryOverview {
 }
 export interface Presence { agents: { id: string; mood: string; verb: string; status: string }[]; }
 export interface Failures { failures: { ts: string; source: string; summary: string }[]; }
+export interface Agent { session: string; thread: string; files: string[]; ts: string; active: boolean; ageMin: number; }
+export interface SessionDigest { session: string; paragraph: string; stats: { prompts: number; tools: number; files: number; exchanges: number }; }
 
 export const api = {
   overview: () => get<Overview>("/api/overview"),
@@ -45,7 +47,8 @@ export const api = {
   conversation: (s: string) => get<Conversation>(`/api/conversation?session=${encodeURIComponent(s)}`),
   graph: () => get<GraphData>("/api/graph"),
   codegraph: () => get<CodeGraph>("/api/codegraph"),
-  agents: () => get<{ agents: { session: string; thread: string; files: string[]; ts: string; active: boolean; ageMin: number }[] }>("/api/agents"),
+  agents: () => get<{ agents: Agent[] }>("/api/agents"),
+  sessionDigest: (s: string) => get<SessionDigest>(`/api/session-digest?session=${encodeURIComponent(s)}`),
   resume: (s: string) => get<Resume>(`/api/resume?session=${encodeURIComponent(s)}`),
   memory: () => get<MemoryOverview>("/api/memory/overview"),
   instincts: () => get<{ instincts: { subject: string; note: string; confidence: number }[] }>("/api/instincts"),

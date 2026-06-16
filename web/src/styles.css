@@ -101,3 +101,57 @@ input, textarea, select.box { background: var(--surface); color: var(--fg); bord
 table { width: 100%; border-collapse: collapse; }
 th { text-align: left; font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); padding: 8px 10px; border-bottom: 1px solid var(--line); }
 td { padding: 9px 10px; border-bottom: 1px solid var(--line); font-size: 13px; }
+
+/* ===== Slipstream Flow — the namesake identity layer ===== */
+
+/* Flowing-current motif: a gradient that drifts across the top of the shell. */
+.flowbar { position: relative; height: 3px; border-radius: 3px; overflow: hidden; background: var(--line); margin: 0 0 18px; }
+.flowbar::before {
+  content: ""; position: absolute; inset: 0; width: 240%;
+  background: linear-gradient(90deg, transparent, var(--emerald), var(--cyan), var(--blue), var(--violet), transparent);
+  animation: flow 6s linear infinite; opacity: 0.9;
+}
+@keyframes flow { from { transform: translateX(-60%); } to { transform: translateX(0%); } }
+
+/* Live heartbeat dot — used wherever something is genuinely active right now. */
+.pulse-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--emerald); box-shadow: 0 0 0 0 rgba(52,211,153,0.6); animation: beat 1.6s ease-out infinite; display: inline-block; }
+@keyframes beat { 0% { box-shadow: 0 0 0 0 rgba(52,211,153,0.55); } 70% { box-shadow: 0 0 0 9px rgba(52,211,153,0); } 100% { box-shadow: 0 0 0 0 rgba(52,211,153,0); } }
+
+/* KPI row: big tabular hero numbers that read at a glance. */
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 12px; margin-top: 18px; }
+.kpi { border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; background: linear-gradient(180deg, rgba(52,211,153,0.06), rgba(13,17,23,0.4)); }
+.kpi .v { font-size: 24px; font-weight: 800; color: var(--fg); font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+.kpi .v.accent { background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.kpi .l { font-size: 9px; text-transform: uppercase; letter-spacing: 0.14em; color: var(--muted); margin-top: 4px; }
+
+/* Do-Next: the command card. What to pick up, derived from the open thread. */
+.donext { border: 1px solid rgba(52,211,153,0.35); border-radius: 16px; padding: 18px 20px; background: linear-gradient(135deg, rgba(52,211,153,0.12), rgba(13,17,23,0.5)); margin-bottom: 16px; }
+.donext .eyebrow { font-size: 10px; text-transform: uppercase; letter-spacing: 0.16em; color: var(--emerald); font-weight: 700; display: flex; align-items: center; gap: 8px; }
+.donext .next { font-size: 18px; font-weight: 700; margin: 8px 0 4px; }
+.donext .thread { color: var(--muted); font-size: 13px; }
+.donext .files { margin-top: 10px; }
+
+/* Live strip: the agents at work, shown as moving rows, not static avatars. */
+.livestrip { display: flex; flex-direction: column; gap: 8px; }
+.liveagent { display: flex; align-items: center; gap: 12px; border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px; background: rgba(13,17,23,0.5); }
+.liveagent.on { border-color: rgba(52,211,153,0.4); background: linear-gradient(90deg, rgba(52,211,153,0.08), rgba(13,17,23,0.4)); }
+.liveagent .who { font-family: var(--mono); font-size: 12px; color: var(--fg); }
+.liveagent .doing { color: var(--muted); font-size: 12px; flex: 1; }
+.liveagent .when { font-size: 11px; color: var(--muted-2); font-variant-numeric: tabular-nums; }
+
+/* Session digest: one readable paragraph, the antidote to the wall of text. */
+.digest { font-size: 14px; line-height: 1.6; color: var(--fg); margin: 2px 0 10px; }
+.digest .stats { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 8px; }
+.digest .stats span { font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.digest .stats b { color: var(--cyan); font-weight: 700; }
+
+/* Compact timeline shown only when a session is expanded. */
+.timeline { border-left: 2px solid var(--line-2); margin: 6px 0 0 6px; padding-left: 14px; }
+.timeline .t-step { position: relative; padding: 6px 0; }
+.timeline .t-step::before { content: ""; position: absolute; left: -21px; top: 11px; width: 8px; height: 8px; border-radius: 50%; background: var(--cyan); }
+.timeline .t-ask { font-size: 13px; color: var(--fg); }
+.timeline .t-did { font-size: 12px; color: var(--emerald); font-style: italic; margin-top: 2px; }
+
+/* Hindsight: instinct confidence bars. */
+.bar { height: 6px; border-radius: 999px; background: var(--line); overflow: hidden; margin-top: 6px; }
+.bar > span { display: block; height: 100%; background: var(--grad); }
