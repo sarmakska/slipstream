@@ -62,6 +62,7 @@ import {
   sessionsInsights
 } from "./insights.js";
 import { storyFlow } from "./story.js";
+import { sessionDigest } from "./digest.js";
 import { extractFailures } from "./failures.js";
 import { sessionReport } from "./report.js";
 import { buildGraph } from "./graph.js";
@@ -651,6 +652,15 @@ export class DashboardServer {
         "content-disposition": `attachment; filename="${name}-brief.md"`
       });
       res.end(md);
+      return;
+    }
+    // A one-paragraph digest of a session: what it was, in prose, plus headline
+    // counts. Lets the dashboard show a session without dumping every action.
+    if (url.pathname === "/api/session-digest") {
+      const session = await this.resolveSession(url.searchParams.get("session") ?? undefined);
+      const story = storyFlow(await readLog(this.opts.projectRoot, session));
+      res.writeHead(200, { "content-type": "application/json" });
+      res.end(JSON.stringify(sessionDigest(story)));
       return;
     }
     // A shareable Markdown report of a session, served as a download.
