@@ -60,11 +60,17 @@ export function SessionsPage() {
     byDay.get(day)!.push(i);
   }
   const days = [...byDay.keys()].sort((a, b) => (a < b ? 1 : -1));
+  const realDays = days.filter((d) => d !== "undated");
+  const totalObs = info.reduce((n, x) => n + x.observations, 0);
+  const summary = info.length
+    ? `${info.length} session${info.length === 1 ? "" : "s"}${realDays.length ? ` across ${realDays.length} day${realDays.length === 1 ? "" : "s"}` : ""}, ${totalObs} observations recorded. Most recent first.`
+    : "No sessions recorded yet.";
   return (
     <>
-      <div className="card">
-        <h2>Sessions <span className="badge">{info.length}</span></h2>
-        <div className="empty" style={{ marginTop: 0 }}>Each session in one paragraph. Open one to see its timeline.</div>
+      <div className="hero">
+        <div className="flowbar" />
+        <h1>Sessions</h1>
+        <p>{summary}</p>
       </div>
       {days.map((day) => {
         const rows = byDay.get(day)!;

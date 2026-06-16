@@ -8,10 +8,14 @@ import { CodeGraphView } from "./CodeGraph";
 
 function MapPage() {
   return (
-    <div className="card">
-      <h2>Code dependency map</h2>
-      <CodeGraphView />
-    </div>
+    <>
+      <div className="hero">
+        <div className="flowbar" />
+        <h1>Code map</h1>
+        <p>Where the project's weight sits. Each dot is a file, sized by how many files depend on it; the white-ringed ones are the god nodes everything flows through — read those first. Colour groups by area. Scroll to zoom, drag to pan, click a node for its dependencies.</p>
+      </div>
+      <div className="card"><CodeGraphView /></div>
+    </>
   );
 }
 
