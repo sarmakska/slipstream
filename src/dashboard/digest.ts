@@ -64,8 +64,10 @@ export function sessionDigest(story: Story): SessionDigest {
   if (prompts.length) {
     parts.push(`Started with: "${clip(prompts[0]!.prompt, 110)}".`);
   }
-  const body = summaries.slice(0, 3).map((s) => clip(s, 140)).join(" Then ");
-  if (body) parts.push((prompts.length ? "The agent " : "").concat(body.charAt(0).toLowerCase() + body.slice(1)));
+  // The lane summaries already read as their own clauses ("13 tool calls, read
+  // X"), so join them as sentences rather than wrapping them in a subject.
+  const body = summaries.slice(0, 3).map((s) => clip(s, 140).replace(/\.+$/, "")).join(". Then ");
+  if (body) parts.push(`${body}.`);
   if (prompts.length > 1) {
     parts.push(`Across ${stats.prompts} prompts.`);
   }
