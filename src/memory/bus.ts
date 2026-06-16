@@ -86,3 +86,27 @@ export async function postStatus(root: string, entry: BusEntry): Promise<void> {
 export async function loadBus(root: string): Promise<BusEntry[]> {
   return parseBus(await readFile(busPath(root), "utf8").catch(() => ""));
 }
+
+/**
+ * Build a heartbeat bus entry for the live dashboard. Posted at turn start and
+ * refreshed as files are touched, so an agent appears the instant it starts
+ * working instead of only after it stops. The thread is the current focus
+ * (trimmed), files are de-duplicated and capped so the entry stays small.
+ */
+export function heartbeatEntry(session: string, thread: string, files: string[], ts: string): BusEntry {
+  const seen = new Set<string>();
+  const cleanFiles: string[] = [];
+  for (const f of files) {
+    const t = (f ?? "").trim();
+    if (!t || seen.has(t)) continue;
+    seen.add(t);
+    cleanFiles.push(t);
+    if (cleanFiles.length >= 8) break;
+  }
+  return {
+    session: String(session),
+    ts,
+    thread: (thread ?? "").trim().replace(/\s+/g, " ").slice(0, 120),
+    files: cleanFiles
+  };
+}
