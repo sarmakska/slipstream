@@ -20,7 +20,7 @@ A long Claude Code session dies one of two ways: it reads whole files until the 
 - **Cold start is never cold.** On every session start slipstream injects a freshly built knowledge feed: what the project is, how it is organised, the most-connected files to read first, what was recently asked, and what is remembered. Claude opens oriented instead of blank.
 - **~95% fewer tokens per read, and it is reproducible.** Instead of opening whole files, Claude pulls one symbol or one line range through the scoped map. `pnpm benchmark` measures it on real files and prints a table you can regenerate. This is per-read efficiency, not end-to-end; the script says so plainly.
 - **Multiple tabs coordinate.** Open several Claude Code sessions on one project and each posts what it is working on to a shared local bus; every session sees the others at its next turn and builds on their work instead of duplicating it. This is turn-boundary coordination, not live mid-turn messaging, which the platform does not allow.
-- **A local dashboard that shows the real work.** Six focused views on `127.0.0.1`, fed by your actual sessions: what was said and done, the full conversation, where Claude struggled, token and dollar savings, distilled lessons, recurring instincts, and an interactive code-dependency graph.
+- **A local dashboard that shows the real work.** The home view is a live pixel office where every open Claude Code tab is a character at a desk, animated by what it is doing right now, with tokens saved as the hero figure. Alongside it: digest-first sessions, what slipstream has learned, and an interactive code-dependency graph — all on `127.0.0.1`, fed by your actual sessions.
 - **Skills that make Claude work deliberately.** 78 shipped skills, including a methodology set (`using-slipstream`, `test-driven-development`, `verification-before-completion`, `executing-plans`, `dispatching-parallel-agents`, `using-git-worktrees`, code review, `finishing-a-branch`) and a premium web-design track.
 
 ## How it fits together
@@ -77,20 +77,18 @@ After install, just use Claude Code normally. slipstream captures each session, 
 
 ## The dashboard
 
-Six focused views on `127.0.0.1`, all on real captured data:
+Four focused views on `127.0.0.1`, all on real captured data:
 
-- **Overview** — a plain-English narration of what the project is and how it is organised, key stats, and a downloadable full project brief.
-- **Live activity** — what Claude is doing now, where it struggled, and the token budget.
-- **Agents office** — every open Claude Code tab on the project as a character at a desk (see below).
-- **Sessions** — grouped by day; click one for its full said-and-done detail and conversation.
-- **What Claude remembers** — summary, durable facts, instincts, health and search.
+- **The office** — the home view: a live pixel scene where every open Claude Code tab is a character at a desk, animated by what it is doing right now (typing, reading, running, thinking), the live file in a speech bubble, tokens saved as the hero figure. Click a character to read its session story.
+- **Sessions** — digest-first: each session synthesised into one readable paragraph, expandable into a tight timeline rather than a wall of every action.
+- **What is learned** — the durable facts, the habits forming (instincts, with strength), and the recurring work patterns across sessions.
 - **Code map** — an interactive dependency graph: files as nodes, imports as edges, the god nodes everything flows through ringed.
 
-### Agents office
+### The office
 
-Open several Claude Code tabs on one project and each appears as a working character, fed live by the shared bus, so you can watch the whole team at once and they coordinate instead of duplicating work. Each character animates while its tab is active (typing, blinking, a glowing monitor) and dims when idle.
+Open several Claude Code tabs on one project and each appears as a character at a desk in a shared room — carpet, desks, monitors, plants — fed live by the bus, so you can watch the whole team at once and they coordinate instead of duplicating work. Each character animates by its current tool and dims when idle. A heartbeat posted at turn start and on every file tool means an agent shows up the instant it starts working, and the room only shows tabs active in the last few minutes.
 
-![The agents office: every open Claude Code tab as a working character at a desk](docs/agents-office.png)
+![The office: every open Claude Code tab as a character at a desk](docs/agents-office.png)
 
 ## How Claude uses it
 
