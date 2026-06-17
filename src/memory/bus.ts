@@ -19,6 +19,8 @@ export interface BusEntry {
   thread: string;
   /** Files it has in flight. */
   files: string[];
+  /** The last tool it used, so the dashboard can show what it is doing now. */
+  tool?: string;
 }
 
 export function parseBus(jsonl: string): BusEntry[] {
@@ -28,7 +30,11 @@ export function parseBus(jsonl: string): BusEntry[] {
     if (!t) continue;
     try {
       const r = JSON.parse(t) as Partial<BusEntry>;
-      if (r.session) out.push({ session: r.session, ts: r.ts ?? "", thread: r.thread ?? "", files: Array.isArray(r.files) ? r.files : [] });
+      if (r.session) {
+        const entry: BusEntry = { session: r.session, ts: r.ts ?? "", thread: r.thread ?? "", files: Array.isArray(r.files) ? r.files : [] };
+        if (typeof r.tool === "string" && r.tool) entry.tool = r.tool;
+        out.push(entry);
+      }
     } catch {
       continue;
     }
@@ -43,22 +49,53 @@ export function parseBus(jsonl: string): BusEntry[] {
  */
 const GENERIC_IDS = new Set(["main", "this-session", "session", ""]);
 
-/** The latest entry per other session, newest first. Excludes the caller. */
-export function othersRecent(entries: BusEntry[], session: string, limit = 6): BusEntry[] {
+export interface OthersOpts {
+  /** Cap on how many other sessions to return. */
+  limit?: number;
+  /** Only keep sessions whose last heartbeat is within this many ms. */
+  withinMs?: number;
+  /** Injectable clock for deterministic tests; defaults to now. */
+  nowMs?: number;
+}
+
+/**
+ * The latest entry per other session, newest first, excluding the caller. With
+ * `withinMs` set, only sessions that have posted a heartbeat that recently are
+ * kept, so a tab closed hours ago no longer shows as a live collaborator.
+ * Entries with an empty or unparseable timestamp are kept (the recency claim
+ * cannot be judged), which keeps fixture-driven callers working.
+ */
+export function othersRecent(entries: BusEntry[], session: string, opts: OthersOpts = {}): BusEntry[] {
+  const { limit = 6, withinMs, nowMs = Date.now() } = opts;
   const latest = new Map<string, BusEntry>();
   for (const e of entries) latest.set(e.session, e); // later lines win
   // With a unique id, drop the caller's own entry. With a generic id that other
   // tabs may share, keep everything rather than silently filtering to nothing.
   const generic = GENERIC_IDS.has(session);
+  const isFresh = (e: BusEntry): boolean => {
+    if (!withinMs) return true;
+    const t = e.ts ? new Date(e.ts).getTime() : NaN;
+    return Number.isNaN(t) || nowMs - t <= withinMs;
+  };
   return [...latest.values()]
-    .filter((e) => (generic || e.session !== session) && (e.thread || e.files.length))
+    .filter((e) => (generic || e.session !== session) && (e.thread || e.files.length) && isFresh(e))
     .sort((a, b) => (a.ts < b.ts ? 1 : a.ts > b.ts ? -1 : 0))
     .slice(0, limit);
 }
 
-/** Render the other sessions' work as a coordination note for the agent. */
-export function renderBus(entries: BusEntry[], session: string): string {
-  const others = othersRecent(entries, session);
+/** How recently another tab must have posted to count as "working right now". */
+export const COORD_WINDOW_MS = 20 * 60 * 1000;
+
+/**
+ * Render the other sessions' work as a coordination note for the agent. Only
+ * sessions active within COORD_WINDOW_MS are shown, so the note describes tabs
+ * that are genuinely open now rather than every session that ever ran.
+ */
+export function renderBus(entries: BusEntry[], session: string, opts: { nowMs?: number; withinMs?: number } = {}): string {
+  const others = othersRecent(entries, session, {
+    withinMs: opts.withinMs ?? COORD_WINDOW_MS,
+    nowMs: opts.nowMs ?? Date.now()
+  });
   if (others.length === 0) return "";
   const lines = ["Other slipstream sessions are open on this project right now. Coordinate with them, do not duplicate or undo their work:"];
   for (const e of others) {
@@ -85,4 +122,31 @@ export async function postStatus(root: string, entry: BusEntry): Promise<void> {
 
 export async function loadBus(root: string): Promise<BusEntry[]> {
   return parseBus(await readFile(busPath(root), "utf8").catch(() => ""));
+}
+
+/**
+ * Build a heartbeat bus entry for the live dashboard. Posted at turn start and
+ * refreshed as files are touched, so an agent appears the instant it starts
+ * working instead of only after it stops. The thread is the current focus
+ * (trimmed), files are de-duplicated and capped so the entry stays small.
+ */
+export function heartbeatEntry(session: string, thread: string, files: string[], ts: string, tool?: string): BusEntry {
+  const seen = new Set<string>();
+  const cleanFiles: string[] = [];
+  for (const f of files) {
+    const t = (f ?? "").trim();
+    if (!t || seen.has(t)) continue;
+    seen.add(t);
+    cleanFiles.push(t);
+    if (cleanFiles.length >= 8) break;
+  }
+  const entry: BusEntry = {
+    session: String(session),
+    ts,
+    thread: (thread ?? "").trim().replace(/\s+/g, " ").slice(0, 120),
+    files: cleanFiles
+  };
+  const t = (tool ?? "").trim();
+  if (t) entry.tool = t;
+  return entry;
 }

@@ -6,7 +6,11 @@
 // approximate per-agent token figure so you can watch the budget fill in real
 // time. Like the other dashboard hooks it never blocks and never throws.
 
+import { dirname, join } from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { readPayload, sessionId, emit, withLatencyGuard } from "./emit.mjs";
+
+const here = dirname(fileURLToPath(import.meta.url));
 
 await withLatencyGuard("post-tool-use", async () => {
   const payload = await readPayload();
@@ -35,6 +39,24 @@ await withLatencyGuard("post-tool-use", async () => {
     label: `${toolName} ${target}`.trim() || `${toolName} done`,
     bytes
   });
+
+  // Live presence: when a file tool touches a file, refresh this session's bus
+  // heartbeat so the dashboard shows what it is working on right now. Carries
+  // the prior thread; appends the touched file. Silent on a dev checkout.
+  if (target) {
+    try {
+      const memory = await import(pathToFileURL(join(here, "..", "dist", "memory", "index.js")).href);
+      const mine = (await memory.loadBus(process.cwd())).filter((e) => e.session === String(session)).pop();
+      const thread = mine?.thread || `${toolName}`.toLowerCase();
+      const files = [...(mine?.files ?? []), target];
+      await memory.postStatus(
+        process.cwd(),
+        memory.heartbeatEntry(String(session), thread, files, new Date().toISOString(), toolName)
+      );
+    } catch {
+      // No dist build, or bus write failed: never break the session.
+    }
+  }
 });
 
 process.exit(0);

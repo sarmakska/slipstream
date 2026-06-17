@@ -62,6 +62,7 @@ import {
   sessionsInsights
 } from "./insights.js";
 import { storyFlow } from "./story.js";
+import { sessionDigest } from "./digest.js";
 import { extractFailures } from "./failures.js";
 import { sessionReport } from "./report.js";
 import { buildGraph } from "./graph.js";
@@ -549,12 +550,19 @@ export class DashboardServer {
     // it is working on, so multiple open tabs appear together in one room.
     if (url.pathname === "/api/agents") {
       const bus = await loadBus(this.opts.projectRoot);
-      const latest = new Map<string, { session: string; ts: string; thread: string; files: string[] }>();
+      const latest = new Map<string, { session: string; ts: string; thread: string; files: string[]; tool?: string }>();
       for (const e of bus) latest.set(e.session, e);
       const nowMs = Date.now();
+      // Heartbeats are posted at turn start and on every file tool, so an active
+      // agent refreshes within seconds. A 3-minute window therefore means
+      // genuinely-active, not "ran at some point in the last ten minutes".
       const agents = [...latest.values()].map((e) => {
-        const ageMin = e.ts ? Math.round((nowMs - new Date(e.ts).getTime()) / 60000) : 9999;
-        return { session: e.session, thread: e.thread, files: e.files, ts: e.ts, active: ageMin <= 10, ageMin };
+        const ageSec = e.ts ? Math.round((nowMs - new Date(e.ts).getTime()) / 1000) : 999999;
+        const active = ageSec <= 180;
+        // Derive what the agent is doing now from its last tool, so the office
+        // can animate the character (typing / reading / running / thinking).
+        const { mood, verb } = agentMood(active ? "running" : "waiting", e.tool ?? "");
+        return { session: e.session, thread: e.thread, files: e.files, tool: e.tool ?? "", ts: e.ts, active, ageMin: Math.round(ageSec / 60), mood, verb };
       }).sort((a, b) => (a.ts < b.ts ? 1 : -1));
       res.writeHead(200, { "content-type": "application/json" });
       res.end(JSON.stringify({ agents }));
@@ -648,6 +656,15 @@ export class DashboardServer {
         "content-disposition": `attachment; filename="${name}-brief.md"`
       });
       res.end(md);
+      return;
+    }
+    // A one-paragraph digest of a session: what it was, in prose, plus headline
+    // counts. Lets the dashboard show a session without dumping every action.
+    if (url.pathname === "/api/session-digest") {
+      const session = await this.resolveSession(url.searchParams.get("session") ?? undefined);
+      const story = storyFlow(await readLog(this.opts.projectRoot, session));
+      res.writeHead(200, { "content-type": "application/json" });
+      res.end(JSON.stringify(sessionDigest(story)));
       return;
     }
     // A shareable Markdown report of a session, served as a download.

@@ -1,16 +1,21 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { Link, Route, Switch, useLocation } from "wouter";
 import { api } from "./api";
-import { OverviewPage, LivePage, SessionsPage, MemoryPage } from "./pages";
+import { OfficePage } from "./office";
+import { SessionsPage } from "./sessions";
+import { MemoryPage } from "./memory";
 import { CodeGraphView } from "./CodeGraph";
-import { Office } from "./Office";
 
-function CodeGraphPage() {
+function MapPage() {
   return (
-    <div className="card">
-      <h2>Code dependency graph</h2>
-      <CodeGraphView />
-    </div>
+    <>
+      <div className="hero">
+        <div className="flowbar" />
+        <h1>Code map</h1>
+        <p>Where the project's weight sits. Each dot is a file, sized by how many files depend on it; the white-ringed ones are the god nodes everything flows through — read those first. Colour groups by area. Scroll to zoom, drag to pan, click a node for its dependencies.</p>
+      </div>
+      <div className="card"><CodeGraphView /></div>
+    </>
   );
 }
 
@@ -20,14 +25,12 @@ export const useSession = (): SessionCtx => useContext(Ctx);
 
 const NAV: { section: string; items: { path: string; label: string }[] }[] = [
   { section: "Now", items: [
-    { path: "/", label: "Overview" },
-    { path: "/live", label: "Live activity" },
-    { path: "/office", label: "Agents office" }
+    { path: "/", label: "The office" },
+    { path: "/sessions", label: "Sessions" }
   ] },
-  { section: "Memory", items: [
-    { path: "/sessions", label: "Sessions" },
-    { path: "/memory", label: "What Claude remembers" },
-    { path: "/code", label: "Code map" }
+  { section: "Knowledge", items: [
+    { path: "/memory", label: "What is learned" },
+    { path: "/map", label: "Code map" }
   ] }
 ];
 
@@ -74,12 +77,10 @@ export function App() {
           </div>
           <main className="content">
             <Switch>
-              <Route path="/" component={OverviewPage} />
-              <Route path="/live" component={LivePage} />
-              <Route path="/office" component={Office} />
+              <Route path="/" component={OfficePage} />
               <Route path="/sessions" component={SessionsPage} />
               <Route path="/memory" component={MemoryPage} />
-              <Route path="/code" component={CodeGraphPage} />
+              <Route path="/map" component={MapPage} />
             </Switch>
           </main>
         </div>

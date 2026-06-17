@@ -5,6 +5,21 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- **Three more methodology skills, original to slipstream.** `executing-plans` (work a written plan task by task with a checkpoint after each), `dispatching-parallel-agents` (fan genuinely-independent work out to run at once) and `using-git-worktrees` (isolate parallel or risky strands in their own checkout). The library is now 78 skills, all loading cleanly through `slipstream validate`.
+- **The Office — a live pixel scene of who is doing what.** The home view is now an animated office: every open chat window is a character at a desk, animated by what it is doing right now (typing, reading, running, thinking), with a speech bubble showing the live file, glowing monitors, and tokens-saved as the hero figure. Click a character to read its session story. Canvas 2D renderer, original slipstream code; character sprites are the CC0 MetroCity pack (credited in `web/public/assets/characters/CREDITS.md`). The bus now carries each session's last tool so the scene can show the right animation.
+
+### Changed
+- **Dashboard redesigned around four focused views.** The office (live pixel scene), digest-first Sessions, a Memory view with a Hindsight panel, and the code Map. The old sprawl of part-wired views is gone; the dashboard now answers who is working, what just happened, and what was learned.
+- **Sessions read as one paragraph.** Each session is synthesised into a single readable digest with headline counts, and expands into a tight timeline on demand instead of dumping every prompt and tool call. New deterministic `sessionDigest` synthesiser and `/api/session-digest`.
+- **One dashboard, not two.** The legacy inline HTML dashboard is retired; the React app is the single UI, with a small "run the build" fallback when the bundle is absent.
+
+### Fixed
+- **Live presence now reflects work as it happens.** The cross-tab bus was only written when a turn ended, so an active agent showed nothing. A heartbeat is now posted at turn start and refreshed as files are touched, and the active window is recency-based, so agents appear the instant they start working.
+- **Multi-window coordination is now accurate.** With frequent heartbeats, the coordination note injected into each session only lists tabs active within the last 20 minutes, so two open windows see each other's current work and a tab closed hours ago no longer shows as a live collaborator.
+
 ## [1.0.0] - 2026-06-06
 
 ### Added

@@ -31,11 +31,15 @@ export interface MemoryOverview {
   health: { note: string } | null;
   digests: { session: string; excerpt: string; updated: string | null }[];
   durable: { name: string; description: string; updated: string | null }[];
-  lessons: { title?: string; topic?: string; summary?: string; body?: string; count?: number }[];
+  lessons: { title?: string; topic?: string; summary?: string; body?: string; count?: number; sessions?: number; files?: string[]; dominantKind?: string }[];
   counts: { memories: number };
 }
+export interface Instinct { kind?: string; subject: string; note: string; confidence: number; observations?: number; sessions?: number; }
 export interface Presence { agents: { id: string; mood: string; verb: string; status: string }[]; }
 export interface Failures { failures: { ts: string; source: string; summary: string }[]; }
+export type AgentMood = "typing" | "reading" | "running" | "delegating" | "thinking" | "waiting";
+export interface Agent { session: string; thread: string; files: string[]; tool: string; ts: string; active: boolean; ageMin: number; mood: AgentMood; verb: string; }
+export interface SessionDigest { session: string; paragraph: string; stats: { prompts: number; tools: number; files: number; exchanges: number }; }
 
 export const api = {
   overview: () => get<Overview>("/api/overview"),
@@ -45,10 +49,11 @@ export const api = {
   conversation: (s: string) => get<Conversation>(`/api/conversation?session=${encodeURIComponent(s)}`),
   graph: () => get<GraphData>("/api/graph"),
   codegraph: () => get<CodeGraph>("/api/codegraph"),
-  agents: () => get<{ agents: { session: string; thread: string; files: string[]; ts: string; active: boolean; ageMin: number }[] }>("/api/agents"),
+  agents: () => get<{ agents: Agent[] }>("/api/agents"),
+  sessionDigest: (s: string) => get<SessionDigest>(`/api/session-digest?session=${encodeURIComponent(s)}`),
   resume: (s: string) => get<Resume>(`/api/resume?session=${encodeURIComponent(s)}`),
   memory: () => get<MemoryOverview>("/api/memory/overview"),
-  instincts: () => get<{ instincts: { subject: string; note: string; confidence: number }[] }>("/api/instincts"),
+  instincts: () => get<{ instincts: Instinct[] }>("/api/instincts"),
   presence: (s: string) => get<Presence>(`/api/presence?session=${encodeURIComponent(s)}`),
   failures: (s: string) => get<Failures>(`/api/failures?session=${encodeURIComponent(s)}`),
   projectSummary: () => get<Record<string, unknown>>("/api/project/summary"),
