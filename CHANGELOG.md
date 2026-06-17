@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Three more methodology skills, original to slipstream.** `executing-plans` (work a written plan task by task with a checkpoint after each), `dispatching-parallel-agents` (fan genuinely-independent work out to run at once) and `using-git-worktrees` (isolate parallel or risky strands in their own checkout). The library is now 78 skills, all loading cleanly through `slipstream validate`.
 - **The Office — a live pixel scene of who is doing what.** The home view is now an animated office: every open chat window is a character at a desk, animated by what it is doing right now (typing, reading, running, thinking), with a speech bubble showing the live file, glowing monitors, and tokens-saved as the hero figure. Click a character to read its session story. Canvas 2D renderer, original slipstream code; character sprites are the CC0 MetroCity pack (credited in `web/public/assets/characters/CREDITS.md`). The bus now carries each session's last tool so the scene can show the right animation.
 
 ### Changed

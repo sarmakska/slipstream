@@ -21,7 +21,7 @@ A long Claude Code session dies one of two ways: it reads whole files until the 
 - **~95% fewer tokens per read, and it is reproducible.** Instead of opening whole files, Claude pulls one symbol or one line range through the scoped map. `pnpm benchmark` measures it on real files and prints a table you can regenerate. This is per-read efficiency, not end-to-end; the script says so plainly.
 - **Multiple tabs coordinate.** Open several Claude Code sessions on one project and each posts what it is working on to a shared local bus; every session sees the others at its next turn and builds on their work instead of duplicating it. This is turn-boundary coordination, not live mid-turn messaging, which the platform does not allow.
 - **A local dashboard that shows the real work.** Six focused views on `127.0.0.1`, fed by your actual sessions: what was said and done, the full conversation, where Claude struggled, token and dollar savings, distilled lessons, recurring instincts, and an interactive code-dependency graph.
-- **Skills that make Claude work deliberately.** 75 shipped skills, including a methodology set (`using-slipstream`, `test-driven-development`, `verification-before-completion`, code review, `finishing-a-branch`) and a premium web-design track.
+- **Skills that make Claude work deliberately.** 78 shipped skills, including a methodology set (`using-slipstream`, `test-driven-development`, `verification-before-completion`, `executing-plans`, `dispatching-parallel-agents`, `using-git-worktrees`, code review, `finishing-a-branch`) and a premium web-design track.
 
 ## How it fits together
 
