@@ -23,7 +23,11 @@
   ],
   "skills": "./skills",
   "commands": "./commands",
-  "agents": "./agents",
+  "agents": [
+    "./agents/sp-reviewer.md",
+    "./agents/sp-schema.md",
+    "./agents/sp-shipper.md"
+  ],
   "hooks": "./hooks/hooks.json",
   "statusLine": {
     "type": "command",
