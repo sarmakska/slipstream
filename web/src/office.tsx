@@ -111,18 +111,75 @@ function OfficeCanvas({ agents, onSelect }: { agents: Agent[]; onSelect: (s: str
   );
 }
 
+const WALL_H = 40;
+const TOP = 44; // top of the first character row, below the wall
+
+/** Carpet floor, back wall with windows, and a soft vignette. */
+function drawRoom(ctx: CanvasRenderingContext2D, w: number, h: number) {
+  // Carpet — fine tiled grid in cool greys.
+  const TILE = 16;
+  for (let y = WALL_H; y < h; y += TILE) {
+    for (let x = 0; x < w; x += TILE) {
+      ctx.fillStyle = ((x / TILE + y / TILE) % 2 === 0) ? "#141a25" : "#121823";
+      ctx.fillRect(x, y, TILE, TILE);
+    }
+  }
+  ctx.strokeStyle = "rgba(255,255,255,0.015)";
+  ctx.lineWidth = 1;
+  for (let x = 0; x <= w; x += TILE) { ctx.beginPath(); ctx.moveTo(x, WALL_H); ctx.lineTo(x, h); ctx.stroke(); }
+
+  // Back wall + baseboard.
+  ctx.fillStyle = "#1b2230";
+  ctx.fillRect(0, 0, w, WALL_H);
+  ctx.fillStyle = "#0e131d";
+  ctx.fillRect(0, WALL_H - 5, w, 5);
+  // Windows along the wall with a faint night-glass glow.
+  for (let wx = 40; wx < w - 60; wx += 200) {
+    ctx.fillStyle = "#0c1018"; ctx.fillRect(wx, 8, 120, 22);
+    const g = ctx.createLinearGradient(wx, 8, wx, 30);
+    g.addColorStop(0, "rgba(96,165,250,0.18)"); g.addColorStop(1, "rgba(52,211,153,0.10)");
+    ctx.fillStyle = g; ctx.fillRect(wx + 2, 10, 116, 18);
+    ctx.strokeStyle = "#2a3547"; ctx.lineWidth = 1; ctx.strokeRect(wx, 8, 120, 22);
+    ctx.beginPath(); ctx.moveTo(wx + 60, 8); ctx.lineTo(wx + 60, 30); ctx.stroke();
+  }
+}
+
+/** A potted plant — a little office greenery between desks. */
+function drawPlant(ctx: CanvasRenderingContext2D, x: number, y: number) {
+  ctx.fillStyle = "#7c4a2d"; ctx.fillRect(x - 5, y, 10, 9);             // pot
+  ctx.fillStyle = "#8a5436"; ctx.fillRect(x - 5, y, 10, 2);
+  ctx.fillStyle = "#2f9e5a";                                            // leaves
+  ctx.beginPath(); ctx.ellipse(x, y - 6, 7, 9, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = "#37b768";
+  ctx.beginPath(); ctx.ellipse(x - 3, y - 9, 3.5, 6, -0.5, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(x + 3, y - 9, 3.5, 6, 0.5, 0, Math.PI * 2); ctx.fill();
+}
+
+/** A wood desk with a monitor (glowing when active), keyboard and mug. */
+function drawDesk(ctx: CanvasRenderingContext2D, cx: number, deskY: number, active: boolean) {
+  // Chair back behind the worker.
+  ctx.fillStyle = "#222a38";
+  roundRect(ctx, cx - 18, deskY - 54, 36, 30, 7); ctx.fill();
+  // Desk top + front face (warm wood).
+  ctx.fillStyle = "#5a4632"; roundRect(ctx, cx - 54, deskY - 14, 108, 14, 4); ctx.fill();
+  ctx.fillStyle = "#3f3424"; ctx.fillRect(cx - 54, deskY - 1, 108, 9);
+  ctx.fillStyle = "rgba(255,255,255,0.06)"; ctx.fillRect(cx - 54, deskY - 14, 108, 2);
+  // Monitor (back panel faces us) with a glowing edge when active.
+  ctx.fillStyle = "#11161f"; ctx.fillRect(cx - 16, deskY - 30, 32, 20);
+  ctx.fillStyle = active ? "#22d3ee" : "#2a3547";
+  if (active) { ctx.save(); ctx.shadowColor = "#22d3ee"; ctx.shadowBlur = 12; ctx.fillRect(cx - 14, deskY - 28, 28, 16); ctx.restore(); }
+  else ctx.fillRect(cx - 14, deskY - 28, 28, 16);
+  ctx.fillStyle = "#2a3547"; ctx.fillRect(cx - 3, deskY - 10, 6, 4);   // stand
+  // Keyboard + mug on the desk.
+  ctx.fillStyle = "#1c2431"; ctx.fillRect(cx - 14, deskY - 7, 20, 5);
+  ctx.fillStyle = active ? "#fbbf24" : "#7c869a"; ctx.fillRect(cx + 12, deskY - 8, 6, 6);
+}
+
 function drawScene(
   ctx: CanvasRenderingContext2D, w: number, h: number, agents: Agent[],
   sheets: HTMLImageElement[], loaded: boolean, t: number, rectsRef: { current: HitRect[] }
 ) {
-  // Floor — checkerboard of two dark tiles.
-  const TILE = 32;
-  for (let y = 0; y < h; y += TILE) {
-    for (let x = 0; x < w; x += TILE) {
-      ctx.fillStyle = ((x / TILE + y / TILE) % 2 === 0) ? "#0c1018" : "#0e131d";
-      ctx.fillRect(x, y, TILE, TILE);
-    }
-  }
+  drawRoom(ctx, w, h);
   const rects: HitRect[] = [];
   if (!loaded || agents.length === 0) { rectsRef.current = rects; return; }
 
@@ -130,30 +187,24 @@ function drawScene(
   agents.forEach((a, i) => {
     const col = i % perRow, row = Math.floor(i / perRow);
     const cx = col * CELL_W + CELL_W / 2;
-    const cyTop = row * CELL_H + 18;        // top of character
+    const cyTop = row * CELL_H + TOP;       // top of character
     const feet = cyTop + CH;                 // character feet / desk line
     const active = a.active;
 
-    // Desk — a slab with a monitor that glows when active.
-    ctx.fillStyle = "#1a2230";
-    roundRect(ctx, cx - 46, feet - 10, 92, 22, 5); ctx.fill();
-    ctx.fillStyle = active ? "#22d3ee" : "#2a3547";
-    ctx.fillRect(cx - 14, feet - 26, 28, 18);
-    if (active) {
-      ctx.save();
-      ctx.shadowColor = "#22d3ee"; ctx.shadowBlur = 14;
-      ctx.fillRect(cx - 14, feet - 26, 28, 18);
-      ctx.restore();
-    }
+    // A plant tucked beside every third workstation.
+    if (i % 3 === 2) drawPlant(ctx, cx + 58, feet - 4);
 
-    // Character.
+    // Chair back is drawn inside drawDesk (behind), but the desk front must sit
+    // OVER the character's lower body, so: character first, then desk front.
     const sheet = sheets[charIndex(a.session)];
     const sxCol = frameColumn(a.mood, active, t);
+    // chair back behind the character
+    ctx.fillStyle = "#1d2532"; roundRect(ctx, cx - 18, feet - 58, 36, 34, 8); ctx.fill();
     ctx.globalAlpha = active ? 1 : 0.4;
-    if (sheet && sheet.complete) {
-      ctx.drawImage(sheet, sxCol * FW, 0, FW, FH, cx - CW / 2, cyTop, CW, CH);
-    }
+    if (sheet && sheet.complete) ctx.drawImage(sheet, sxCol * FW, 0, FW, FH, cx - CW / 2, cyTop, CW, CH);
     ctx.globalAlpha = 1;
+    // desk + monitor in front of the seated worker
+    drawDesk(ctx, cx, feet, active);
 
     // Speech bubble — what it is doing, or the live file.
     if (active) {
@@ -161,11 +212,12 @@ function drawScene(
       const label = file || a.verb || "working";
       ctx.font = "11px ui-sans-serif, system-ui, sans-serif";
       const tw = Math.min(132, ctx.measureText(label).width + 16);
-      const bx = cx - tw / 2, by = cyTop - 26;
-      ctx.fillStyle = "rgba(16,20,30,0.95)";
+      const bx = cx - tw / 2, by = cyTop - 24;
+      ctx.fillStyle = "rgba(16,20,30,0.96)";
       ctx.strokeStyle = "rgba(52,211,153,0.5)";
       ctx.lineWidth = 1;
       roundRect(ctx, bx, by, tw, 20, 6); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(cx - 4, by + 20); ctx.lineTo(cx + 4, by + 20); ctx.lineTo(cx, by + 25); ctx.closePath(); ctx.fillStyle = "rgba(16,20,30,0.96)"; ctx.fill();
       ctx.fillStyle = "#e9f5ef";
       ctx.textAlign = "center"; ctx.textBaseline = "middle";
       ctx.fillText(label, cx, by + 10, tw - 12);
@@ -175,9 +227,9 @@ function drawScene(
     ctx.fillStyle = active ? "#8b9bb4" : "#5b6478";
     ctx.font = "10px ui-monospace, monospace";
     ctx.textAlign = "center"; ctx.textBaseline = "top";
-    ctx.fillText(a.session.slice(0, 8), cx, feet + 16, CELL_W - 12);
+    ctx.fillText(a.session.slice(0, 8), cx, feet + 12, CELL_W - 12);
 
-    rects.push({ x: cx - CW / 2, y: cyTop, w: CW, h: CH + 16, session: a.session });
+    rects.push({ x: cx - CW / 2, y: cyTop, w: CW, h: CH + 12, session: a.session });
   });
   rectsRef.current = rects;
 }
