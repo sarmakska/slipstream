@@ -21,6 +21,8 @@ import { listSessions } from "./log.js";
 import { generateMap, buildCodeGraph } from "../map/index.js";
 import { loadSavings, summarizeSavings } from "../context/savings.js";
 import { estimateCost } from "../context/cost.js";
+import { checkForUpdate, renderUpdateNotice } from "../util/update-check.js";
+import { SERVER_VERSION } from "../mcp/server.js";
 
 export interface BriefInput {
   name: string;
@@ -125,6 +127,11 @@ export async function knowledgeFeed(root: string): Promise<string> {
   if (memories.length) {
     lines.push(`${memories.length} durable memor${memories.length === 1 ? "y" : "ies"}: ` + memories.slice(0, 5).map((m) => m.name).join(", ") + ".");
   }
+  // Last, so it reads as a footnote rather than burying the project knowledge.
+  // Cached for a day and silent when offline or current, so most sessions add
+  // nothing here at all.
+  const update = await checkForUpdate({ root, current: SERVER_VERSION }).catch(() => null);
+  if (update) lines.push(renderUpdateNotice(update));
   return lines.join("\n");
 }
 

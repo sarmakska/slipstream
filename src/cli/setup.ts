@@ -12,6 +12,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
+import { resolveDistDir } from "./skills-dir.js";
 
 export type Editor =
   | "claude-code"
@@ -132,9 +133,19 @@ export function buildEditorMcpConfig(prev: Record<string, unknown> | null): Reco
   return base;
 }
 
-/** Pretty-print JSON the way every editor's config file expects it. */
+/**
+ * Pretty-print JSON the way every editor's config file expects it, resolving the
+ * `${SLIPSTREAM_DIST}` placeholder to a real path on the way out.
+ *
+ * Nothing else ever expanded it. Claude Code substitutes its own
+ * `${CLAUDE_PLUGIN_ROOT}`, but Cursor, Windsurf, Antigravity and VS Code expand
+ * nothing, so every config written for them named a directory that does not
+ * exist and the server could never start. Doing it here catches every file,
+ * since this is the only place a config becomes text.
+ */
 function fmt(obj: unknown): string {
-  return `${JSON.stringify(obj, null, 2)}\n`;
+  const json = JSON.stringify(obj, null, 2).split("${SLIPSTREAM_DIST}").join(resolveDistDir());
+  return `${json}\n`;
 }
 
 /**

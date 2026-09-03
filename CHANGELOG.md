@@ -5,6 +5,17 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-09-03
+
+### Added
+- **slipstream tells you when it is out of date, inside the session.** A newer published version surfaces as a line in the session feed naming the exact command for both install routes, so Claude can offer to run it there and then. Finding out you are 120 versions behind should not require going and looking. Cached for 24 hours, 1.5s timeout, silent when offline or current, and `SLIPSTREAM_NO_UPDATE_CHECK=1` disables it. New `src/util/update-check.ts`, 14 tests, all with `fetch` injected so the suite never touches the network.
+
+### Fixed
+- **`slipstream-setup` wrote a config that could not work.** Every editor config was emitted with a literal `${SLIPSTREAM_DIST}` placeholder that nothing ever expanded — Claude Code substitutes its own `${CLAUDE_PLUGIN_ROOT}`, but Cursor, Windsurf, Antigravity and VS Code expand nothing, so the server they were told to run pointed at a directory that does not exist. The placeholder is now resolved to a real absolute path as the config is serialised, which covers every editor because that is the only place a config becomes text.
+
+### Changed
+- **The privacy claim is now accurate.** slipstream said "no cloud, no telemetry" and that is no longer strictly true, so the README states the exception up front: one unauthenticated GET to the npm registry, at most daily, sending nothing about you, and switchable off.
+
 ## [1.1.0] - 2026-09-03
 
 ### Added

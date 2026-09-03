@@ -31,3 +31,16 @@ export function resolvePluginRoot(override?: string): string {
   if (override) return resolve(override);
   return packageRoot();
 }
+
+/**
+ * Absolute path to the compiled `dist` directory, in forward-slash form so it can
+ * be dropped straight into a JSON config on any platform.
+ *
+ * Editor MCP configs are written with a literal `${SLIPSTREAM_DIST}` placeholder.
+ * Claude Code expands `${CLAUDE_PLUGIN_ROOT}` itself, but Cursor, Windsurf,
+ * Antigravity and VS Code expand nothing, so the placeholder has to be resolved
+ * here or the config they get can never start the server.
+ */
+export function resolveDistDir(): string {
+  return join(packageRoot(), "dist").replace(/\\/g, "/");
+}

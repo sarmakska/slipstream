@@ -1,6 +1,6 @@
 {
   "name": "slipstream",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "A Claude Code plugin: a bundled MCP server for scoped retrieval, cross-client conversation harvesting, lossless compaction via a PreCompact digest, smart memory recall, shipped subagents, a context-budget statusline and a live local agent dashboard for shipping production sites on Cloudflare, Supabase, Vercel and Resend.",
   "type": "module",
   "license": "MIT",
