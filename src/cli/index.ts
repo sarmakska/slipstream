@@ -890,7 +890,22 @@ async function main(): Promise<number> {
 }
 
 main()
-  .then((code) => process.exit(code))
+  .then((code) => {
+    // A successful run sets the exit code and lets the event loop drain on its
+    // own rather than calling process.exit(). Several commands (`dashboard
+    // start`, `--open`) spawn a detached, unref'd child moments before we get
+    // here, and on Windows forcing exit while that child's handles are still
+    // closing trips a libuv assertion in the parent:
+    //
+    //   Assertion failed: !(handle->flags & UV_HANDLE_CLOSING), src\win\async.c
+    //
+    // The server survived it, but a native abort is not cosmetic. Every child we
+    // spawn is unref'd, so with nothing else holding the loop the process ends
+    // naturally within a tick - and libuv gets to close its handles in order.
+    // Failures still exit immediately; a non-zero code should not linger.
+    if (code === 0) process.exitCode = 0;
+    else process.exit(code);
+  })
   .catch((error) => {
     console.error(error instanceof Error ? error.message : String(error));
     process.exit(1);

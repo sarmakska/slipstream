@@ -5,6 +5,11 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.1] - 2026-09-03
+
+### Fixed
+- **Native crash on Windows after `dashboard start`.** The CLI spawned the detached dashboard runner and the browser, unref'd both, then called `process.exit()` while those children's handles were still closing — which trips a libuv assertion in the parent (`!(handle->flags & UV_HANDLE_CLOSING)`, `src\win\async.c`). The server survived, so it looked cosmetic, but a native abort is not a warning and on other timing could take the server down with it. A successful run now sets `process.exitCode` and lets the loop drain; every spawned child is unref'd, so the process ends within a tick and libuv closes its handles in order. Failures still exit immediately. Verified three consecutive cold starts on Windows: exit 0, sub-second, no assertion.
+
 ## [1.2.0] - 2026-09-03
 
 ### Added
