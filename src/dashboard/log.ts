@@ -91,6 +91,22 @@ export async function readLog(
     const event = parseEvent(line);
     if (event) events.push(event);
   }
+  // Sequence is authoritative by POSITION, not by what was written to the line.
+  //
+  // The write lock is deliberately best-effort - a hook must never block the
+  // agent, so under contention appendEvent can run without holding it and two
+  // writers can allocate the same seq. That used to be silent data loss rather
+  // than a cosmetic duplicate: state.ts drops any event whose seq is <= the last
+  // it folded, and the observation cursor advances past duplicates the same way,
+  // so a collision quietly discarded a real event.
+  //
+  // Numbering here removes the problem at the root: the log is append-only, so
+  // position is unique and monotonic whether or not the lock was held. For a log
+  // written without contention this is identical to the stored value; for one
+  // written under contention it repairs it.
+  events.forEach((event, index) => {
+    event.seq = index;
+  });
   return events;
 }
 

@@ -5,9 +5,11 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.1.0] - 2026-09-03
 
 ### Added
+- **One memory across every AI client.** Memory has always been stored per project rather than per tool; this release makes that usable. `slipstream harvest` reads conversations other clients already wrote to disk and folds them into the same store, so something worked out in one tool is recallable from the next. Claude Code and Codex CLI are supported today, both with pure, tested parsers. Idempotent by size and mtime, so it is safe on a timer: `slipstream harvest`, `harvest sources`, `--source`, `--since`, `--dry-run`. New `src/memory/sources.ts` and `src/memory/harvest.ts`, 18 tests, and [docs/cross-client-memory.md](docs/cross-client-memory.md).
+- **Provenance on stored conversations.** `Conversation.source` names the client a chat came from, and harvested sessions from non-Claude-Code clients are namespaced (`codex--<id>`) so two clients cannot collide on a session id.
 - **Three more methodology skills, original to slipstream.** `executing-plans` (work a written plan task by task with a checkpoint after each), `dispatching-parallel-agents` (fan genuinely-independent work out to run at once) and `using-git-worktrees` (isolate parallel or risky strands in their own checkout). The library is now 78 skills, all loading cleanly through `slipstream validate`.
 - **The Office — a live pixel scene of who is doing what.** The home view is now an animated office: every open chat window is a character at a desk, animated by what it is doing right now (typing, reading, running, thinking), with a speech bubble showing the live file, glowing monitors, and tokens-saved as the hero figure. Click a character to read its session story. Canvas 2D renderer, original slipstream code; character sprites are the CC0 MetroCity pack (credited in `web/public/assets/characters/CREDITS.md`). The bus now carries each session's last tool so the scene can show the right animation.
 
@@ -15,10 +17,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Dashboard redesigned around four focused views.** The office (live pixel scene), digest-first Sessions, a Memory view with a Hindsight panel, and the code Map. The old sprawl of part-wired views is gone; the dashboard now answers who is working, what just happened, and what was learned.
 - **Sessions read as one paragraph.** Each session is synthesised into a single readable digest with headline counts, and expands into a tight timeline on demand instead of dumping every prompt and tool call. New deterministic `sessionDigest` synthesiser and `/api/session-digest`.
 - **One dashboard, not two.** The legacy inline HTML dashboard is retired; the React app is the single UI, with a small "run the build" fallback when the bundle is absent.
+- **Honest limits in the README.** "Capture is going forward" is no longer strictly true and now says so, alongside a new note that Antigravity and Claude Desktop keep history encrypted at rest and are reachable only through MCP. No adapter is shipped for them rather than one that quietly returns nothing.
 
 ### Fixed
 - **Live presence now reflects work as it happens.** The cross-tab bus was only written when a turn ended, so an active agent showed nothing. A heartbeat is now posted at turn start and refreshed as files are touched, and the active window is recency-based, so agents appear the instant they start working.
 - **Multi-window coordination is now accurate.** With frequent heartbeats, the coordination note injected into each session only lists tabs active within the last 20 minutes, so two open windows see each other's current work and a tab closed hours ago no longer shows as a live collaborator.
+- **Duplicate event sequence numbers silently dropped real events.** The dashboard write lock is best-effort by design — a hook must never block the agent — so under contention two writers could allocate the same `seq`. That was not the survivable duplicate the code assumed: `state.ts` discards any event whose `seq` is at or below the last one folded, and the observation cursor advances the same way, so a collision quietly threw away a real event. `readLog` now numbers events by their position in the append-only log, which is unique and monotonic whether or not the lock was held, and repairs logs already written with duplicates.
+- **Stale lock reclamation could never run.** `withFileLock` treated a marker as stale after 5000 ms but gave up after 1500 ms, so the reclaim path was unreachable with default settings and a marker left by a crashed process wedged the file until something else removed it. The two bounds are now coherent and documented as a pair, with jittered backoff so a burst of waiters stops colliding on every retry.
+- **Two callers could hold the lock at once.** A waiter whose `stat` found no marker treated it as infinitely old and therefore stale, and deleted it — but a missing marker means the holder just *released* it, and by then a third caller may already have created its own: `A holds -> B's open fails -> A releases -> B stats, sees nothing -> C acquires -> B removes C's marker -> B acquires`, leaving B and C both convinced they were alone. A vanished marker is now retried rather than reclaimed. Found by the new contention test, which fails against the old code.
+- **`withFileLock` now tells its callback whether the lock was actually held**, so a caller that cannot tolerate contention can react instead of assuming exclusivity it may not have.
 
 ## [1.0.0] - 2026-06-06
 

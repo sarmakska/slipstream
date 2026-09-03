@@ -31,6 +31,12 @@ export interface Conversation {
   exchanges: Exchange[];
   /** Total normalised turns folded, both roles. */
   turnCount: number;
+  /**
+   * Which client this chat came from - "claude-code", "codex", and so on.
+   * Absent on conversations captured before sources existed, which are all
+   * Claude Code by definition.
+   */
+  source?: string;
 }
 
 function firstSentence(s: string): string {
@@ -63,6 +69,13 @@ function convPath(root: string, session: string): string {
   return join(resolve(root), ".claude", "slipstream", "conversations", `${safe}.json`);
 }
 
+/** Persist an already-folded conversation. Used by ingest and by harvest. */
+export async function saveConversation(root: string, conv: Conversation): Promise<void> {
+  const path = convPath(root, conv.session);
+  await mkdir(join(path, ".."), { recursive: true });
+  await writeFile(path, JSON.stringify(conv), "utf8");
+}
+
 /** Read the Claude Code transcript at `transcriptPath`, fold it, persist it. */
 export async function ingestConversation(
   root: string,
@@ -76,9 +89,7 @@ export async function ingestConversation(
     return null;
   }
   const conv = buildConversation(session, parseTranscript(jsonl));
-  const path = convPath(root, session);
-  await mkdir(join(path, ".."), { recursive: true });
-  await writeFile(path, JSON.stringify(conv), "utf8");
+  await saveConversation(root, conv);
   return conv;
 }
 

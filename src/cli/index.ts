@@ -2,6 +2,8 @@
 import { writeFile, mkdir, readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { loadSkills, SkillValidationError } from "../engine/index.js";
+import { harvest } from "../memory/harvest.js";
+import { detectSources } from "../memory/sources.js";
 import {
   generateMap,
   mapToJson,
@@ -105,6 +107,8 @@ Usage:
   slipstream memory lessons [--min N] [--limit N] [--root .]
   slipstream observe [--root .] [--session S] [--watch-map] [--ci]
   slipstream savings [--root .]
+  slipstream harvest [--source a,b] [--since ISO] [--dry-run] [--root .]
+  slipstream harvest sources
   slipstream mindmap [root] [--mermaid] [--html out.html]
   slipstream status [root] [--bytes N]
   slipstream brief [root] [--out file.md]
@@ -363,6 +367,49 @@ async function cmdMemory(args: string[]): Promise<number> {
 async function cmdSavings(args: string[]): Promise<number> {
   const root = getFlag(args, "root") ?? ".";
   console.log(renderSavings(summarizeSavings(await loadSavings(root))));
+  return 0;
+}
+
+async function cmdHarvest(args: string[]): Promise<number> {
+  const root = getFlag(args, "root") ?? ".";
+
+  if (args[0] === "sources") {
+    const found = await detectSources();
+    if (!found.length) {
+      console.log("No AI client transcripts found on this machine.");
+      return 0;
+    }
+    console.log("Clients with readable transcripts:");
+    for (const { source, files } of found) {
+      console.log(`  ${source.label.padEnd(14)} ${String(files).padStart(4)} transcripts  ${source.root}`);
+    }
+    return 0;
+  }
+
+  const onlyFlag = getFlag(args, "source");
+  const sinceFlag = getFlag(args, "since");
+  const since = sinceFlag ? new Date(sinceFlag) : undefined;
+  if (since && Number.isNaN(since.getTime())) {
+    console.error(`--since is not a date: ${sinceFlag}`);
+    return 2;
+  }
+
+  const report = await harvest({
+    root,
+    only: onlyFlag ? onlyFlag.split(",").map((s) => s.trim()) : undefined,
+    dryRun: args.includes("--dry-run"),
+    since,
+  });
+
+  for (const s of report.bySource) {
+    console.log(`  ${s.label.padEnd(14)} ${String(s.found).padStart(4)} found  ${String(s.taken).padStart(4)} taken`);
+  }
+  const verb = report.dryRun ? "would fold" : "folded";
+  console.log(
+    `\n${verb} ${report.taken.length} conversation(s); ` +
+      `${report.unchanged} unchanged, ${report.skipped} unreadable.`
+  );
+  if (report.dryRun) console.log("dry run - nothing written.");
   return 0;
 }
 
@@ -801,6 +848,8 @@ async function main(): Promise<number> {
       return cmdObserve(rest);
     case "savings":
       return cmdSavings(rest);
+    case "harvest":
+      return cmdHarvest(rest);
     case "mindmap":
       return cmdMindmap(rest);
     case "status":
